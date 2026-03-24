@@ -1,4 +1,4 @@
-package com.DMDHelper.basic.Class;
+package com.DMDHelper.basic.playerclass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +56,14 @@ public abstract class Character_Class {
 
     public boolean has_feat(String feat_name) {
         return this.feat_names.contains(feat_name);
+    }
+
+    public int get_extra_armor_class_bonus(String armor_type) {
+        return 0;
+    }
+
+    public int get_extra_hit_points_per_level() {
+        return 0;
     }
 
     public abstract void rebuild_progression();

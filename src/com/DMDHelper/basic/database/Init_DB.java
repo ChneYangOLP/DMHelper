@@ -30,6 +30,12 @@ public class Init_DB {
                 + "armor_type TEXT DEFAULT 'None', "
                 + "armor_base_ac INTEGER DEFAULT 10, "
                 + "has_shield INTEGER DEFAULT 0, "
+                + "inventory_items TEXT DEFAULT '', "
+                + "equipped_armor_key TEXT DEFAULT '', "
+                + "equipped_main_hand_key TEXT DEFAULT '', "
+                + "equipped_off_hand_key TEXT DEFAULT '', "
+                + "equipped_cloak_key TEXT DEFAULT '', "
+                + "equipped_accessory_key TEXT DEFAULT '', "
                 + "skill_proficiencies TEXT DEFAULT '', "
                 + "feat_names TEXT DEFAULT '', "
                 + "advancement_notes TEXT DEFAULT '', "
@@ -55,6 +61,12 @@ public class Init_DB {
             ensure_column(stmt, "saved_characters", "armor_type", "TEXT DEFAULT 'None'");
             ensure_column(stmt, "saved_characters", "armor_base_ac", "INTEGER DEFAULT 10");
             ensure_column(stmt, "saved_characters", "has_shield", "INTEGER DEFAULT 0");
+            ensure_column(stmt, "saved_characters", "inventory_items", "TEXT DEFAULT ''");
+            ensure_column(stmt, "saved_characters", "equipped_armor_key", "TEXT DEFAULT ''");
+            ensure_column(stmt, "saved_characters", "equipped_main_hand_key", "TEXT DEFAULT ''");
+            ensure_column(stmt, "saved_characters", "equipped_off_hand_key", "TEXT DEFAULT ''");
+            ensure_column(stmt, "saved_characters", "equipped_cloak_key", "TEXT DEFAULT ''");
+            ensure_column(stmt, "saved_characters", "equipped_accessory_key", "TEXT DEFAULT ''");
             ensure_column(stmt, "saved_characters", "skill_proficiencies", "TEXT DEFAULT ''");
             ensure_column(stmt, "saved_characters", "feat_names", "TEXT DEFAULT ''");
             ensure_column(stmt, "saved_characters", "advancement_notes", "TEXT DEFAULT ''");

@@ -1,9 +1,12 @@
 package com.DMDHelper.basic.menus;
 
 import com.DMDHelper.basic.Character_Sheet;
-import com.DMDHelper.basic.Class.Character_Class;
-import com.DMDHelper.basic.Class.Fighter.Fighter_Class;
-import com.DMDHelper.basic.Class.wizard.Wizard_Class;
+import com.DMDHelper.basic.playerclass.Character_Class;
+import com.DMDHelper.basic.playerclass.Fighter.Fighter_Class;
+import com.DMDHelper.basic.playerclass.paladin.Paladin_Class;
+import com.DMDHelper.basic.playerclass.sorcerer.Sorcerer_Class;
+import com.DMDHelper.basic.playerclass.warlock.Warlock_Class;
+import com.DMDHelper.basic.playerclass.wizard.Wizard_Class;
 import com.DMDHelper.basic.Stats;
 import com.DMDHelper.basic.database.Character_DAO;
 import com.DMDHelper.basic.database.Global_Data;
@@ -60,7 +63,7 @@ public class Create_Character_UI extends JFrame {
         form_panel.add(race_box);
 
         form_panel.add(new JLabel("选择职业:"));
-        String[] classes = {"战士 (Fighter)", "法师 (Wizard)"};
+        String[] classes = {"战士 (Fighter)", "法师 (Wizard)", "术士 (Sorcerer)", "邪术士 (Warlock)", "圣武士 (Paladin)"};
         class_box = new JComboBox<>(classes);
         form_panel.add(class_box);
 
@@ -133,6 +136,9 @@ public class Create_Character_UI extends JFrame {
         Character_Class job = null;
         if (selected_class.equals("战士 (Fighter)")) job = new Fighter_Class();
         else if (selected_class.equals("法师 (Wizard)")) job = new Wizard_Class();
+        else if (selected_class.equals("术士 (Sorcerer)")) job = new Sorcerer_Class();
+        else if (selected_class.equals("邪术士 (Warlock)")) job = new Warlock_Class();
+        else if (selected_class.equals("圣武士 (Paladin)")) job = new Paladin_Class();
         else job = new Fighter_Class();
 
         Character_Sheet new_character = Character_Sheet.create_new_character(name, age, gender, race, job, raw_stats);

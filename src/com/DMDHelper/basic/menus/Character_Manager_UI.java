@@ -1,33 +1,47 @@
 package com.DMDHelper.basic.menus;
 
 import com.DMDHelper.basic.Character_Sheet;
-import com.DMDHelper.basic.Class.Fighter.Fighter_Class;
-import com.DMDHelper.basic.Class.wizard.Wizard_Class;
-import com.DMDHelper.basic.armor.Armor;
 import com.DMDHelper.basic.database.Character_DAO;
 import com.DMDHelper.basic.database.Global_Data;
+import com.DMDHelper.basic.equipment.Equipment_Item;
+import com.DMDHelper.basic.equipment.Equipment_Slot;
+import com.DMDHelper.basic.playerclass.Fighter.Fighter_Class;
+import com.DMDHelper.basic.playerclass.paladin.Paladin_Class;
+import com.DMDHelper.basic.playerclass.sorcerer.Sorcerer_Class;
+import com.DMDHelper.basic.playerclass.warlock.Warlock_Class;
+import com.DMDHelper.basic.playerclass.wizard.Wizard_Class;
+import com.DMDHelper.basic.spell.Spell_Library;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Character_Manager_UI extends JFrame {
 
     private Character_Sheet current_char;
+    private boolean is_reloading_selector;
 
     private JComboBox<String> char_selector;
     private JTextArea stats_area;
     private JTextArea level_info_area;
     private JTextArea inventory_area;
+    private JTextArea spellcasting_area;
 
-    private JComboBox<String> armor_box;
-    private JCheckBox shield_check;
+    private JComboBox<EquipmentChoice> armor_box;
+    private JComboBox<EquipmentChoice> main_hand_box;
+    private JComboBox<EquipmentChoice> off_hand_box;
+    private JComboBox<EquipmentChoice> cloak_box;
+    private JComboBox<EquipmentChoice> accessory_box;
     private JButton level_up_btn;
     private JButton add_xp_btn;
+    private JButton manage_spellbook_btn;
+    private JButton manage_spell_selection_btn;
+    private JButton manage_prepared_spell_btn;
 
     public Character_Manager_UI() {
         setTitle("全功能角色管理控制台");
-        setSize(640, 760);
+        setSize(760, 820);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -36,10 +50,13 @@ public class Character_Manager_UI extends JFrame {
         JPanel top_panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         top_panel.add(new JLabel("当前管理角色: "));
         char_selector = new JComboBox<>();
-        reload_selector_items();
+        reload_selector_items(current_char);
         top_panel.add(char_selector);
 
         char_selector.addActionListener(e -> {
+            if (is_reloading_selector) {
+                return;
+            }
             int idx = char_selector.getSelectedIndex();
             if (idx >= 0) {
                 current_char = Global_Data.character_pool.get(idx);
@@ -51,40 +68,50 @@ public class Character_Manager_UI extends JFrame {
         tabbed_pane.setFont(new Font("微软雅黑", Font.BOLD, 14));
 
         JPanel stats_panel = new JPanel(new BorderLayout());
-        stats_area = new JTextArea();
-        stats_area.setEditable(false);
-        stats_area.setFont(new Font("微软雅黑", Font.PLAIN, 15));
-        stats_area.setMargin(new Insets(15, 15, 15, 15));
+        stats_area = build_text_area();
         stats_panel.add(new JScrollPane(stats_area), BorderLayout.CENTER);
         tabbed_pane.addTab("基础与属性", stats_panel);
 
         JPanel equip_panel = new JPanel(new BorderLayout());
-        JPanel armor_select_panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        armor_select_panel.add(new JLabel("更换护甲:"));
-        String[] armors = {"普通衣服 (None, AC:10)", "皮甲 (Light, AC:11)", "半身甲 (Medium, AC:15)", "锁子甲 (Heavy, AC:16)"};
-        armor_box = new JComboBox<>(armors);
-        shield_check = new JCheckBox("装备盾牌 (+2 AC)");
-        JButton equip_btn = new JButton("确认换装");
-
-        armor_select_panel.add(armor_box);
-        armor_select_panel.add(shield_check);
-        armor_select_panel.add(equip_btn);
-
-        inventory_area = new JTextArea();
-        inventory_area.setEditable(false);
-        inventory_area.setFont(new Font("微软雅黑", Font.PLAIN, 15));
-        inventory_area.setMargin(new Insets(15, 15, 15, 15));
-
-        equip_panel.add(armor_select_panel, BorderLayout.NORTH);
+        JPanel equipment_slot_panel = new JPanel(new GridLayout(5, 2, 10, 10));
+        equipment_slot_panel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        armor_box = new JComboBox<>();
+        main_hand_box = new JComboBox<>();
+        off_hand_box = new JComboBox<>();
+        cloak_box = new JComboBox<>();
+        accessory_box = new JComboBox<>();
+        equipment_slot_panel.add(new JLabel("护甲槽位"));
+        equipment_slot_panel.add(armor_box);
+        equipment_slot_panel.add(new JLabel("主手武器"));
+        equipment_slot_panel.add(main_hand_box);
+        equipment_slot_panel.add(new JLabel("副手/盾牌"));
+        equipment_slot_panel.add(off_hand_box);
+        equipment_slot_panel.add(new JLabel("披风"));
+        equipment_slot_panel.add(cloak_box);
+        equipment_slot_panel.add(new JLabel("护符"));
+        equipment_slot_panel.add(accessory_box);
+        JButton equip_btn = new JButton("应用当前装备");
+        inventory_area = build_text_area();
+        equip_panel.add(equipment_slot_panel, BorderLayout.NORTH);
         equip_panel.add(new JScrollPane(inventory_area), BorderLayout.CENTER);
+        equip_panel.add(equip_btn, BorderLayout.SOUTH);
         tabbed_pane.addTab("装备与物品", equip_panel);
 
-        JPanel progression_panel = new JPanel(new BorderLayout());
-        level_info_area = new JTextArea();
-        level_info_area.setEditable(false);
-        level_info_area.setFont(new Font("微软雅黑", Font.PLAIN, 15));
-        level_info_area.setMargin(new Insets(15, 15, 15, 15));
+        JPanel spell_panel = new JPanel(new BorderLayout());
+        spellcasting_area = build_text_area();
+        JPanel spell_btn_panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        manage_spellbook_btn = new JButton("管理戏法");
+        manage_spell_selection_btn = new JButton("管理法术");
+        manage_prepared_spell_btn = new JButton("管理准备法术");
+        spell_btn_panel.add(manage_spellbook_btn);
+        spell_btn_panel.add(manage_spell_selection_btn);
+        spell_btn_panel.add(manage_prepared_spell_btn);
+        spell_panel.add(new JScrollPane(spellcasting_area), BorderLayout.CENTER);
+        spell_panel.add(spell_btn_panel, BorderLayout.SOUTH);
+        tabbed_pane.addTab("施法与法术", spell_panel);
 
+        JPanel progression_panel = new JPanel(new BorderLayout());
+        level_info_area = build_text_area();
         JPanel level_btn_panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         add_xp_btn = new JButton("添加经验值");
         level_up_btn = new JButton("执行升级");
@@ -92,7 +119,6 @@ public class Character_Manager_UI extends JFrame {
         level_up_btn.setForeground(Color.RED);
         level_btn_panel.add(add_xp_btn);
         level_btn_panel.add(level_up_btn);
-
         progression_panel.add(new JScrollPane(level_info_area), BorderLayout.CENTER);
         progression_panel.add(level_btn_panel, BorderLayout.SOUTH);
         tabbed_pane.addTab("成长与升级", progression_panel);
@@ -100,6 +126,9 @@ public class Character_Manager_UI extends JFrame {
         equip_btn.addActionListener(e -> handle_equip());
         add_xp_btn.addActionListener(e -> handle_add_experience());
         level_up_btn.addActionListener(e -> handle_level_up());
+        manage_spellbook_btn.addActionListener(e -> handle_manage_spellbook());
+        manage_spell_selection_btn.addActionListener(e -> handle_manage_spell_selection());
+        manage_prepared_spell_btn.addActionListener(e -> handle_manage_prepared_spells());
 
         add(top_panel, BorderLayout.NORTH);
         add(tabbed_pane, BorderLayout.CENTER);
@@ -107,28 +136,65 @@ public class Character_Manager_UI extends JFrame {
         refresh_ui();
     }
 
-    private void handle_equip() {
-        String selected = (String) armor_box.getSelectedItem();
-        Armor newArmor = new Armor("普通衣服", "None", 10);
-        if (selected != null && selected.contains("Light")) {
-            newArmor = new Armor("皮甲", "Light", 11);
-        } else if (selected != null && selected.contains("Medium")) {
-            newArmor = new Armor("半身甲", "Medium", 15);
-        } else if (selected != null && selected.contains("Heavy")) {
-            newArmor = new Armor("锁子甲", "Heavy", 16);
-        }
+    private JTextArea build_text_area() {
+        JTextArea area = new JTextArea();
+        area.setEditable(false);
+        area.setFont(new Font("微软雅黑", Font.PLAIN, 15));
+        area.setMargin(new Insets(15, 15, 15, 15));
+        return area;
+    }
 
-        current_char.set_equipment(newArmor, shield_check.isSelected());
+    private void handle_equip() {
+        current_char.equip_item(Equipment_Slot.ARMOR, get_selected_equipment_key(armor_box));
+        current_char.equip_item(Equipment_Slot.MAIN_HAND, get_selected_equipment_key(main_hand_box));
+        current_char.equip_item(Equipment_Slot.OFF_HAND, get_selected_equipment_key(off_hand_box));
+        current_char.equip_item(Equipment_Slot.CLOAK, get_selected_equipment_key(cloak_box));
+        current_char.equip_item(Equipment_Slot.ACCESSORY, get_selected_equipment_key(accessory_box));
         Character_DAO.update_character(current_char);
         refresh_ui();
-        JOptionPane.showMessageDialog(this, "换装成功，当前 AC 为 " + current_char.ac + "。");
+        JOptionPane.showMessageDialog(this, "装备已更新，当前 AC 为 " + current_char.ac + "。");
+    }
+
+    private String get_selected_equipment_key(JComboBox<EquipmentChoice> box) {
+        EquipmentChoice choice = (EquipmentChoice) box.getSelectedItem();
+        return choice == null ? "" : choice.item_key;
+    }
+
+    private void reload_equipment_boxes() {
+        reload_slot_box(armor_box, Equipment_Slot.ARMOR, current_char.equipped_armor_key, false);
+        reload_slot_box(main_hand_box, Equipment_Slot.MAIN_HAND, current_char.equipped_main_hand_key, false);
+        reload_slot_box(off_hand_box, Equipment_Slot.OFF_HAND, current_char.equipped_off_hand_key, true);
+        reload_slot_box(cloak_box, Equipment_Slot.CLOAK, current_char.equipped_cloak_key, true);
+        reload_slot_box(accessory_box, Equipment_Slot.ACCESSORY, current_char.equipped_accessory_key, true);
+    }
+
+    private void reload_slot_box(JComboBox<EquipmentChoice> box, Equipment_Slot slot, String equippedKey, boolean allowEmpty) {
+        box.removeAllItems();
+        if (allowEmpty) {
+            box.addItem(new EquipmentChoice("", "空置", "不装备此槽位物品。"));
+        }
+        for (Equipment_Item item : current_char.get_owned_items_for_slot(slot)) {
+            box.addItem(new EquipmentChoice(item.key, item.display_name, item.description));
+        }
+        select_choice(box, equippedKey);
+    }
+
+    private void select_choice(JComboBox<EquipmentChoice> box, String equippedKey) {
+        for (int i = 0; i < box.getItemCount(); i++) {
+            EquipmentChoice choice = box.getItemAt(i);
+            if (choice != null && choice.item_key.equals(equippedKey == null ? "" : equippedKey)) {
+                box.setSelectedIndex(i);
+                return;
+            }
+        }
+        if (box.getItemCount() > 0) {
+            box.setSelectedIndex(0);
+        }
     }
 
     private void handle_add_experience() {
         String input = JOptionPane.showInputDialog(this, "请输入要增加的经验值：", "添加经验值", JOptionPane.PLAIN_MESSAGE);
-        if (input == null) {
-            return;
-        }
+        if (input == null) return;
 
         try {
             int xp = Integer.parseInt(input.trim());
@@ -136,7 +202,6 @@ public class Character_Manager_UI extends JFrame {
                 JOptionPane.showMessageDialog(this, "经验值必须是正整数。");
                 return;
             }
-
             current_char.add_experience(xp);
             Character_DAO.update_character(current_char);
             refresh_ui();
@@ -171,21 +236,159 @@ public class Character_Manager_UI extends JFrame {
         Character_Advancement_Helper.process_pending_choices(this, current_char);
         current_char.recalculate_derived_stats();
         Character_DAO.update_character(current_char);
-        reload_selector_items();
-        char_selector.setSelectedIndex(Global_Data.character_pool.indexOf(current_char));
+        reload_selector_items(current_char);
         refresh_ui();
         JOptionPane.showMessageDialog(this, "升级完成，新的职业能力与选择已保存。");
     }
 
-    private void reload_selector_items() {
-        if (char_selector == null) {
-            return;
+    private void handle_manage_spellbook() {
+        if (current_char.job instanceof Wizard_Class) {
+            Wizard_Class wizard = (Wizard_Class) current_char.job;
+            List<String> selected = Spell_Management_Helper.open_selection_dialog(
+                    this,
+                    "管理法师戏法",
+                    "法师戏法已知数固定为 " + wizard.cantrips_known + "。",
+                    Spell_Library.get_wizard_cantrip_keys(),
+                    wizard.known_cantrip_keys,
+                    wizard.cantrips_known,
+                    wizard.cantrips_known
+            );
+            wizard.set_known_cantrips(selected);
+            current_char.record_advancement("调整法师戏法，当前数量：" + wizard.known_cantrip_keys.size());
+            current_char.recalculate_derived_stats();
+            Character_DAO.update_character(current_char);
+            refresh_ui();
+        } else if (current_char.job instanceof Sorcerer_Class) {
+            Sorcerer_Class sorcerer = (Sorcerer_Class) current_char.job;
+            List<String> selected = Spell_Management_Helper.open_selection_dialog(
+                    this,
+                    "管理术士戏法",
+                    "术士戏法已知上限：" + sorcerer.cantrips_known + "。",
+                    Spell_Library.get_sorcerer_cantrip_keys(),
+                    sorcerer.known_cantrip_keys,
+                    sorcerer.cantrips_known,
+                    sorcerer.cantrips_known
+            );
+            sorcerer.set_known_cantrips(selected);
+            current_char.record_advancement("调整术士戏法，当前数量：" + sorcerer.known_cantrip_keys.size());
+            current_char.recalculate_derived_stats();
+            Character_DAO.update_character(current_char);
+            refresh_ui();
+        } else if (current_char.job instanceof Warlock_Class) {
+            Warlock_Class warlock = (Warlock_Class) current_char.job;
+            List<String> selected = Spell_Management_Helper.open_selection_dialog(
+                    this,
+                    "管理邪术士戏法",
+                    "邪术士戏法已知上限：" + warlock.cantrips_known + "。",
+                    Spell_Library.get_warlock_cantrip_keys(),
+                    warlock.known_cantrip_keys,
+                    warlock.cantrips_known,
+                    warlock.cantrips_known
+            );
+            warlock.set_known_cantrips(selected);
+            current_char.record_advancement("调整邪术士戏法，当前数量：" + warlock.known_cantrip_keys.size());
+            current_char.recalculate_derived_stats();
+            Character_DAO.update_character(current_char);
+            refresh_ui();
+        }
+    }
+
+    private void handle_manage_spell_selection() {
+        if (current_char.job instanceof Wizard_Class) {
+            Wizard_Class wizard = (Wizard_Class) current_char.job;
+            List<String> selected = Spell_Management_Helper.open_selection_dialog(
+                    this,
+                    "管理法术书",
+                    "法师法术书容量上限：" + wizard.spells_in_spellbook + "。当前最高可学习 " + wizard.get_max_spell_level() + " 环法术。",
+                    Spell_Library.get_wizard_spell_keys_up_to_level(wizard.get_max_spell_level()),
+                    wizard.spellbook_spell_keys,
+                    wizard.spells_in_spellbook
+            );
+            wizard.spellbook_spell_keys.clear();
+            wizard.spellbook_spell_keys.addAll(selected);
+            current_char.record_advancement("整理法术书，当前记录法术数：" + wizard.spellbook_spell_keys.size());
+        } else if (current_char.job instanceof Sorcerer_Class) {
+            Sorcerer_Class sorcerer = (Sorcerer_Class) current_char.job;
+            List<String> selected = Spell_Management_Helper.open_selection_dialog(
+                    this,
+                    "管理已知法术",
+                    "术士已知法术上限：" + sorcerer.spells_known_count + "，当前最高可学 " + sorcerer.get_max_spell_level() + " 环法术。",
+                    Spell_Library.get_sorcerer_spell_keys_up_to_level(sorcerer.get_max_spell_level()),
+                    sorcerer.known_spell_keys,
+                    sorcerer.spells_known_count,
+                    sorcerer.spells_known_count
+            );
+            sorcerer.set_known_spells(selected);
+            current_char.record_advancement("调整术士已知法术，当前数量：" + sorcerer.known_spell_keys.size());
+        } else if (current_char.job instanceof Warlock_Class) {
+            Warlock_Class warlock = (Warlock_Class) current_char.job;
+            List<String> selected = Spell_Management_Helper.open_selection_dialog(
+                    this,
+                    "管理邪术士已知法术",
+                    "邪术士已知法术上限：" + warlock.spells_known_count + "，当前契约法术最高按 " + warlock.pact_slot_level + " 环施放。",
+                    Spell_Library.get_warlock_spell_keys_up_to_level(warlock.pact_slot_level),
+                    warlock.known_spell_keys,
+                    warlock.spells_known_count,
+                    warlock.spells_known_count
+            );
+            warlock.set_known_spells(selected);
+            current_char.record_advancement("调整邪术士已知法术，当前数量：" + warlock.known_spell_keys.size());
         }
 
+        current_char.recalculate_derived_stats();
+        Character_DAO.update_character(current_char);
+        refresh_ui();
+    }
+
+    private void handle_manage_prepared_spells() {
+        if (current_char.job instanceof Wizard_Class) {
+            Wizard_Class wizard = (Wizard_Class) current_char.job;
+            List<String> selected = Spell_Management_Helper.open_selection_dialog(
+                    this,
+                    "管理准备法术",
+                    "你可准备 " + wizard.get_prepared_spell_count(current_char.stats.get_mod(current_char.stats.intel)) + " 个法术。",
+                    new ArrayList<>(wizard.spellbook_spell_keys),
+                    wizard.prepared_spell_keys,
+                    wizard.get_prepared_spell_count(current_char.stats.get_mod(current_char.stats.intel))
+            );
+            wizard.set_prepared_spells(selected, current_char.stats.get_mod(current_char.stats.intel));
+            current_char.record_advancement("调整准备法术，当前准备数量：" + wizard.prepared_spell_keys.size());
+        } else if (current_char.job instanceof Paladin_Class) {
+            Paladin_Class paladin = (Paladin_Class) current_char.job;
+            int preparedCount = paladin.get_prepared_spell_count(current_char.stats.get_mod(current_char.stats.cha));
+            List<String> selected = Spell_Management_Helper.open_selection_dialog(
+                    this,
+                    "管理圣武士准备法术",
+                    "你可准备 " + preparedCount + " 个法术。",
+                    paladin.get_available_spell_options(),
+                    paladin.prepared_spell_keys,
+                    preparedCount
+            );
+            paladin.set_prepared_spells(selected, current_char.stats.get_mod(current_char.stats.cha));
+            current_char.record_advancement("调整圣武士准备法术，当前数量：" + paladin.prepared_spell_keys.size());
+        }
+
+        current_char.recalculate_derived_stats();
+        Character_DAO.update_character(current_char);
+        refresh_ui();
+    }
+
+    private void reload_selector_items(Character_Sheet selectedCharacter) {
+        if (char_selector == null) return;
+        is_reloading_selector = true;
         char_selector.removeAllItems();
+        int selectedIndex = 0;
+        int idx = 0;
         for (Character_Sheet character : Global_Data.character_pool) {
             char_selector.addItem(character.name + " (" + character.job.class_name + " LV." + character.job.current_level + ")");
+            if (character == selectedCharacter) selectedIndex = idx;
+            idx++;
         }
+        if (!Global_Data.character_pool.isEmpty()) {
+            char_selector.setSelectedIndex(selectedIndex);
+            current_char = Global_Data.character_pool.get(selectedIndex);
+        }
+        is_reloading_selector = false;
     }
 
     private void refresh_ui() {
@@ -198,7 +401,9 @@ public class Character_Manager_UI extends JFrame {
         sb_stats.append("经验值: ").append(current_char.experience_points).append("\n");
         sb_stats.append("--------------------------------------------------\n");
         sb_stats.append("当前最大 HP: ").append(current_char.hp).append("\n");
-        sb_stats.append("当前护甲 AC: ").append(current_char.ac).append(" (防具: ").append(current_char.equipped_armor.armor_name).append(")\n");
+        sb_stats.append("当前护甲 AC: ").append(current_char.ac).append(" (护甲: ").append(current_char.equipped_armor.armor_name).append(")\n");
+        Equipment_Item weaponItem = current_char.get_equipped_item(Equipment_Slot.MAIN_HAND);
+        sb_stats.append("当前主手: ").append(weaponItem == null ? "空置" : weaponItem.display_name).append("\n");
         sb_stats.append("熟练加值 PB: +").append(current_char.get_proficiency_bonus()).append("\n");
         sb_stats.append("子职业: ").append(current_char.job.get_subclass_name()).append("\n");
         sb_stats.append("--------------------------------------------------\n");
@@ -211,45 +416,145 @@ public class Character_Manager_UI extends JFrame {
                 current_char.get_saving_throw_bonus("Intelligence"),
                 current_char.get_saving_throw_bonus("Wisdom"),
                 current_char.get_saving_throw_bonus("Charisma")));
-        sb_stats.append("--------------------------------------------------\n");
-        sb_stats.append(String.format("力量 %d (%+d) | 敏捷 %d (%+d) | 体质 %d (%+d)\n",
-                current_char.stats.str, current_char.stats.get_mod(current_char.stats.str),
-                current_char.stats.dex, current_char.stats.get_mod(current_char.stats.dex),
-                current_char.stats.con, current_char.stats.get_mod(current_char.stats.con)));
-        sb_stats.append(String.format("智力 %d (%+d) | 感知 %d (%+d) | 魅力 %d (%+d)\n",
-                current_char.stats.intel, current_char.stats.get_mod(current_char.stats.intel),
-                current_char.stats.wis, current_char.stats.get_mod(current_char.stats.wis),
-                current_char.stats.cha, current_char.stats.get_mod(current_char.stats.cha)));
         stats_area.setText(sb_stats.toString());
         stats_area.setCaretPosition(0);
 
-        shield_check.setSelected(current_char.has_shield);
-        String armorName = current_char.equipped_armor.armor_name;
-        if (armorName.contains("衣服") || armorName.contains("长袍")) {
-            armor_box.setSelectedIndex(0);
-        } else if (armorName.contains("皮甲")) {
-            armor_box.setSelectedIndex(1);
-        } else if (armorName.contains("半身甲")) {
-            armor_box.setSelectedIndex(2);
-        } else if (armorName.contains("锁子甲")) {
-            armor_box.setSelectedIndex(3);
-        }
+        reload_equipment_boxes();
 
         StringBuilder inventory = new StringBuilder();
-        inventory.append("【").append(current_char.name).append(" 的装备状态】\n");
-        inventory.append("当前护甲: ").append(current_char.equipped_armor.armor_name).append("\n");
-        inventory.append("盾牌状态: ").append(current_char.has_shield ? "已装备" : "未装备").append("\n\n");
-        inventory.append("【职业熟练】\n");
-        inventory.append(String.join("、", current_char.job.equipment_proficiencies)).append("\n\n");
-        inventory.append("【技能熟练】\n");
-        if (current_char.job.skill_proficiencies.isEmpty()) {
-            inventory.append("尚未选择\n");
-        } else {
-            inventory.append(String.join("、", current_char.job.skill_proficiencies)).append("\n");
+        inventory.append("【").append(current_char.name).append(" 的装备面板】\n");
+        inventory.append("护甲槽位: ").append(get_equipped_item_label(Equipment_Slot.ARMOR)).append("\n");
+        inventory.append("主手槽位: ").append(get_equipped_item_label(Equipment_Slot.MAIN_HAND)).append("\n");
+        inventory.append("副手槽位: ").append(get_equipped_item_label(Equipment_Slot.OFF_HAND)).append("\n");
+        inventory.append("披风槽位: ").append(get_equipped_item_label(Equipment_Slot.CLOAK)).append("\n");
+        inventory.append("护符槽位: ").append(get_equipped_item_label(Equipment_Slot.ACCESSORY)).append("\n\n");
+        inventory.append("【职业熟练】\n").append(String.join("、", current_char.job.equipment_proficiencies)).append("\n\n");
+        inventory.append("【背包物品】\n");
+        for (Equipment_Item item : current_char.get_owned_items_for_slot(Equipment_Slot.ARMOR)) {
+            inventory.append("- ").append(item.to_inventory_line()).append("\n");
         }
+        for (Equipment_Item item : current_char.get_owned_items_for_slot(Equipment_Slot.MAIN_HAND)) {
+            inventory.append("- ").append(item.to_inventory_line()).append("\n");
+        }
+        for (Equipment_Item item : current_char.get_owned_items_for_slot(Equipment_Slot.OFF_HAND)) {
+            inventory.append("- ").append(item.to_inventory_line()).append("\n");
+        }
+        for (Equipment_Item item : current_char.get_owned_items_for_slot(Equipment_Slot.CLOAK)) {
+            inventory.append("- ").append(item.to_inventory_line()).append("\n");
+        }
+        for (Equipment_Item item : current_char.get_owned_items_for_slot(Equipment_Slot.ACCESSORY)) {
+            inventory.append("- ").append(item.to_inventory_line()).append("\n");
+        }
+        inventory.append("\n");
+        inventory.append("【技能熟练】\n");
+        if (current_char.job.skill_proficiencies.isEmpty()) inventory.append("尚未选择\n");
+        else inventory.append(String.join("、", current_char.job.skill_proficiencies)).append("\n");
         inventory_area.setText(inventory.toString());
         inventory_area.setCaretPosition(0);
 
+        refresh_spellcasting_panel();
+        refresh_progression_panel();
+
+        boolean canLevelUp = current_char.can_level_up();
+        level_up_btn.setEnabled(canLevelUp);
+        level_up_btn.setText(canLevelUp ? "执行升级" : "经验不足，暂不可升级");
+    }
+
+    private void refresh_spellcasting_panel() {
+        StringBuilder sb = new StringBuilder();
+        manage_spellbook_btn.setVisible(false);
+        manage_spell_selection_btn.setVisible(false);
+        manage_prepared_spell_btn.setVisible(false);
+
+        if (current_char.job instanceof Wizard_Class) {
+            Wizard_Class wizard = (Wizard_Class) current_char.job;
+            manage_spellbook_btn.setVisible(true);
+            manage_spell_selection_btn.setVisible(true);
+            manage_prepared_spell_btn.setVisible(true);
+            manage_spellbook_btn.setText("管理戏法");
+            manage_spell_selection_btn.setText("管理法术书");
+            manage_prepared_spell_btn.setText("管理准备法术");
+
+            sb.append("【法师施法资源】\n");
+            sb.append(wizard.get_spell_slot_summary()).append("\n");
+            sb.append("戏法已知数: ").append(wizard.cantrips_known).append("\n");
+            sb.append("法术书容量: ").append(wizard.spells_in_spellbook).append("\n");
+            sb.append("可准备法术数: ").append(wizard.get_prepared_spell_count(current_char.stats.get_mod(current_char.stats.intel))).append("\n");
+            sb.append("奥术回能额度: 最多恢复总环级 ").append(wizard.arcane_recovery_level).append("\n\n");
+            sb.append("【已知戏法】\n");
+            if (wizard.get_known_cantrip_lines().isEmpty()) sb.append("- 暂无\n");
+            else for (String line : wizard.get_known_cantrip_lines()) sb.append("- ").append(line).append("\n");
+            sb.append("【法术书】\n");
+            if (wizard.get_spellbook_lines().isEmpty()) sb.append("- 暂无\n");
+            else for (String line : wizard.get_spellbook_lines()) sb.append("- ").append(line).append("\n");
+            sb.append("\n【准备法术】\n");
+            if (wizard.get_prepared_spell_lines().isEmpty()) sb.append("- 暂无\n");
+            else for (String line : wizard.get_prepared_spell_lines()) sb.append("- ").append(line).append("\n");
+        } else if (current_char.job instanceof Sorcerer_Class) {
+            Sorcerer_Class sorcerer = (Sorcerer_Class) current_char.job;
+            manage_spellbook_btn.setVisible(true);
+            manage_spell_selection_btn.setVisible(true);
+            manage_spellbook_btn.setText("管理戏法");
+            manage_spell_selection_btn.setText("管理已知法术");
+
+            sb.append("【术士施法资源】\n");
+            sb.append(sorcerer.get_spell_slot_summary()).append("\n");
+            sb.append("术法点: ").append(sorcerer.sorcery_points).append("\n");
+            sb.append("戏法已知数: ").append(sorcerer.cantrips_known).append("\n");
+            sb.append("法术已知数: ").append(sorcerer.spells_known_count).append("\n\n");
+            sb.append("【已知戏法】\n");
+            if (sorcerer.get_known_cantrip_lines().isEmpty()) sb.append("- 暂无\n");
+            else for (String line : sorcerer.get_known_cantrip_lines()) sb.append("- ").append(line).append("\n");
+            sb.append("【已知法术】\n");
+            if (sorcerer.get_known_spell_lines().isEmpty()) sb.append("- 暂无\n");
+            else for (String line : sorcerer.get_known_spell_lines()) sb.append("- ").append(line).append("\n");
+        } else if (current_char.job instanceof Warlock_Class) {
+            Warlock_Class warlock = (Warlock_Class) current_char.job;
+            manage_spellbook_btn.setVisible(true);
+            manage_spell_selection_btn.setVisible(true);
+            manage_spellbook_btn.setText("管理戏法");
+            manage_spell_selection_btn.setText("管理已知法术");
+
+            sb.append("【邪术士施法资源】\n");
+            sb.append("契约法术位: ").append(warlock.pact_slot_count).append(" 个 ").append(warlock.pact_slot_level).append(" 环位\n");
+            if (warlock.mystic_arcanum_level > 0) {
+                sb.append("神秘秘法: 1 个 ").append(warlock.mystic_arcanum_level).append(" 环秘法\n");
+            }
+            sb.append("戏法已知数: ").append(warlock.cantrips_known).append("\n");
+            sb.append("法术已知数: ").append(warlock.spells_known_count).append("\n\n");
+            sb.append("【已知戏法】\n");
+            if (warlock.get_known_cantrip_lines().isEmpty()) sb.append("- 暂无\n");
+            else for (String line : warlock.get_known_cantrip_lines()) sb.append("- ").append(line).append("\n");
+            sb.append("【已知法术】\n");
+            if (warlock.get_known_spell_lines().isEmpty()) sb.append("- 暂无\n");
+            else for (String line : warlock.get_known_spell_lines()) sb.append("- ").append(line).append("\n");
+        } else if (current_char.job instanceof Paladin_Class) {
+            Paladin_Class paladin = (Paladin_Class) current_char.job;
+            int charismaModifier = current_char.stats.get_mod(current_char.stats.cha);
+            if (current_char.job.current_level >= 2) {
+                manage_prepared_spell_btn.setVisible(true);
+                manage_prepared_spell_btn.setText("管理准备法术");
+            }
+            sb.append("【圣武士施法资源】\n");
+            sb.append(paladin.get_spell_slot_summary()).append("\n");
+            sb.append("圣疗池: ").append(paladin.lay_on_hands_pool).append("\n");
+            sb.append("神圣感知次数: ").append(paladin.get_divine_sense_uses(charismaModifier)).append("\n");
+            if (current_char.job.current_level >= 14) {
+                sb.append("净化之触次数: ").append(paladin.get_cleansing_touch_uses(charismaModifier)).append("\n");
+            }
+            sb.append("可准备法术数: ").append(paladin.get_prepared_spell_count(charismaModifier)).append("\n\n");
+            sb.append("【准备法术】\n");
+            if (paladin.get_prepared_spell_lines().isEmpty()) sb.append("- 暂无\n");
+            else for (String line : paladin.get_prepared_spell_lines()) sb.append("- ").append(line).append("\n");
+        } else {
+            sb.append("当前职业暂无专门的施法管理界面。");
+        }
+
+        spellcasting_area.setText(sb.toString());
+        spellcasting_area.setCaretPosition(0);
+    }
+
+    private void refresh_progression_panel() {
         StringBuilder progression = new StringBuilder();
         progression.append("当前等级: ").append(current_char.job.current_level).append("\n");
         progression.append("当前经验值: ").append(current_char.experience_points).append("\n");
@@ -262,32 +567,17 @@ public class Character_Manager_UI extends JFrame {
 
         progression.append("\n【当前职业特性】\n");
         List<String> features = current_char.job.get_feature_summaries();
-        if (features.isEmpty()) {
-            progression.append("- 暂无\n");
-        } else {
-            for (String feature : features) {
-                progression.append("- ").append(feature).append("\n");
-            }
-        }
+        if (features.isEmpty()) progression.append("- 暂无\n");
+        else for (String feature : features) progression.append("- ").append(feature).append("\n");
 
         progression.append("\n【待处理升级选择】\n");
         List<String> pendingChoices = current_char.job.get_pending_choices();
-        if (pendingChoices.isEmpty()) {
-            progression.append("- 暂无\n");
-        } else {
-            for (String pendingChoice : pendingChoices) {
-                progression.append("- ").append(pendingChoice).append("\n");
-            }
-        }
+        if (pendingChoices.isEmpty()) progression.append("- 暂无\n");
+        else for (String pendingChoice : pendingChoices) progression.append("- ").append(pendingChoice).append("\n");
 
         progression.append("\n【升级记录】\n");
-        if (current_char.advancement_notes.isEmpty()) {
-            progression.append("- 暂无\n");
-        } else {
-            for (String note : current_char.advancement_notes) {
-                progression.append("- ").append(note).append("\n");
-            }
-        }
+        if (current_char.advancement_notes.isEmpty()) progression.append("- 暂无\n");
+        else for (String note : current_char.advancement_notes) progression.append("- ").append(note).append("\n");
 
         if (current_char.job instanceof Fighter_Class) {
             Fighter_Class fighter = (Fighter_Class) current_char.job;
@@ -295,20 +585,56 @@ public class Character_Manager_UI extends JFrame {
             progression.append("动作如潮次数: ").append(fighter.action_surge_uses).append("\n");
             progression.append("不屈次数: ").append(fighter.indomitable_uses).append("\n");
             progression.append("每次攻击动作攻击次数: ").append(fighter.attacks_per_action).append("\n");
-            if (fighter.fighter_subclass == com.DMDHelper.basic.Class.Fighter.Fighter_Subclass.BATTLE_MASTER) {
+            if (fighter.fighter_subclass == com.DMDHelper.basic.playerclass.Fighter.Fighter_Subclass.BATTLE_MASTER) {
                 progression.append("卓越骰: ").append(fighter.superiority_dice).append(" 颗 d").append(fighter.superiority_dice_type).append("\n");
             }
-        } else if (current_char.job instanceof Wizard_Class) {
-            Wizard_Class wizard = (Wizard_Class) current_char.job;
-            progression.append("\n【法师资源】\n");
-            progression.append(wizard.get_spell_slot_summary()).append("\n");
+        } else if (current_char.job instanceof Sorcerer_Class) {
+            Sorcerer_Class sorcerer = (Sorcerer_Class) current_char.job;
+            progression.append("\n【术士资源】\n");
+            progression.append("术法点: ").append(sorcerer.sorcery_points).append("\n");
+        } else if (current_char.job instanceof Warlock_Class) {
+            Warlock_Class warlock = (Warlock_Class) current_char.job;
+            progression.append("\n【邪术士资源】\n");
+            progression.append("契约法术位: ").append(warlock.pact_slot_count).append(" 个 ").append(warlock.pact_slot_level).append(" 环位\n");
+            if (warlock.mystic_arcanum_level > 0) {
+                progression.append("神秘秘法: 1 个 ").append(warlock.mystic_arcanum_level).append(" 环秘法\n");
+            }
+        } else if (current_char.job instanceof Paladin_Class) {
+            Paladin_Class paladin = (Paladin_Class) current_char.job;
+            int charismaModifier = current_char.stats.get_mod(current_char.stats.cha);
+            progression.append("\n【圣武士资源】\n");
+            progression.append("圣疗池: ").append(paladin.lay_on_hands_pool).append("\n");
+            progression.append("神圣感知次数: ").append(paladin.get_divine_sense_uses(charismaModifier)).append("\n");
+            if (current_char.job.current_level >= 14) {
+                progression.append("净化之触次数: ").append(paladin.get_cleansing_touch_uses(charismaModifier)).append("\n");
+            }
+            progression.append("每次攻击动作攻击次数: ").append(paladin.attacks_per_action).append("\n");
         }
 
         level_info_area.setText(progression.toString());
         level_info_area.setCaretPosition(0);
+    }
 
-        boolean canLevelUp = current_char.can_level_up();
-        level_up_btn.setEnabled(canLevelUp);
-        level_up_btn.setText(canLevelUp ? "执行升级" : "经验不足，暂不可升级");
+    private String get_equipped_item_label(Equipment_Slot slot) {
+        Equipment_Item item = current_char.get_equipped_item(slot);
+        if (item == null) {
+            return "空置";
+        }
+        return item.display_name + " - " + item.description;
+    }
+
+    private static class EquipmentChoice {
+        private final String item_key;
+        private final String label;
+
+        private EquipmentChoice(String item_key, String label, String description) {
+            this.item_key = item_key;
+            this.label = label + (description == null || description.trim().isEmpty() ? "" : " | " + description);
+        }
+
+        @Override
+        public String toString() {
+            return this.label;
+        }
     }
 }

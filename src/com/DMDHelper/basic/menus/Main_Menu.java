@@ -54,7 +54,13 @@ public class Main_Menu extends JFrame {
             new Character_Manager_UI().setVisible(true);
         });
 
-        combat_sys_btn.addActionListener(e -> System.out.println("[路由] 正在打开：战斗系统界面..."));
+        combat_sys_btn.addActionListener(e -> {
+            if (Global_Data.character_pool.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "当前没有任何角色存档，请先创建角色！", "提示", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            new Combat_System_UI().setVisible(true);
+        });
 
         add(main_panel);
     }

@@ -1,4 +1,4 @@
-package com.DMDHelper.basic.Class.Fighter;
+package com.DMDHelper.basic.playerclass.Fighter;
 
 // 战士子职业枚举
 public enum Fighter_Subclass {

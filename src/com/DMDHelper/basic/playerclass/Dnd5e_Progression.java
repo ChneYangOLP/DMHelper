@@ -1,4 +1,4 @@
-package com.DMDHelper.basic.Class;
+package com.DMDHelper.basic.playerclass;
 
 public class Dnd5e_Progression {
 

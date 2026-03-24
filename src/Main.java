@@ -1,9 +1,4 @@
-import com.DMDHelper.basic.Character_Sheet;
-import com.DMDHelper.basic.Class.Character_Class;
-import com.DMDHelper.basic.Class.Fighter.Fighter_Class;
-import com.DMDHelper.basic.Stats;
-import com.DMDHelper.basic.race.Character_Race;
-import com.DMDHelper.basic.race.Human_Race;
+import com.DMDHelper.basic.playerclass.Fighter.Fighter_Class;
 
 import java.util.ArrayList;
 import java.util.List;

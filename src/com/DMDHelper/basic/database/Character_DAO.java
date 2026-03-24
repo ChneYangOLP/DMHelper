@@ -1,9 +1,12 @@
 package com.DMDHelper.basic.database;
 
 import com.DMDHelper.basic.Character_Sheet;
-import com.DMDHelper.basic.Class.Character_Class;
-import com.DMDHelper.basic.Class.Fighter.Fighter_Class;
-import com.DMDHelper.basic.Class.wizard.Wizard_Class;
+import com.DMDHelper.basic.playerclass.Character_Class;
+import com.DMDHelper.basic.playerclass.Fighter.Fighter_Class;
+import com.DMDHelper.basic.playerclass.paladin.Paladin_Class;
+import com.DMDHelper.basic.playerclass.sorcerer.Sorcerer_Class;
+import com.DMDHelper.basic.playerclass.warlock.Warlock_Class;
+import com.DMDHelper.basic.playerclass.wizard.Wizard_Class;
 import com.DMDHelper.basic.Stats;
 import com.DMDHelper.basic.armor.Armor;
 import com.DMDHelper.basic.race.*;
@@ -19,8 +22,9 @@ public class Character_DAO {
         String sql = "INSERT INTO saved_characters "
                 + "(name, age, gender, race_name, class_name, current_level, experience_points, hp, ac, "
                 + "str, dex, con, intel, wis, cha, armor_name, armor_type, armor_base_ac, has_shield, "
+                + "inventory_items, equipped_armor_key, equipped_main_hand_key, equipped_off_hand_key, equipped_cloak_key, equipped_accessory_key, "
                 + "skill_proficiencies, feat_names, advancement_notes, class_state, used_asi_choices) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         Connection conn = DB_Helper.get_connection();
         if (conn == null) {
@@ -87,7 +91,13 @@ public class Character_DAO {
                 String armorName = rs.getString("armor_name");
                 String armorType = rs.getString("armor_type");
                 int armorBaseAc = rs.getInt("armor_base_ac");
-                loadedChar.set_equipment(
+                loadedChar.restore_equipment_state(
+                        Persistence_Util.decode_list(rs.getString("inventory_items")),
+                        rs.getString("equipped_armor_key"),
+                        rs.getString("equipped_main_hand_key"),
+                        rs.getString("equipped_off_hand_key"),
+                        rs.getString("equipped_cloak_key"),
+                        rs.getString("equipped_accessory_key"),
                         new Armor(
                                 armorName == null || armorName.trim().isEmpty() ? loadedChar.equipped_armor.armor_name : armorName,
                                 armorType == null || armorType.trim().isEmpty() ? loadedChar.equipped_armor.armor_type : armorType,
@@ -95,7 +105,6 @@ public class Character_DAO {
                         ),
                         rs.getInt("has_shield") == 1
                 );
-                loadedChar.recalculate_derived_stats();
 
                 Global_Data.character_pool.add(loadedChar);
             }
@@ -115,7 +124,8 @@ public class Character_DAO {
         String sql = "UPDATE saved_characters SET "
                 + "name = ?, age = ?, gender = ?, race_name = ?, class_name = ?, current_level = ?, experience_points = ?, "
                 + "hp = ?, ac = ?, str = ?, dex = ?, con = ?, intel = ?, wis = ?, cha = ?, armor_name = ?, armor_type = ?, "
-                + "armor_base_ac = ?, has_shield = ?, skill_proficiencies = ?, feat_names = ?, advancement_notes = ?, "
+                + "armor_base_ac = ?, has_shield = ?, inventory_items = ?, equipped_armor_key = ?, equipped_main_hand_key = ?, "
+                + "equipped_off_hand_key = ?, equipped_cloak_key = ?, equipped_accessory_key = ?, skill_proficiencies = ?, feat_names = ?, advancement_notes = ?, "
                 + "class_state = ?, used_asi_choices = ? WHERE id = ?";
 
         Connection conn = DB_Helper.get_connection();
@@ -181,16 +191,22 @@ public class Character_DAO {
         pstmt.setString(17, character.equipped_armor.armor_type);
         pstmt.setInt(18, character.equipped_armor.base_ac);
         pstmt.setInt(19, character.has_shield ? 1 : 0);
-        pstmt.setString(20, Persistence_Util.encode_list(character.job.skill_proficiencies));
-        pstmt.setString(21, Persistence_Util.encode_list(character.job.feat_names));
-        pstmt.setString(22, Persistence_Util.encode_list(character.advancement_notes));
-        pstmt.setString(23, Persistence_Util.encode_map(character.job.export_class_state()));
-        pstmt.setInt(24, character.job.used_asi_choices);
+        pstmt.setString(20, Persistence_Util.encode_list(character.owned_equipment_keys));
+        pstmt.setString(21, character.equipped_armor_key == null ? "" : character.equipped_armor_key);
+        pstmt.setString(22, character.equipped_main_hand_key == null ? "" : character.equipped_main_hand_key);
+        pstmt.setString(23, character.equipped_off_hand_key == null ? "" : character.equipped_off_hand_key);
+        pstmt.setString(24, character.equipped_cloak_key == null ? "" : character.equipped_cloak_key);
+        pstmt.setString(25, character.equipped_accessory_key == null ? "" : character.equipped_accessory_key);
+        pstmt.setString(26, Persistence_Util.encode_list(character.job.skill_proficiencies));
+        pstmt.setString(27, Persistence_Util.encode_list(character.job.feat_names));
+        pstmt.setString(28, Persistence_Util.encode_list(character.advancement_notes));
+        pstmt.setString(29, Persistence_Util.encode_map(character.job.export_class_state()));
+        pstmt.setInt(30, character.job.used_asi_choices);
     }
 
     private static void bind_character_for_update(PreparedStatement pstmt, Character_Sheet character) throws SQLException {
         bind_character(pstmt, character);
-        pstmt.setInt(25, character.database_id);
+        pstmt.setInt(31, character.database_id);
     }
 
     private static Character_Race build_race(String race_name) {
@@ -230,6 +246,15 @@ public class Character_DAO {
         }
         if ("法师 (Wizard)".equals(class_name)) {
             return new Wizard_Class();
+        }
+        if ("术士 (Sorcerer)".equals(class_name)) {
+            return new Sorcerer_Class();
+        }
+        if ("邪术士 (Warlock)".equals(class_name)) {
+            return new Warlock_Class();
+        }
+        if ("圣武士 (Paladin)".equals(class_name)) {
+            return new Paladin_Class();
         }
         return new Fighter_Class();
     }

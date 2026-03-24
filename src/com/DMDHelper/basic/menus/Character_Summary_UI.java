@@ -1,6 +1,8 @@
 package com.DMDHelper.basic.menus;
 
 import com.DMDHelper.basic.Character_Sheet;
+import com.DMDHelper.basic.equipment.Equipment_Item;
+import com.DMDHelper.basic.equipment.Equipment_Slot;
 
 import javax.swing.*;
 import java.awt.*;
@@ -33,12 +35,11 @@ public class Character_Summary_UI extends JFrame {
         sb.append("熟练加值 (PB): +").append(character.get_proficiency_bonus()).append("\n\n");
 
         sb.append("=== 装备与熟练 ===\n");
-        sb.append("当前防具: ").append(character.equipped_armor.armor_name);
-        if (character.has_shield) {
-            sb.append(" (+盾牌)");
-        }
-        sb.append("\n");
-        sb.append("防具类型: ").append(character.equipped_armor.armor_type).append("\n");
+        append_equipped_item(sb, "护甲", character.get_equipped_item(Equipment_Slot.ARMOR));
+        append_equipped_item(sb, "主手武器", character.get_equipped_item(Equipment_Slot.MAIN_HAND));
+        append_equipped_item(sb, "副手/盾牌", character.get_equipped_item(Equipment_Slot.OFF_HAND));
+        append_equipped_item(sb, "披风", character.get_equipped_item(Equipment_Slot.CLOAK));
+        append_equipped_item(sb, "护符", character.get_equipped_item(Equipment_Slot.ACCESSORY));
         sb.append("武器/护甲熟练: ").append(String.join(", ", character.job.equipment_proficiencies)).append("\n\n");
 
         sb.append("=== 豁免检定加值 ===\n");
@@ -105,5 +106,14 @@ public class Character_Summary_UI extends JFrame {
         btn_panel.add(continue_btn);
         btn_panel.add(back_btn);
         add(btn_panel, BorderLayout.SOUTH);
+    }
+
+    private void append_equipped_item(StringBuilder sb, String title, Equipment_Item item) {
+        sb.append(title).append(": ");
+        if (item == null) {
+            sb.append("空置\n");
+        } else {
+            sb.append(item.display_name).append(" | ").append(item.description).append("\n");
+        }
     }
 }

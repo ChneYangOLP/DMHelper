@@ -1,4 +1,4 @@
-package com.DMDHelper.basic.Class.Fighter;
+package com.DMDHelper.basic.playerclass.Fighter;
 
 // 特性封装类：用于存储能力的名称和具体的文字描述
 public class Trait {
