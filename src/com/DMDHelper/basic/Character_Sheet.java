@@ -1,6 +1,8 @@
 package com.DMDHelper.basic;
 
+import com.DMDHelper.basic.combat.Combatant;
 import com.DMDHelper.basic.playerclass.Character_Class;
+import com.DMDHelper.basic.playerclass.paladin.Paladin_Class;
 import com.DMDHelper.basic.playerclass.Dnd5e_Progression;
 import com.DMDHelper.basic.armor.Armor;
 import com.DMDHelper.basic.equipment.Equipment_Item;
@@ -22,6 +24,7 @@ public class Character_Sheet {
     public Stats stats;
 
     public int hp;
+    public int current_hp;
     public int ac;
     public int experience_points;
 
@@ -33,6 +36,11 @@ public class Character_Sheet {
     public String equipped_off_hand_key;
     public String equipped_cloak_key;
     public String equipped_accessory_key;
+    public String background_story;
+    public String personality_traits;
+    public String ideals;
+    public String bonds;
+    public String flaws;
     public List<String> advancement_notes;
 
     private Character_Sheet(String name,
@@ -51,11 +59,17 @@ public class Character_Sheet {
         this.experience_points = 0;
         this.advancement_notes = new ArrayList<>();
         this.owned_equipment_keys = new ArrayList<>();
+        this.background_story = "";
+        this.personality_traits = "";
+        this.ideals = "";
+        this.bonds = "";
+        this.flaws = "";
 
         initialize_default_equipment();
 
         this.job.rebuild_progression();
         recalculate_derived_stats();
+        this.current_hp = this.hp;
     }
 
     public static Character_Sheet create_new_character(String name,
@@ -116,6 +130,10 @@ public class Character_Sheet {
         if (!this.owned_equipment_keys.contains(itemKey) && Equipment_Library.get_item(itemKey) != null) {
             this.owned_equipment_keys.add(itemKey);
         }
+    }
+
+    public void add_item_to_inventory(String itemKey) {
+        ensure_equipment_ownership(itemKey);
     }
 
     private void sync_legacy_equipment_state() {
@@ -242,6 +260,16 @@ public class Character_Sheet {
         this.experience_points += amount;
     }
 
+    public void take_long_rest() {
+        recalculate_derived_stats();
+        this.current_hp = this.hp;
+        this.job.restore_long_rest_resources();
+        if (this.job instanceof Paladin_Class) {
+            ((Paladin_Class) this.job).sync_charisma_resource_caps(this.stats.get_mod(this.stats.cha), true);
+        }
+        record_advancement("完成一次长休：恢复生命值、法术位与职业资源到完整状态。");
+    }
+
     public boolean can_level_up() {
         if (this.job.current_level >= 20) {
             return false;
@@ -262,10 +290,20 @@ public class Character_Sheet {
     }
 
     public void recalculate_derived_stats() {
+        int previousMaxHp = this.hp;
         this.job.rebuild_progression();
+        if (this.job instanceof Paladin_Class) {
+            ((Paladin_Class) this.job).sync_charisma_resource_caps(this.stats.get_mod(this.stats.cha), false);
+        }
         sync_legacy_equipment_state();
         this.hp = calculate_max_hp();
         this.ac = calculate_armor_class();
+        if (previousMaxHp <= 0) {
+            this.current_hp = this.hp;
+        } else {
+            int hpDelta = this.hp - previousMaxHp;
+            this.current_hp = Math.max(0, Math.min(this.current_hp + hpDelta, this.hp));
+        }
     }
 
     private int calculate_max_hp() {
@@ -306,6 +344,22 @@ public class Character_Sheet {
         if (note != null && !note.trim().isEmpty()) {
             this.advancement_notes.add(note);
         }
+    }
+
+    public void set_current_hp(int value) {
+        this.current_hp = Math.max(0, Math.min(value, this.hp));
+    }
+
+    public String get_hp_summary() {
+        return this.current_hp + "/" + this.hp;
+    }
+
+    public void sync_from_combatant(Combatant combatant) {
+        if (combatant == null) {
+            return;
+        }
+        set_current_hp(combatant.current_hp);
+        this.job.sync_from_combatant(combatant);
     }
 
     public int get_proficiency_bonus() {

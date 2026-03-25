@@ -30,7 +30,7 @@ public class Character_Summary_UI extends JFrame {
         sb.append("经验值: ").append(character.experience_points).append("\n\n");
 
         sb.append("=== 战斗属性 ===\n");
-        sb.append("最大生命值 (HP): ").append(character.hp).append("\n");
+        sb.append("生命值 (HP): ").append(character.get_hp_summary()).append("\n");
         sb.append("护甲等级 (AC): ").append(character.ac).append("\n");
         sb.append("熟练加值 (PB): +").append(character.get_proficiency_bonus()).append("\n\n");
 
@@ -66,6 +66,14 @@ public class Character_Summary_UI extends JFrame {
         for (String feature : character.job.get_feature_summaries()) {
             sb.append("- ").append(feature).append("\n");
         }
+        sb.append("\n");
+
+        sb.append("=== 背景与性格 ===\n");
+        append_profile_line(sb, "背景故事", character.background_story);
+        append_profile_line(sb, "性格特点", character.personality_traits);
+        append_profile_line(sb, "理想信念", character.ideals);
+        append_profile_line(sb, "羁绊关系", character.bonds);
+        append_profile_line(sb, "缺陷弱点", character.flaws);
         sb.append("\n");
 
         sb.append("=== 升级记录 ===\n");
@@ -115,5 +123,9 @@ public class Character_Summary_UI extends JFrame {
         } else {
             sb.append(item.display_name).append(" | ").append(item.description).append("\n");
         }
+    }
+
+    private void append_profile_line(StringBuilder sb, String title, String value) {
+        sb.append(title).append(": ").append(value == null || value.trim().isEmpty() ? "未填写" : value).append("\n");
     }
 }

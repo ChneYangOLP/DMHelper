@@ -1,5 +1,6 @@
 package com.DMDHelper.basic.playerclass.wizard;
 
+import com.DMDHelper.basic.combat.Combatant;
 import com.DMDHelper.basic.database.Persistence_Util;
 import com.DMDHelper.basic.feat.Feat_Library;
 import com.DMDHelper.basic.playerclass.Character_Class;
@@ -16,6 +17,7 @@ public class Wizard_Class extends Character_Class {
     public Wizard_Subclass wizard_subclass;
     public int pending_asi_count;
     public int[] spell_slots;
+    public int[] current_spell_slots;
     public List<String> traits;
     public int cantrips_known;
     public int spells_in_spellbook;
@@ -24,6 +26,7 @@ public class Wizard_Class extends Character_Class {
     public List<String> known_cantrip_keys;
     public List<String> spellbook_spell_keys;
     public List<String> prepared_spell_keys;
+    private boolean preserve_loaded_current_slots;
 
     private static final int[][] WIZARD_SLOT_TABLE = {
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -55,6 +58,7 @@ public class Wizard_Class extends Character_Class {
         this.wizard_subclass = Wizard_Subclass.NONE;
         this.pending_asi_count = 0;
         this.spell_slots = new int[10];
+        this.current_spell_slots = new int[10];
         this.traits = new ArrayList<>();
         this.cantrips_known = 3;
         this.spells_in_spellbook = 6;
@@ -83,9 +87,11 @@ public class Wizard_Class extends Character_Class {
 
     @Override
     public void rebuild_progression() {
+        int[] previousMaxSlots = this.spell_slots == null ? new int[10] : this.spell_slots.clone();
         this.pending_asi_count = 0;
         this.traits.clear();
         this.spell_slots = WIZARD_SLOT_TABLE[Math.max(1, Math.min(this.current_level, 20))].clone();
+        sync_current_spell_slots(previousMaxSlots);
         this.cantrips_known = get_cantrips_known_for_level(this.current_level);
         this.spells_in_spellbook = 6 + Math.max(0, (this.current_level - 1) * 2);
         this.arcane_recovery_level = Math.max(1, (int) Math.ceil(this.current_level / 2.0));
@@ -107,6 +113,25 @@ public class Wizard_Class extends Character_Class {
 
         int earned_asi_choices = get_earned_asi_choices();
         this.pending_asi_count = Math.max(0, earned_asi_choices - this.used_asi_choices);
+    }
+
+    private void sync_current_spell_slots(int[] previousMaxSlots) {
+        if (this.current_spell_slots == null || this.current_spell_slots.length != this.spell_slots.length) {
+            this.current_spell_slots = this.spell_slots.clone();
+            this.preserve_loaded_current_slots = false;
+            return;
+        }
+
+        for (int spellLevel = 1; spellLevel < this.spell_slots.length; spellLevel++) {
+            if (!this.preserve_loaded_current_slots
+                    && previousMaxSlots[spellLevel] == 0
+                    && this.spell_slots[spellLevel] > 0
+                    && this.current_spell_slots[spellLevel] == 0) {
+                this.current_spell_slots[spellLevel] = this.spell_slots[spellLevel];
+            }
+            this.current_spell_slots[spellLevel] = Math.max(0, Math.min(this.current_spell_slots[spellLevel], this.spell_slots[spellLevel]));
+        }
+        this.preserve_loaded_current_slots = false;
     }
 
     private void ensure_default_spellbook() {
@@ -472,7 +497,7 @@ public class Wizard_Class extends Character_Class {
                 if (hasAny) {
                     sb.append(" | ");
                 }
-                sb.append(spellLevel).append("环 ").append(this.spell_slots[spellLevel]).append("个");
+                sb.append(spellLevel).append("环 ").append(this.current_spell_slots[spellLevel]).append("/").append(this.spell_slots[spellLevel]);
                 hasAny = true;
             }
         }
@@ -484,6 +509,23 @@ public class Wizard_Class extends Character_Class {
 
     public int get_prepared_spell_count(int intelligence_modifier) {
         return Math.max(1, this.prepared_spell_limit + intelligence_modifier);
+    }
+
+    @Override
+    public void restore_long_rest_resources() {
+        this.current_spell_slots = this.spell_slots.clone();
+    }
+
+    @Override
+    public void sync_from_combatant(Combatant combatant) {
+        if (combatant == null || combatant.spell_slots_remaining == null) {
+            return;
+        }
+        int[] remaining = combatant.spell_slots_remaining;
+        for (int spellLevel = 1; spellLevel < this.current_spell_slots.length; spellLevel++) {
+            int current = spellLevel < remaining.length ? remaining[spellLevel] : 0;
+            this.current_spell_slots[spellLevel] = Math.max(0, Math.min(current, this.spell_slots[spellLevel]));
+        }
     }
 
     @Override
@@ -513,6 +555,7 @@ public class Wizard_Class extends Character_Class {
         state.put("known_cantrips", Persistence_Util.encode_list(this.known_cantrip_keys));
         state.put("spellbook", Persistence_Util.encode_list(this.spellbook_spell_keys));
         state.put("prepared", Persistence_Util.encode_list(this.prepared_spell_keys));
+        state.put("current_spell_slots", Persistence_Util.encode_int_array(this.current_spell_slots));
         return state;
     }
 
@@ -528,6 +571,10 @@ public class Wizard_Class extends Character_Class {
         this.spellbook_spell_keys.addAll(Persistence_Util.decode_list(class_state.get("spellbook")));
         this.prepared_spell_keys.clear();
         this.prepared_spell_keys.addAll(Persistence_Util.decode_list(class_state.get("prepared")));
+        if (class_state.containsKey("current_spell_slots")) {
+            this.current_spell_slots = Persistence_Util.decode_int_array(class_state.get("current_spell_slots"), 10);
+            this.preserve_loaded_current_slots = true;
+        }
         rebuild_progression();
     }
 }

@@ -69,6 +69,32 @@ public class Persistence_Util {
         return values;
     }
 
+    public static String encode_int_array(int[] values) {
+        if (values == null || values.length == 0) {
+            return "";
+        }
+
+        List<String> encoded = new ArrayList<>();
+        for (int value : values) {
+            encoded.add(Integer.toString(value));
+        }
+        return encode_list(encoded);
+    }
+
+    public static int[] decode_int_array(String raw, int expected_length) {
+        int safeLength = Math.max(0, expected_length);
+        int[] values = new int[safeLength];
+        List<String> decoded = decode_list(raw);
+        for (int i = 0; i < Math.min(decoded.size(), safeLength); i++) {
+            try {
+                values[i] = Integer.parseInt(decoded.get(i));
+            } catch (NumberFormatException ignored) {
+                values[i] = 0;
+            }
+        }
+        return values;
+    }
+
     private static String encode_string(String value) {
         return Base64.getUrlEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }

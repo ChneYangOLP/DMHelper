@@ -1,5 +1,6 @@
 package com.DMDHelper.basic.playerclass.Fighter;
 
+import com.DMDHelper.basic.combat.Combatant;
 import com.DMDHelper.basic.feat.Feat_Library;
 import com.DMDHelper.basic.playerclass.Character_Class;
 import com.DMDHelper.basic.database.Persistence_Util;
@@ -12,10 +13,13 @@ import java.util.Map;
 public class Fighter_Class extends Character_Class {
 
     public int action_surge_uses;
+    public int current_action_surge_uses;
     public int indomitable_uses;
+    public int current_indomitable_uses;
     public int attacks_per_action;
 
     public int superiority_dice;
+    public int current_superiority_dice;
     public int superiority_dice_type;
     public List<String> maneuver_names;
 
@@ -25,14 +29,20 @@ public class Fighter_Class extends Character_Class {
     public List<Trait> traits;
     public String fighting_style_name;
     public String extra_fighting_style_name;
+    private boolean preserve_loaded_action_surge;
+    private boolean preserve_loaded_indomitable;
+    private boolean preserve_loaded_superiority_dice;
 
     public Fighter_Class() {
         super("FIGHTER", "战士 (Fighter)", 10);
 
         this.action_surge_uses = 0;
+        this.current_action_surge_uses = 0;
         this.indomitable_uses = 0;
+        this.current_indomitable_uses = 0;
         this.attacks_per_action = 1;
         this.superiority_dice = 0;
+        this.current_superiority_dice = 0;
         this.superiority_dice_type = 0;
         this.pending_asi_count = 0;
         this.fighter_subclass = Fighter_Subclass.NONE;
@@ -59,6 +69,9 @@ public class Fighter_Class extends Character_Class {
 
     @Override
     public void rebuild_progression() {
+        int previousActionSurge = this.action_surge_uses;
+        int previousIndomitable = this.indomitable_uses;
+        int previousSuperiorityDice = this.superiority_dice;
         this.action_surge_uses = 0;
         this.indomitable_uses = 0;
         this.attacks_per_action = 1;
@@ -72,6 +85,31 @@ public class Fighter_Class extends Character_Class {
         for (int level = 2; level <= this.current_level; level++) {
             apply_level_features(level);
         }
+
+        if (!this.preserve_loaded_action_surge
+                && previousActionSurge == 0
+                && this.action_surge_uses > 0
+                && this.current_action_surge_uses == 0) {
+            this.current_action_surge_uses = this.action_surge_uses;
+        }
+        if (!this.preserve_loaded_indomitable
+                && previousIndomitable == 0
+                && this.indomitable_uses > 0
+                && this.current_indomitable_uses == 0) {
+            this.current_indomitable_uses = this.indomitable_uses;
+        }
+        if (!this.preserve_loaded_superiority_dice
+                && previousSuperiorityDice == 0
+                && this.superiority_dice > 0
+                && this.current_superiority_dice == 0) {
+            this.current_superiority_dice = this.superiority_dice;
+        }
+        this.current_action_surge_uses = Math.max(0, Math.min(this.current_action_surge_uses, this.action_surge_uses));
+        this.current_indomitable_uses = Math.max(0, Math.min(this.current_indomitable_uses, this.indomitable_uses));
+        this.current_superiority_dice = Math.max(0, Math.min(this.current_superiority_dice, this.superiority_dice));
+        this.preserve_loaded_action_surge = false;
+        this.preserve_loaded_indomitable = false;
+        this.preserve_loaded_superiority_dice = false;
 
         int earned_asi_choices = get_earned_asi_choices();
         this.pending_asi_count = Math.max(0, earned_asi_choices - this.used_asi_choices);
@@ -389,6 +427,11 @@ public class Fighter_Class extends Character_Class {
                 summaries.add("专长 - " + Feat_Library.get_summary_line(feat_name));
             }
         }
+        summaries.add("动作如潮： " + get_action_surge_summary());
+        summaries.add("不屈： " + get_indomitable_summary());
+        if (this.superiority_dice > 0) {
+            summaries.add("卓越骰： " + get_superiority_dice_summary());
+        }
         return summaries;
     }
 
@@ -426,6 +469,9 @@ public class Fighter_Class extends Character_Class {
         state.put("fighting_style", this.fighting_style_name == null ? "" : this.fighting_style_name);
         state.put("extra_fighting_style", this.extra_fighting_style_name == null ? "" : this.extra_fighting_style_name);
         state.put("maneuvers", Persistence_Util.encode_list(this.maneuver_names));
+        state.put("current_action_surge", Integer.toString(this.current_action_surge_uses));
+        state.put("current_indomitable", Integer.toString(this.current_indomitable_uses));
+        state.put("current_superiority_dice", Integer.toString(this.current_superiority_dice));
         return state;
     }
 
@@ -439,7 +485,61 @@ public class Fighter_Class extends Character_Class {
         this.extra_fighting_style_name = empty_to_null(class_state.get("extra_fighting_style"));
         this.maneuver_names.clear();
         this.maneuver_names.addAll(Persistence_Util.decode_list(class_state.get("maneuvers")));
+        if (class_state.containsKey("current_action_surge")) {
+            try {
+                this.current_action_surge_uses = Integer.parseInt(class_state.get("current_action_surge"));
+                this.preserve_loaded_action_surge = true;
+            } catch (NumberFormatException ignored) {
+                this.current_action_surge_uses = 0;
+            }
+        }
+        if (class_state.containsKey("current_indomitable")) {
+            try {
+                this.current_indomitable_uses = Integer.parseInt(class_state.get("current_indomitable"));
+                this.preserve_loaded_indomitable = true;
+            } catch (NumberFormatException ignored) {
+                this.current_indomitable_uses = 0;
+            }
+        }
+        if (class_state.containsKey("current_superiority_dice")) {
+            try {
+                this.current_superiority_dice = Integer.parseInt(class_state.get("current_superiority_dice"));
+                this.preserve_loaded_superiority_dice = true;
+            } catch (NumberFormatException ignored) {
+                this.current_superiority_dice = 0;
+            }
+        }
         rebuild_progression();
+    }
+
+    public String get_action_surge_summary() {
+        return this.current_action_surge_uses + "/" + this.action_surge_uses;
+    }
+
+    public String get_indomitable_summary() {
+        return this.current_indomitable_uses + "/" + this.indomitable_uses;
+    }
+
+    public String get_superiority_dice_summary() {
+        if (this.superiority_dice <= 0) {
+            return "暂无";
+        }
+        return this.current_superiority_dice + "/" + this.superiority_dice + " 颗 d" + this.superiority_dice_type;
+    }
+
+    @Override
+    public void restore_long_rest_resources() {
+        this.current_action_surge_uses = this.action_surge_uses;
+        this.current_indomitable_uses = this.indomitable_uses;
+        this.current_superiority_dice = this.superiority_dice;
+    }
+
+    @Override
+    public void sync_from_combatant(Combatant combatant) {
+        if (combatant == null) {
+            return;
+        }
+        this.current_superiority_dice = Math.max(0, Math.min(combatant.superiority_dice_remaining, this.superiority_dice));
     }
 
     private String empty_to_null(String value) {

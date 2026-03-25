@@ -18,11 +18,17 @@ public class Init_DB {
                 + "name TEXT NOT NULL, "
                 + "age INTEGER DEFAULT 20, "
                 + "gender TEXT DEFAULT '未知', "
+                + "background_story TEXT DEFAULT '', "
+                + "personality_traits TEXT DEFAULT '', "
+                + "ideals TEXT DEFAULT '', "
+                + "bonds TEXT DEFAULT '', "
+                + "flaws TEXT DEFAULT '', "
                 + "race_name TEXT NOT NULL, "
                 + "class_name TEXT NOT NULL, "
                 + "current_level INTEGER DEFAULT 1, "
                 + "experience_points INTEGER DEFAULT 0, "
                 + "hp INTEGER DEFAULT 0, "
+                + "current_hp INTEGER DEFAULT 0, "
                 + "ac INTEGER DEFAULT 0, "
                 + "str INTEGER, dex INTEGER, con INTEGER, "
                 + "intel INTEGER, wis INTEGER, cha INTEGER, "
@@ -56,7 +62,13 @@ public class Init_DB {
 
             ensure_column(stmt, "saved_characters", "age", "INTEGER DEFAULT 20");
             ensure_column(stmt, "saved_characters", "gender", "TEXT DEFAULT '未知'");
+            ensure_column(stmt, "saved_characters", "background_story", "TEXT DEFAULT ''");
+            ensure_column(stmt, "saved_characters", "personality_traits", "TEXT DEFAULT ''");
+            ensure_column(stmt, "saved_characters", "ideals", "TEXT DEFAULT ''");
+            ensure_column(stmt, "saved_characters", "bonds", "TEXT DEFAULT ''");
+            ensure_column(stmt, "saved_characters", "flaws", "TEXT DEFAULT ''");
             ensure_column(stmt, "saved_characters", "experience_points", "INTEGER DEFAULT 0");
+            ensure_column(stmt, "saved_characters", "current_hp", "INTEGER DEFAULT 0");
             ensure_column(stmt, "saved_characters", "armor_name", "TEXT DEFAULT '普通旅行者服装'");
             ensure_column(stmt, "saved_characters", "armor_type", "TEXT DEFAULT 'None'");
             ensure_column(stmt, "saved_characters", "armor_base_ac", "INTEGER DEFAULT 10");

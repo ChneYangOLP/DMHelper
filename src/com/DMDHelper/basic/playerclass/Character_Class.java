@@ -1,5 +1,7 @@
 package com.DMDHelper.basic.playerclass;
 
+import com.DMDHelper.basic.combat.Combatant;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +66,12 @@ public abstract class Character_Class {
 
     public int get_extra_hit_points_per_level() {
         return 0;
+    }
+
+    public void restore_long_rest_resources() {
+    }
+
+    public void sync_from_combatant(Combatant combatant) {
     }
 
     public abstract void rebuild_progression();

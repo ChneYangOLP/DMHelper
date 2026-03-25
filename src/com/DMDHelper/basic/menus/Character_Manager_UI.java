@@ -35,6 +35,7 @@ public class Character_Manager_UI extends JFrame {
     private JComboBox<EquipmentChoice> accessory_box;
     private JButton level_up_btn;
     private JButton add_xp_btn;
+    private JButton long_rest_btn;
     private JButton manage_spellbook_btn;
     private JButton manage_spell_selection_btn;
     private JButton manage_prepared_spell_btn;
@@ -114,10 +115,12 @@ public class Character_Manager_UI extends JFrame {
         level_info_area = build_text_area();
         JPanel level_btn_panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         add_xp_btn = new JButton("添加经验值");
+        long_rest_btn = new JButton("进行长休");
         level_up_btn = new JButton("执行升级");
         level_up_btn.setFont(new Font("微软雅黑", Font.BOLD, 16));
         level_up_btn.setForeground(Color.RED);
         level_btn_panel.add(add_xp_btn);
+        level_btn_panel.add(long_rest_btn);
         level_btn_panel.add(level_up_btn);
         progression_panel.add(new JScrollPane(level_info_area), BorderLayout.CENTER);
         progression_panel.add(level_btn_panel, BorderLayout.SOUTH);
@@ -125,6 +128,7 @@ public class Character_Manager_UI extends JFrame {
 
         equip_btn.addActionListener(e -> handle_equip());
         add_xp_btn.addActionListener(e -> handle_add_experience());
+        long_rest_btn.addActionListener(e -> handle_long_rest());
         level_up_btn.addActionListener(e -> handle_level_up());
         manage_spellbook_btn.addActionListener(e -> handle_manage_spellbook());
         manage_spell_selection_btn.addActionListener(e -> handle_manage_spell_selection());
@@ -208,6 +212,23 @@ public class Character_Manager_UI extends JFrame {
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "请输入合法的数字经验值。");
         }
+    }
+
+    private void handle_long_rest() {
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "确认让 [" + current_char.name + "] 完成一次长休吗？\n这会把当前系统中的生命值、法术位与职业资源视为恢复到完整状态。",
+                "长休确认",
+                JOptionPane.YES_NO_OPTION
+        );
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        current_char.take_long_rest();
+        Character_DAO.update_character(current_char);
+        refresh_ui();
+        JOptionPane.showMessageDialog(this, "长休完成，角色已恢复到完整状态。");
     }
 
     private void handle_level_up() {
@@ -400,12 +421,20 @@ public class Character_Manager_UI extends JFrame {
         sb_stats.append("年龄/性别: ").append(current_char.age).append(" / ").append(current_char.gender).append("\n");
         sb_stats.append("经验值: ").append(current_char.experience_points).append("\n");
         sb_stats.append("--------------------------------------------------\n");
-        sb_stats.append("当前最大 HP: ").append(current_char.hp).append("\n");
+        sb_stats.append("当前 HP: ").append(current_char.get_hp_summary()).append("\n");
         sb_stats.append("当前护甲 AC: ").append(current_char.ac).append(" (护甲: ").append(current_char.equipped_armor.armor_name).append(")\n");
         Equipment_Item weaponItem = current_char.get_equipped_item(Equipment_Slot.MAIN_HAND);
         sb_stats.append("当前主手: ").append(weaponItem == null ? "空置" : weaponItem.display_name).append("\n");
         sb_stats.append("熟练加值 PB: +").append(current_char.get_proficiency_bonus()).append("\n");
         sb_stats.append("子职业: ").append(current_char.job.get_subclass_name()).append("\n");
+        if (has_profile_content()) {
+            sb_stats.append("--------------------------------------------------\n");
+            if (!current_char.background_story.trim().isEmpty()) sb_stats.append("背景故事: ").append(current_char.background_story).append("\n");
+            if (!current_char.personality_traits.trim().isEmpty()) sb_stats.append("性格特点: ").append(current_char.personality_traits).append("\n");
+            if (!current_char.ideals.trim().isEmpty()) sb_stats.append("理想信念: ").append(current_char.ideals).append("\n");
+            if (!current_char.bonds.trim().isEmpty()) sb_stats.append("羁绊关系: ").append(current_char.bonds).append("\n");
+            if (!current_char.flaws.trim().isEmpty()) sb_stats.append("缺陷弱点: ").append(current_char.flaws).append("\n");
+        }
         sb_stats.append("--------------------------------------------------\n");
         sb_stats.append("[豁免检定加值]\n");
         sb_stats.append(String.format("力量: %+d | 敏捷: %+d | 体质: %+d\n",
@@ -443,6 +472,10 @@ public class Character_Manager_UI extends JFrame {
             inventory.append("- ").append(item.to_inventory_line()).append("\n");
         }
         for (Equipment_Item item : current_char.get_owned_items_for_slot(Equipment_Slot.ACCESSORY)) {
+            inventory.append("- ").append(item.to_inventory_line()).append("\n");
+        }
+        inventory.append("【背包杂物】\n");
+        for (Equipment_Item item : current_char.get_owned_items_for_slot(Equipment_Slot.BACKPACK)) {
             inventory.append("- ").append(item.to_inventory_line()).append("\n");
         }
         inventory.append("\n");
@@ -499,7 +532,7 @@ public class Character_Manager_UI extends JFrame {
 
             sb.append("【术士施法资源】\n");
             sb.append(sorcerer.get_spell_slot_summary()).append("\n");
-            sb.append("术法点: ").append(sorcerer.sorcery_points).append("\n");
+            sb.append("术法点: ").append(sorcerer.get_sorcery_point_summary()).append("\n");
             sb.append("戏法已知数: ").append(sorcerer.cantrips_known).append("\n");
             sb.append("法术已知数: ").append(sorcerer.spells_known_count).append("\n\n");
             sb.append("【已知戏法】\n");
@@ -516,7 +549,7 @@ public class Character_Manager_UI extends JFrame {
             manage_spell_selection_btn.setText("管理已知法术");
 
             sb.append("【邪术士施法资源】\n");
-            sb.append("契约法术位: ").append(warlock.pact_slot_count).append(" 个 ").append(warlock.pact_slot_level).append(" 环位\n");
+            sb.append("契约法术位: ").append(warlock.get_pact_slot_summary()).append("\n");
             if (warlock.mystic_arcanum_level > 0) {
                 sb.append("神秘秘法: 1 个 ").append(warlock.mystic_arcanum_level).append(" 环秘法\n");
             }
@@ -537,10 +570,10 @@ public class Character_Manager_UI extends JFrame {
             }
             sb.append("【圣武士施法资源】\n");
             sb.append(paladin.get_spell_slot_summary()).append("\n");
-            sb.append("圣疗池: ").append(paladin.lay_on_hands_pool).append("\n");
-            sb.append("神圣感知次数: ").append(paladin.get_divine_sense_uses(charismaModifier)).append("\n");
+            sb.append("圣疗池: ").append(paladin.get_lay_on_hands_summary()).append("\n");
+            sb.append("神圣感知次数: ").append(paladin.get_divine_sense_summary(charismaModifier)).append("\n");
             if (current_char.job.current_level >= 14) {
-                sb.append("净化之触次数: ").append(paladin.get_cleansing_touch_uses(charismaModifier)).append("\n");
+                sb.append("净化之触次数: ").append(paladin.get_cleansing_touch_summary(charismaModifier)).append("\n");
             }
             sb.append("可准备法术数: ").append(paladin.get_prepared_spell_count(charismaModifier)).append("\n\n");
             sb.append("【准备法术】\n");
@@ -582,20 +615,21 @@ public class Character_Manager_UI extends JFrame {
         if (current_char.job instanceof Fighter_Class) {
             Fighter_Class fighter = (Fighter_Class) current_char.job;
             progression.append("\n【战士资源】\n");
-            progression.append("动作如潮次数: ").append(fighter.action_surge_uses).append("\n");
-            progression.append("不屈次数: ").append(fighter.indomitable_uses).append("\n");
+            progression.append("动作如潮次数: ").append(fighter.get_action_surge_summary()).append("\n");
+            progression.append("不屈次数: ").append(fighter.get_indomitable_summary()).append("\n");
             progression.append("每次攻击动作攻击次数: ").append(fighter.attacks_per_action).append("\n");
             if (fighter.fighter_subclass == com.DMDHelper.basic.playerclass.Fighter.Fighter_Subclass.BATTLE_MASTER) {
-                progression.append("卓越骰: ").append(fighter.superiority_dice).append(" 颗 d").append(fighter.superiority_dice_type).append("\n");
+                progression.append("卓越骰: ").append(fighter.get_superiority_dice_summary()).append("\n");
             }
         } else if (current_char.job instanceof Sorcerer_Class) {
             Sorcerer_Class sorcerer = (Sorcerer_Class) current_char.job;
             progression.append("\n【术士资源】\n");
-            progression.append("术法点: ").append(sorcerer.sorcery_points).append("\n");
+            progression.append("术法点: ").append(sorcerer.get_sorcery_point_summary()).append("\n");
+            progression.append(sorcerer.get_spell_slot_summary()).append("\n");
         } else if (current_char.job instanceof Warlock_Class) {
             Warlock_Class warlock = (Warlock_Class) current_char.job;
             progression.append("\n【邪术士资源】\n");
-            progression.append("契约法术位: ").append(warlock.pact_slot_count).append(" 个 ").append(warlock.pact_slot_level).append(" 环位\n");
+            progression.append("契约法术位: ").append(warlock.get_pact_slot_summary()).append("\n");
             if (warlock.mystic_arcanum_level > 0) {
                 progression.append("神秘秘法: 1 个 ").append(warlock.mystic_arcanum_level).append(" 环秘法\n");
             }
@@ -603,10 +637,11 @@ public class Character_Manager_UI extends JFrame {
             Paladin_Class paladin = (Paladin_Class) current_char.job;
             int charismaModifier = current_char.stats.get_mod(current_char.stats.cha);
             progression.append("\n【圣武士资源】\n");
-            progression.append("圣疗池: ").append(paladin.lay_on_hands_pool).append("\n");
-            progression.append("神圣感知次数: ").append(paladin.get_divine_sense_uses(charismaModifier)).append("\n");
+            progression.append(paladin.get_spell_slot_summary()).append("\n");
+            progression.append("圣疗池: ").append(paladin.get_lay_on_hands_summary()).append("\n");
+            progression.append("神圣感知次数: ").append(paladin.get_divine_sense_summary(charismaModifier)).append("\n");
             if (current_char.job.current_level >= 14) {
-                progression.append("净化之触次数: ").append(paladin.get_cleansing_touch_uses(charismaModifier)).append("\n");
+                progression.append("净化之触次数: ").append(paladin.get_cleansing_touch_summary(charismaModifier)).append("\n");
             }
             progression.append("每次攻击动作攻击次数: ").append(paladin.attacks_per_action).append("\n");
         }
@@ -621,6 +656,14 @@ public class Character_Manager_UI extends JFrame {
             return "空置";
         }
         return item.display_name + " - " + item.description;
+    }
+
+    private boolean has_profile_content() {
+        return !current_char.background_story.trim().isEmpty()
+                || !current_char.personality_traits.trim().isEmpty()
+                || !current_char.ideals.trim().isEmpty()
+                || !current_char.bonds.trim().isEmpty()
+                || !current_char.flaws.trim().isEmpty();
     }
 
     private static class EquipmentChoice {
