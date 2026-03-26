@@ -1,30 +1,124 @@
-import com.DMDHelper.basic.playerclass.Fighter.Fighter_Class;
+import com.DMHelper.basic.database.Character_DAO;
+import com.DMHelper.basic.database.Custom_Equipment_DAO;
+import com.DMHelper.basic.database.Init_DB;
+import com.DMHelper.basic.menus.Main_Menu;
 
-import java.util.ArrayList;
-import java.util.List;
+import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import java.awt.GraphicsEnvironment;
+import java.awt.Image;
+import java.awt.Taskbar;
+import java.io.IOException;
+import java.io.InputStream;
 
+/**
+ * 桌面应用启动入口。
+ * 这里负责做三件事：初始化平台参数、启动 Swing UI、以及在启动失败时给出可见的错误提示。
+ */
 public class Main {
+    private static final String APP_ICON_RESOURCE = "/com/DMHelper/assets/app_icon.png";
+    private static Image cachedAppIcon;
+
     public static void main(String[] args) {
-        Fighter_Class fighter = new Fighter_Class();
+        configure_platform_settings();
+        install_global_exception_handler();
 
-        System.out.println("--- 测试 1: 故意选择错误数量的技能 ---");
-        List<String> bad_count_skills = new ArrayList<>();
-        bad_count_skills.add("Athletics (运动)");
-        fighter.select_skills(bad_count_skills); // 应该失败并提示需要2项
+        SwingUtilities.invokeLater(() -> {
+            try {
+                configure_look_and_feel();
+                boot_application();
+            } catch (Throwable throwable) {
+                show_startup_error(throwable);
+            }
+        });
+    }
 
-        System.out.println("\n--- 测试 2: 故意选择不在战士列表里的技能 ---");
-        List<String> bad_name_skills = new ArrayList<>();
-        bad_name_skills.add("Athletics (运动)");
-        bad_name_skills.add("Arcana (奥秘)"); // 法系技能，战士不能选
-        fighter.select_skills(bad_name_skills); // 应该失败并提示非法
+    private static void configure_platform_settings() {
+        String osName = System.getProperty("os.name", "").toLowerCase();
+        System.setProperty("java.awt.headless", "false");
 
-        System.out.println("\n--- 测试 3: 正确的技能选择 ---");
-        List<String> good_skills = new ArrayList<>();
-        good_skills.add("Athletics (运动)");
-        good_skills.add("Perception (察觉)");
-        fighter.select_skills(good_skills); // 应该成功
+        if (osName.contains("mac")) {
+            System.setProperty("apple.awt.application.name", "DMD Helper");
+            System.setProperty("apple.laf.useScreenMenuBar", "true");
+            System.setProperty("apple.awt.application.appearance", "system");
+        }
+    }
 
-        // 验证结果
-        System.out.println("\n当前战士已熟练的技能: " + fighter.skill_proficiencies);
+    private static void configure_look_and_feel() {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {
+            // 如果系统外观加载失败，继续使用默认 Swing 外观即可。
+        }
+    }
+
+    private static void install_global_exception_handler() {
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> show_startup_error(throwable));
+    }
+
+    private static void boot_application() {
+        // 先准备数据库和内存中的角色池，再打开主界面。
+        Init_DB.setup_database();
+        Custom_Equipment_DAO.load_all_custom_items();
+        Character_DAO.load_all_characters();
+        apply_application_icon();
+
+        Main_Menu menu = new Main_Menu();
+        menu.setVisible(true);
+    }
+
+    private static void apply_application_icon() {
+        Image icon = load_app_icon();
+        if (icon == null) {
+            return;
+        }
+
+        try {
+            if (Taskbar.isTaskbarSupported()) {
+                Taskbar.getTaskbar().setIconImage(icon);
+            }
+        } catch (UnsupportedOperationException | SecurityException ignored) {
+            // 某些平台或运行环境不支持直接设置应用图标，忽略即可。
+        }
+    }
+
+    private static Image load_app_icon() {
+        if (cachedAppIcon != null) {
+            return cachedAppIcon;
+        }
+
+        try (InputStream inputStream = Main.class.getResourceAsStream(APP_ICON_RESOURCE)) {
+            if (inputStream == null) {
+                return null;
+            }
+            // 图标资源会被打进 jar/app 包中，因此通过 classpath 读取最稳。
+            cachedAppIcon = ImageIO.read(inputStream);
+            return cachedAppIcon;
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    private static void show_startup_error(Throwable throwable) {
+        throwable.printStackTrace();
+
+        if (GraphicsEnvironment.isHeadless()) {
+            return;
+        }
+
+        String message = "程序启动失败：\n"
+                + throwable.getClass().getSimpleName()
+                + (throwable.getMessage() == null || throwable.getMessage().trim().isEmpty()
+                ? ""
+                : "\n" + throwable.getMessage());
+
+        JOptionPane.showMessageDialog(
+                null,
+                message,
+                "DMD Helper 启动错误",
+                JOptionPane.ERROR_MESSAGE
+        );
     }
 }
