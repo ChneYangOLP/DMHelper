@@ -26,10 +26,11 @@ public class Character_DAO {
     public static void save_character(Character_Sheet character) {
         String sql = "INSERT INTO saved_characters "
                 + "(name, age, gender, background_story, personality_traits, ideals, bonds, flaws, race_name, class_name, current_level, experience_points, hp, current_hp, ac, "
+                + "gold_pieces, silver_pieces, copper_pieces, "
                 + "str, dex, con, intel, wis, cha, armor_name, armor_type, armor_base_ac, has_shield, "
                 + "inventory_items, inventory_item_counts, equipped_armor_key, equipped_main_hand_key, equipped_off_hand_key, equipped_cloak_key, equipped_accessory_key, "
                 + "skill_proficiencies, feat_names, advancement_notes, class_state, used_asi_choices) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         Connection conn = DB_Helper.get_connection();
         if (conn == null) {
@@ -93,6 +94,9 @@ public class Character_DAO {
 
                 loadedChar.database_id = rs.getInt("id");
                 loadedChar.experience_points = rs.getInt("experience_points");
+                loadedChar.gold_pieces = rs.getInt("gold_pieces");
+                loadedChar.silver_pieces = rs.getInt("silver_pieces");
+                loadedChar.copper_pieces = rs.getInt("copper_pieces");
                 loadedChar.background_story = rs.getString("background_story");
                 loadedChar.personality_traits = rs.getString("personality_traits");
                 loadedChar.ideals = rs.getString("ideals");
@@ -138,7 +142,7 @@ public class Character_DAO {
 
         String sql = "UPDATE saved_characters SET "
                 + "name = ?, age = ?, gender = ?, background_story = ?, personality_traits = ?, ideals = ?, bonds = ?, flaws = ?, race_name = ?, class_name = ?, current_level = ?, experience_points = ?, "
-                + "hp = ?, current_hp = ?, ac = ?, str = ?, dex = ?, con = ?, intel = ?, wis = ?, cha = ?, armor_name = ?, armor_type = ?, "
+                + "hp = ?, current_hp = ?, ac = ?, gold_pieces = ?, silver_pieces = ?, copper_pieces = ?, str = ?, dex = ?, con = ?, intel = ?, wis = ?, cha = ?, armor_name = ?, armor_type = ?, "
                 + "armor_base_ac = ?, has_shield = ?, inventory_items = ?, inventory_item_counts = ?, equipped_armor_key = ?, equipped_main_hand_key = ?, "
                 + "equipped_off_hand_key = ?, equipped_cloak_key = ?, equipped_accessory_key = ?, skill_proficiencies = ?, feat_names = ?, advancement_notes = ?, "
                 + "class_state = ?, used_asi_choices = ? WHERE id = ?";
@@ -204,33 +208,36 @@ public class Character_DAO {
         pstmt.setInt(13, character.hp);
         pstmt.setInt(14, character.current_hp);
         pstmt.setInt(15, character.ac);
-        pstmt.setInt(16, character.stats.str);
-        pstmt.setInt(17, character.stats.dex);
-        pstmt.setInt(18, character.stats.con);
-        pstmt.setInt(19, character.stats.intel);
-        pstmt.setInt(20, character.stats.wis);
-        pstmt.setInt(21, character.stats.cha);
-        pstmt.setString(22, character.equipped_armor.armor_name);
-        pstmt.setString(23, character.equipped_armor.armor_type);
-        pstmt.setInt(24, character.equipped_armor.base_ac);
-        pstmt.setInt(25, character.has_shield ? 1 : 0);
-        pstmt.setString(26, Persistence_Util.encode_list(character.owned_equipment_keys));
-        pstmt.setString(27, Persistence_Util.encode_int_map(character.inventory_item_counts));
-        pstmt.setString(28, character.equipped_armor_key == null ? "" : character.equipped_armor_key);
-        pstmt.setString(29, character.equipped_main_hand_key == null ? "" : character.equipped_main_hand_key);
-        pstmt.setString(30, character.equipped_off_hand_key == null ? "" : character.equipped_off_hand_key);
-        pstmt.setString(31, character.equipped_cloak_key == null ? "" : character.equipped_cloak_key);
-        pstmt.setString(32, character.equipped_accessory_key == null ? "" : character.equipped_accessory_key);
-        pstmt.setString(33, Persistence_Util.encode_list(character.job.skill_proficiencies));
-        pstmt.setString(34, Persistence_Util.encode_list(character.job.feat_names));
-        pstmt.setString(35, Persistence_Util.encode_list(character.advancement_notes));
-        pstmt.setString(36, Persistence_Util.encode_map(character.job.export_class_state()));
-        pstmt.setInt(37, character.job.used_asi_choices);
+        pstmt.setInt(16, character.gold_pieces);
+        pstmt.setInt(17, character.silver_pieces);
+        pstmt.setInt(18, character.copper_pieces);
+        pstmt.setInt(19, character.stats.str);
+        pstmt.setInt(20, character.stats.dex);
+        pstmt.setInt(21, character.stats.con);
+        pstmt.setInt(22, character.stats.intel);
+        pstmt.setInt(23, character.stats.wis);
+        pstmt.setInt(24, character.stats.cha);
+        pstmt.setString(25, character.equipped_armor.armor_name);
+        pstmt.setString(26, character.equipped_armor.armor_type);
+        pstmt.setInt(27, character.equipped_armor.base_ac);
+        pstmt.setInt(28, character.has_shield ? 1 : 0);
+        pstmt.setString(29, Persistence_Util.encode_list(character.owned_equipment_keys));
+        pstmt.setString(30, Persistence_Util.encode_int_map(character.inventory_item_counts));
+        pstmt.setString(31, character.equipped_armor_key == null ? "" : character.equipped_armor_key);
+        pstmt.setString(32, character.equipped_main_hand_key == null ? "" : character.equipped_main_hand_key);
+        pstmt.setString(33, character.equipped_off_hand_key == null ? "" : character.equipped_off_hand_key);
+        pstmt.setString(34, character.equipped_cloak_key == null ? "" : character.equipped_cloak_key);
+        pstmt.setString(35, character.equipped_accessory_key == null ? "" : character.equipped_accessory_key);
+        pstmt.setString(36, Persistence_Util.encode_list(character.job.skill_proficiencies));
+        pstmt.setString(37, Persistence_Util.encode_list(character.job.feat_names));
+        pstmt.setString(38, Persistence_Util.encode_list(character.advancement_notes));
+        pstmt.setString(39, Persistence_Util.encode_map(character.job.export_class_state()));
+        pstmt.setInt(40, character.job.used_asi_choices);
     }
 
     private static void bind_character_for_update(PreparedStatement pstmt, Character_Sheet character) throws SQLException {
         bind_character(pstmt, character);
-        pstmt.setInt(38, character.database_id);
+        pstmt.setInt(41, character.database_id);
     }
 
     private static Character_Race build_race(String race_name) {

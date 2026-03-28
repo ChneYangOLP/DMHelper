@@ -9,7 +9,10 @@ public enum Combat_Status_Type {
     PARALYZED("麻痹", 0, -4, -4, true, 0, 0, ""),
     ASLEEP("沉睡", 0, -4, -4, true, 0, 0, ""),
     BURNING("燃烧", 0, 0, 0, false, 1, 6, "火焰"),
-    CURSED("诅咒", -1, 0, 0, false, 0, 0, "");
+    CURSED("诅咒", -1, 0, 0, false, 0, 0, ""),
+    SLOWED("迟缓", 0, 0, 0, false, 0, 0, ""),
+    SHIELDED("护盾", 0, 5, 0, false, 0, 0, ""),
+    INVISIBLE("隐形", 2, 2, 0, false, 0, 0, "");
 
     public final String label;
     public final int attack_modifier;

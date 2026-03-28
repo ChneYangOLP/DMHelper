@@ -3,6 +3,8 @@ package com.DMHelper.basic.menus;
 import com.DMHelper.basic.Character_Sheet;
 import com.DMHelper.basic.combat.Attack_Option;
 import com.DMHelper.basic.combat.Combat_Engine;
+import com.DMHelper.basic.combat.Combat_Status_Effect;
+import com.DMHelper.basic.combat.Combat_Status_Type;
 import com.DMHelper.basic.combat.Combatant;
 import com.DMHelper.basic.combat.Dice_Util;
 import com.DMHelper.basic.combat.Monster_Definition;
@@ -457,6 +459,20 @@ public class Combat_System_UI extends JFrame {
         initiative_area.setCaretPosition(0);
 
         StringBuilder statusText = new StringBuilder();
+        statusText.append("【状态倒计时】\n");
+        boolean hasCountdown = false;
+        for (Combatant combatant : order) {
+            if (combatant.get_status_summary().equals("无")) {
+                continue;
+            }
+            hasCountdown = true;
+            statusText.append("- ").append(combatant.display_name)
+                    .append(" -> ").append(combatant.get_status_summary()).append("\n");
+        }
+        if (!hasCountdown) {
+            statusText.append("- 当前没有需要倒计时的状态效果。\n");
+        }
+        statusText.append("\n");
         statusText.append("【角色】\n");
         for (Combatant combatant : order) {
             if (combatant.side == Combatant.Side.PLAYER) {
@@ -541,6 +557,11 @@ public class Combat_System_UI extends JFrame {
         Combatant active = this.combat_engine == null ? null : this.combat_engine.get_active_combatant();
         if (active != null) {
             attack_detail_area.append("\n当前资源：" + get_resource_summary(active));
+            attack_detail_area.append("\n当前状态倒计时：" + active.get_status_summary());
+            int targetIndex = target_box.getSelectedIndex();
+            if (targetIndex >= 0 && targetIndex < current_targets.size()) {
+                attack_detail_area.append("\n目标状态倒计时：" + current_targets.get(targetIndex).get_status_summary());
+            }
         }
         attack_detail_area.setCaretPosition(0);
     }
@@ -662,8 +683,48 @@ public class Combat_System_UI extends JFrame {
         if (item.is_healing_item()) {
             return use_healing_item_in_combat(active, item);
         }
+        if ("scroll_of_magic_missile".equals(item.key)) {
+            return use_magic_missile_scroll_in_combat(active, item);
+        }
+        if ("scroll_of_arcane_insight".equals(item.key)) {
+            return use_arcane_insight_scroll_in_combat(active, item);
+        }
         if ("scroll_of_fireball".equals(item.key)) {
             return use_fireball_scroll_in_combat(active, item);
+        }
+        if ("scroll_of_shield".equals(item.key)) {
+            return use_status_item_in_combat(active, item, Combat_Status_Type.SHIELDED, 1, Combatant.Side.PLAYER,
+                    "获得护盾状态，当前系统中提供 +5 AC，持续 1 轮。");
+        }
+        if ("scroll_of_mage_armor".equals(item.key)) {
+            return use_status_item_in_combat(active, item, Combat_Status_Type.SHIELDED, 3, Combatant.Side.PLAYER,
+                    "获得法师护甲保护，当前系统中以护盾状态近似，提供额外 AC，持续 3 轮。");
+        }
+        if ("scroll_of_misty_step".equals(item.key)) {
+            return use_misty_step_scroll_in_combat(active, item);
+        }
+        if ("scroll_of_detect_magic".equals(item.key)) {
+            return use_detect_magic_scroll_in_combat(active, item);
+        }
+        if ("scroll_of_web".equals(item.key)) {
+            return use_control_scroll_in_combat(active, item, Combat_Status_Type.RESTRAINED, 2, "Dexterity", 13,
+                    "蛛网缠住了目标，进入束缚状态。");
+        }
+        if ("scroll_of_hold_person".equals(item.key)) {
+            return use_control_scroll_in_combat(active, item, Combat_Status_Type.PARALYZED, 2, "Wisdom", 14,
+                    "人类定身术生效，目标陷入麻痹。");
+        }
+        if ("scroll_of_sleep".equals(item.key)) {
+            return use_sleep_scroll_in_combat(active, item);
+        }
+        if ("scroll_of_scorching_ray".equals(item.key)) {
+            return use_scorching_ray_scroll_in_combat(active, item);
+        }
+        if ("scroll_of_ray_of_frost".equals(item.key)) {
+            return use_ray_of_frost_scroll_in_combat(active, item);
+        }
+        if ("scroll_of_dispel_magic".equals(item.key)) {
+            return use_dispel_magic_scroll_in_combat(active, item);
         }
         if (item.is_bomb_item()) {
             return use_bomb_in_combat(active, item);
@@ -671,8 +732,27 @@ public class Combat_System_UI extends JFrame {
         if ("scroll_of_identify".equals(item.key)) {
             return use_identify_scroll_in_combat(active, item);
         }
+        if ("potion_of_fire_breath".equals(item.key)) {
+            return use_fire_breath_potion_in_combat(active, item);
+        }
+        if ("potion_of_invisibility".equals(item.key)) {
+            return use_status_item_in_combat(active, item, Combat_Status_Type.INVISIBLE, 2, Combatant.Side.PLAYER,
+                    "目标进入隐形状态（2 轮），在当前系统中提供攻击与防护优势。");
+        }
+        if ("antitoxin".equals(item.key)) {
+            return use_antitoxin_in_combat(active, item);
+        }
+        if ("holy_water".equals(item.key)) {
+            return use_holy_water_in_combat(active, item);
+        }
+        if ("potion_of_climbing".equals(item.key)) {
+            return use_climbing_potion_in_combat(active, item);
+        }
         if (item.is_scroll_item()) {
             return use_lore_scroll_in_combat(active, item);
+        }
+        if (item.is_coin_item()) {
+            return use_coin_item_in_combat(active, item);
         }
         if (item.is_key_item() || item.is_quest_item()) {
             return use_non_consuming_item_in_combat(active, item);
@@ -734,6 +814,196 @@ public class Combat_System_UI extends JFrame {
                 + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
         Character_DAO.update_character(active.linked_character);
         return log + (remaining > 0 ? "\n" + active.display_name + " 的背包中还剩 " + remaining + " 件 [" + item.display_name + "]。" : "");
+    }
+
+    private String use_magic_missile_scroll_in_combat(Combatant active, Equipment_Item item) {
+        List<CombatantChoice> targets = get_living_combatant_choices(Combatant.Side.ENEMY);
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可命中的敌方目标。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择魔法飞弹目标"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用魔法飞弹卷轴",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        int damage = Dice_Util.roll_dice(3, 4) + 3;
+        String note = noteField.getText().trim();
+        String log = this.combat_engine.apply_external_damage(item.display_name, choice.combatant, damage, "力场", note);
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用卷轴：" + item.display_name + "，对 ["
+                + choice.combatant.display_name + "] 造成 " + damage + " 点力场伤害"
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return log + (remaining > 0 ? "\n" + active.display_name + " 的背包中还剩 " + remaining + " 件 [" + item.display_name + "]。" : "");
+    }
+
+    private String use_arcane_insight_scroll_in_combat(Combatant active, Equipment_Item item) {
+        List<CombatantChoice> targets = get_living_combatant_choices(Combatant.Side.ENEMY);
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可洞察的敌方目标。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择洞察目标"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用奥术洞察卷轴",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        choice.combatant.apply_status(Combat_Status_Type.CURSED, 2);
+        String note = noteField.getText().trim();
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用卷轴：" + item.display_name + "，洞察 ["
+                + choice.combatant.display_name + "]，其破绽暴露 2 轮"
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return item.display_name + " -> " + choice.combatant.display_name
+                + "\n目标陷入诅咒/破绽暴露状态（2 轮）。"
+                + "\n情报：AC " + choice.combatant.get_effective_armor_class()
+                + "，HP " + choice.combatant.current_hp + "/" + choice.combatant.max_hp
+                + "，状态 " + choice.combatant.get_status_summary()
+                + (note.isEmpty() ? "" : "\n备注：" + note)
+                + (remaining > 0 ? "\n" + active.display_name + " 的背包中还剩 " + remaining + " 件 [" + item.display_name + "]。" : "");
+    }
+
+    private String use_status_item_in_combat(Combatant active,
+                                             Equipment_Item item,
+                                             Combat_Status_Type statusType,
+                                             int rounds,
+                                             Combatant.Side side,
+                                             String detailText) {
+        List<CombatantChoice> targets = get_living_combatant_choices(side);
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可施加该效果的目标。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择目标"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用道具 - " + item.display_name,
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        choice.combatant.apply_status(statusType, rounds);
+        String note = noteField.getText().trim();
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用道具：" + item.display_name + "，目标 ["
+                + choice.combatant.display_name + "]，状态 " + statusType.label + " " + rounds + " 轮"
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return item.display_name + " -> " + choice.combatant.display_name + "\n" + detailText
+                + (note.isEmpty() ? "" : "\n备注：" + note)
+                + (remaining > 0 ? "\n" + active.display_name + " 的背包中还剩 " + remaining + " 件 [" + item.display_name + "]。" : "");
+    }
+
+    private String use_control_scroll_in_combat(Combatant active,
+                                                Equipment_Item item,
+                                                Combat_Status_Type statusType,
+                                                int rounds,
+                                                String saveAbility,
+                                                int saveDc,
+                                                String successText) {
+        List<CombatantChoice> targets = get_living_combatant_choices(Combatant.Side.ENEMY);
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可作为控制目标的敌方单位。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择控制目标"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用卷轴 - " + item.display_name,
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        int saveRoll = Dice_Util.roll_d20();
+        int saveBonus = choice.combatant.get_saving_throw_bonus(saveAbility);
+        int saveTotal = saveRoll + saveBonus;
+        boolean resisted = saveTotal >= saveDc;
+        String note = noteField.getText().trim();
+        StringBuilder log = new StringBuilder();
+        log.append(item.display_name).append(" -> ").append(choice.combatant.display_name).append("\n");
+        log.append("进行 ").append(saveAbility).append(" 豁免：d20=").append(saveRoll)
+                .append(saveBonus >= 0 ? "+" : "").append(saveBonus)
+                .append(" = ").append(saveTotal).append("，对抗 DC ").append(saveDc).append("\n");
+        if (resisted) {
+            log.append("目标豁免成功，未陷入 ").append(statusType.label).append("。\n");
+        } else {
+            choice.combatant.apply_status(statusType, rounds);
+            log.append(successText).append("（持续 ").append(rounds).append(" 轮）\n");
+        }
+        if (!note.isEmpty()) {
+            log.append("备注：").append(note).append("\n");
+        }
+
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用卷轴：" + item.display_name + "，目标 ["
+                + choice.combatant.display_name + "]，" + saveAbility + " 豁免 " + saveTotal + "/" + saveDc
+                + (resisted ? "，成功抵抗" : "，陷入" + statusType.label + " " + rounds + "轮")
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        if (remaining > 0) {
+            log.append(active.display_name).append(" 的背包中还剩 ").append(remaining).append(" 件 [").append(item.display_name).append("]。");
+        }
+        return log.toString().trim();
     }
 
     private String use_fireball_scroll_in_combat(Combatant active, Equipment_Item item) {
@@ -800,6 +1070,227 @@ public class Combat_System_UI extends JFrame {
             log.append("\n").append(active.display_name).append(" 的背包中还剩 ").append(remaining).append(" 件 [").append(item.display_name).append("]。");
         }
         return log.toString();
+    }
+
+    private String use_fire_breath_potion_in_combat(Combatant active, Equipment_Item item) {
+        List<CombatantChoice> targets = get_living_combatant_choices(Combatant.Side.ENEMY);
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可喷吐火焰的敌方目标。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择火焰喷吐目标"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用吐火药水",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        int damage = Dice_Util.roll_dice(3, 6);
+        String note = noteField.getText().trim();
+        String log = this.combat_engine.apply_external_damage(item.display_name, choice.combatant, damage, "火焰", note);
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用物品：" + item.display_name + "，对 ["
+                + choice.combatant.display_name + "] 造成 " + damage + " 点火焰伤害"
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return log + (remaining > 0 ? "\n" + active.display_name + " 的背包中还剩 " + remaining + " 件 [" + item.display_name + "]。" : "");
+    }
+
+    private String use_holy_water_in_combat(Combatant active, Equipment_Item item) {
+        List<CombatantChoice> targets = get_living_combatant_choices(Combatant.Side.ENEMY);
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可泼洒圣水的敌方目标。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择圣水目标"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用圣水",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        int damage = Dice_Util.roll_dice(2, 6);
+        String note = noteField.getText().trim();
+        String log = this.combat_engine.apply_external_damage(item.display_name, choice.combatant, damage, "光耀", note);
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用物品：" + item.display_name + "，对 ["
+                + choice.combatant.display_name + "] 造成 " + damage + " 点光耀伤害"
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return log + (remaining > 0 ? "\n" + active.display_name + " 的背包中还剩 " + remaining + " 件 [" + item.display_name + "]。" : "");
+    }
+
+    private String use_antitoxin_in_combat(Combatant active, Equipment_Item item) {
+        List<CombatantChoice> targets = get_living_combatant_choices(Combatant.Side.PLAYER);
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可使用抗毒剂的友方目标。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择使用抗毒剂的目标"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用抗毒剂",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        boolean removed = remove_status_from_combatant(choice.combatant, Combat_Status_Type.POISONED);
+        String note = noteField.getText().trim();
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用物品：" + item.display_name + "，目标 ["
+                + choice.combatant.display_name + "]"
+                + (removed ? "，已清除中毒状态" : "，未发现中毒状态")
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return item.display_name + " -> " + choice.combatant.display_name + "\n"
+                + (removed ? "已清除中毒状态，并记录为获得额外抗毒保护。" : "目标当前没有中毒状态，记录为获得额外抗毒保护。")
+                + (note.isEmpty() ? "" : "\n备注：" + note)
+                + (remaining > 0 ? "\n" + active.display_name + " 的背包中还剩 " + remaining + " 件 [" + item.display_name + "]。" : "");
+    }
+
+    private String use_detect_magic_scroll_in_combat(Combatant active, Equipment_Item item) {
+        JTextField areaField = new JTextField();
+        JComboBox<String> schoolBox = new JComboBox<>(new String[]{
+                "未识别", "防护", "咒法", "预言", "惑控", "塑能", "幻术", "死灵", "变化"
+        });
+        JComboBox<String> intensityBox = new JComboBox<>(new String[]{"微弱", "中等", "强烈", "压倒性"});
+        JTextArea resultArea = new JTextArea(4, 24);
+        resultArea.setLineWrap(true);
+        resultArea.setWrapStyleWord(true);
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("侦测区域 / 物件"));
+        panel.add(areaField);
+        panel.add(new JLabel("侦测到的学派"));
+        panel.add(schoolBox);
+        panel.add(new JLabel("灵光强度"));
+        panel.add(intensityBox);
+        panel.add(new JLabel("侦测结果"));
+        panel.add(new JScrollPane(resultArea));
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用侦测魔法卷轴",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+        String area = areaField.getText().trim();
+        String detectResult = resultArea.getText().trim();
+        String school = (String) schoolBox.getSelectedItem();
+        String intensity = (String) intensityBox.getSelectedItem();
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用卷轴：" + item.display_name + "，区域 ["
+                + (area.isEmpty() ? "未指定" : area) + "]，学派 " + school + "，强度 " + intensity
+                + "，结果：" + (detectResult.isEmpty() ? "未记录" : detectResult)
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return active.display_name + " 使用了 [" + item.display_name + "]。"
+                + "\n侦测区域：" + (area.isEmpty() ? "未指定" : area)
+                + "\n学派：" + school + " | 强度：" + intensity
+                + "\n结果：" + (detectResult.isEmpty() ? "未记录" : detectResult)
+                + (remaining > 0 ? "\n背包中还剩 " + remaining + " 件。" : "");
+    }
+
+    private String use_misty_step_scroll_in_combat(Combatant active, Equipment_Item item) {
+        JTextField destinationField = new JTextField();
+        JTextArea noteArea = new JTextArea(3, 24);
+        noteArea.setLineWrap(true);
+        noteArea.setWrapStyleWord(true);
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("瞬移到的位置"));
+        panel.add(destinationField);
+        panel.add(new JLabel("备注"));
+        panel.add(new JScrollPane(noteArea));
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用迷踪步卷轴",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+        String destination = destinationField.getText().trim();
+        String note = noteArea.getText().trim();
+        boolean removedRestrained = remove_status_from_combatant(active, Combat_Status_Type.RESTRAINED);
+        boolean removedProne = remove_status_from_combatant(active, Combat_Status_Type.PRONE);
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用卷轴：" + item.display_name + "，瞬移到 ["
+                + (destination.isEmpty() ? "未指定位置" : destination) + "]"
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return active.display_name + " 使用了 [" + item.display_name + "]。"
+                + "\n瞬移位置：" + (destination.isEmpty() ? "未指定位置" : destination)
+                + ((removedRestrained || removedProne) ? "\n已移除状态：" : "")
+                + (removedRestrained ? "束缚 " : "")
+                + (removedProne ? "倒地" : "")
+                + (note.isEmpty() ? "" : "\n备注：" + note)
+                + (remaining > 0 ? "\n背包中还剩 " + remaining + " 件。" : "");
+    }
+
+    private String use_climbing_potion_in_combat(Combatant active, Equipment_Item item) {
+        JTextField routeField = new JTextField();
+        JTextArea noteArea = new JTextArea(3, 24);
+        noteArea.setLineWrap(true);
+        noteArea.setWrapStyleWord(true);
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("攀爬目标 / 路线"));
+        panel.add(routeField);
+        panel.add(new JLabel("备注"));
+        panel.add(new JScrollPane(noteArea));
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用攀爬药水",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+        String route = routeField.getText().trim();
+        String note = noteArea.getText().trim();
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用物品：" + item.display_name + "，攀爬 ["
+                + (route.isEmpty() ? "未指定路线" : route) + "]"
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return active.display_name + " 使用了 [" + item.display_name + "]。"
+                + "\n攀爬路线：" + (route.isEmpty() ? "未指定路线" : route)
+                + (note.isEmpty() ? "" : "\n备注：" + note)
+                + (remaining > 0 ? "\n背包中还剩 " + remaining + " 件。" : "");
     }
 
     private String use_bomb_in_combat(Combatant active, Equipment_Item item) {
@@ -922,6 +1413,220 @@ public class Combat_System_UI extends JFrame {
                 + (remaining > 0 ? "\n背包中还剩 " + remaining + " 件。" : "");
     }
 
+    private String use_sleep_scroll_in_combat(Combatant active, Equipment_Item item) {
+        List<CombatantChoice> targets = get_living_combatant_choices(Combatant.Side.ENEMY);
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可作为睡眠术目标的敌方单位。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择睡眠术目标"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用睡眠术卷轴",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        int sleepPool = Dice_Util.roll_dice(5, 8);
+        boolean asleep = choice.combatant.current_hp <= sleepPool;
+        if (asleep) {
+            choice.combatant.apply_status(Combat_Status_Type.ASLEEP, 2);
+        }
+        String note = noteField.getText().trim();
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用卷轴：" + item.display_name + "，目标 ["
+                + choice.combatant.display_name + "]，睡眠值 " + sleepPool + "，目标当前 HP " + choice.combatant.current_hp
+                + (asleep ? "，陷入沉睡 2 轮" : "，未被压制")
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return item.display_name + " -> " + choice.combatant.display_name
+                + "\n睡眠值：5d8 = " + sleepPool + "，目标当前 HP " + choice.combatant.current_hp
+                + (asleep ? "\n目标陷入沉睡状态（2 轮）。" : "\n目标生命值过高，没有进入沉睡。")
+                + (note.isEmpty() ? "" : "\n备注：" + note)
+                + (remaining > 0 ? "\n" + active.display_name + " 的背包中还剩 " + remaining + " 件 [" + item.display_name + "]。" : "");
+    }
+
+    private String use_scorching_ray_scroll_in_combat(Combatant active, Equipment_Item item) {
+        List<CombatantChoice> targets = get_living_combatant_choices(Combatant.Side.ENEMY);
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可作为灼热射线目标的敌方单位。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择灼热射线目标（默认三道射线集中）"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用灼热射线卷轴",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        int spellAttackBonus = get_scroll_spell_attack_bonus(active);
+        String note = noteField.getText().trim();
+        StringBuilder log = new StringBuilder();
+        log.append(item.display_name).append(" -> ").append(choice.combatant.display_name).append("\n");
+        int totalDamage = 0;
+        int hits = 0;
+        for (int i = 1; i <= 3; i++) {
+            int d20 = Dice_Util.roll_d20();
+            int totalAttack = d20 + spellAttackBonus + active.get_effective_attack_modifier();
+            boolean hit = d20 == 20 || totalAttack >= choice.combatant.get_effective_armor_class();
+            log.append("第 ").append(i).append(" 道射线：d20=").append(d20)
+                    .append(" + ").append(spellAttackBonus + active.get_effective_attack_modifier())
+                    .append(" = ").append(totalAttack).append(hit ? "，命中" : "，未命中").append("\n");
+            if (hit) {
+                int damage = Dice_Util.roll_dice(2, 6);
+                totalDamage += damage;
+                hits++;
+                choice.combatant.current_hp = Math.max(0, choice.combatant.current_hp - damage);
+                log.append("造成 ").append(damage).append(" 点火焰伤害，目标剩余 HP ")
+                        .append(choice.combatant.current_hp).append("/").append(choice.combatant.max_hp).append("\n");
+                if (!choice.combatant.is_alive()) {
+                    log.append(choice.combatant.display_name).append(" 倒下了。\n");
+                    break;
+                }
+            }
+        }
+        if (!note.isEmpty()) {
+            log.append("备注：").append(note).append("\n");
+        }
+
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用卷轴：" + item.display_name + "，目标 ["
+                + choice.combatant.display_name + "]，命中 " + hits + " 道射线，造成 " + totalDamage + " 点火焰伤害"
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        if (remaining > 0) {
+            log.append(active.display_name).append(" 的背包中还剩 ").append(remaining).append(" 件 [").append(item.display_name).append("]。");
+        }
+        return log.toString().trim();
+    }
+
+    private String use_ray_of_frost_scroll_in_combat(Combatant active, Equipment_Item item) {
+        List<CombatantChoice> targets = get_living_combatant_choices(Combatant.Side.ENEMY);
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可作为寒霜射线目标的敌方单位。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择寒霜射线目标"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用寒霜射线卷轴",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        int spellAttackBonus = get_scroll_spell_attack_bonus(active);
+        int d20 = Dice_Util.roll_d20();
+        int totalAttack = d20 + spellAttackBonus + active.get_effective_attack_modifier();
+        boolean hit = d20 == 20 || totalAttack >= choice.combatant.get_effective_armor_class();
+        String note = noteField.getText().trim();
+        StringBuilder log = new StringBuilder();
+        log.append(item.display_name).append(" -> ").append(choice.combatant.display_name).append("\n");
+        log.append("攻击检定：d20=").append(d20)
+                .append(" + ").append(spellAttackBonus + active.get_effective_attack_modifier())
+                .append(" = ").append(totalAttack).append(hit ? "，命中\n" : "，未命中\n");
+        if (hit) {
+            int damage = Dice_Util.roll_dice(1, 8);
+            choice.combatant.current_hp = Math.max(0, choice.combatant.current_hp - damage);
+            choice.combatant.apply_status(Combat_Status_Type.SLOWED, 1);
+            log.append("造成 ").append(damage).append(" 点寒冷伤害，目标获得迟缓状态（1 轮），剩余 HP ")
+                    .append(choice.combatant.current_hp).append("/").append(choice.combatant.max_hp).append("\n");
+        }
+        if (!note.isEmpty()) {
+            log.append("备注：").append(note).append("\n");
+        }
+
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用卷轴：" + item.display_name + "，目标 ["
+                + choice.combatant.display_name + "]，攻击检定 " + totalAttack
+                + (hit ? "，命中并附加迟缓 1 轮" : "，未命中")
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        if (remaining > 0) {
+            log.append(active.display_name).append(" 的背包中还剩 ").append(remaining).append(" 件 [").append(item.display_name).append("]。");
+        }
+        return log.toString().trim();
+    }
+
+    private String use_dispel_magic_scroll_in_combat(Combatant active, Equipment_Item item) {
+        List<CombatantChoice> targets = get_living_combatant_choices();
+        if (targets.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可作为解除魔法目标的单位。");
+            return null;
+        }
+
+        JComboBox<CombatantChoice> targetBox = new JComboBox<>(targets.toArray(new CombatantChoice[0]));
+        JTextField noteField = new JTextField();
+        JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
+        panel.add(new JLabel("选择解除魔法目标"));
+        panel.add(targetBox);
+        panel.add(new JLabel("备注"));
+        panel.add(noteField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "使用解除魔法卷轴",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        CombatantChoice choice = (CombatantChoice) targetBox.getSelectedItem();
+        if (choice == null || choice.combatant == null) {
+            return null;
+        }
+
+        List<String> removedLabels = clear_statuses_from_combatant(choice.combatant);
+        String note = noteField.getText().trim();
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中使用卷轴：" + item.display_name + "，目标 ["
+                + choice.combatant.display_name + "]，移除状态：" + (removedLabels.isEmpty() ? "无" : String.join("、", removedLabels))
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return item.display_name + " -> " + choice.combatant.display_name
+                + "\n已移除状态：" + (removedLabels.isEmpty() ? "无可移除效果" : String.join("、", removedLabels))
+                + (note.isEmpty() ? "" : "\n备注：" + note)
+                + (remaining > 0 ? "\n" + active.display_name + " 的背包中还剩 " + remaining + " 件 [" + item.display_name + "]。" : "");
+    }
+
     private String use_non_consuming_item_in_combat(Combatant active, Equipment_Item item) {
         JTextField noteField = new JTextField();
         JPanel panel = new JPanel(new GridLayout(0, 1, 6, 6));
@@ -943,17 +1648,72 @@ public class Combat_System_UI extends JFrame {
                 + "\n该物品不会自动消耗。";
     }
 
+    private String use_coin_item_in_combat(Combatant active, Equipment_Item item) {
+        int gainedValue = item.get_currency_gain_cp();
+        active.linked_character.add_currency_cp(gainedValue);
+        active.linked_character.remove_item_from_inventory(item.key);
+        int remaining = active.linked_character.get_item_count(item.key);
+        active.linked_character.record_advancement("战斗中兑换钱币：" + item.display_name + "，获得 "
+                + Equipment_Item.format_cp_value(gainedValue)
+                + (remaining > 0 ? "，剩余 " + remaining + " 件" : ""));
+        Character_DAO.update_character(active.linked_character);
+        return active.display_name + " 在战斗中兑换了 [" + item.display_name + "]，获得 "
+                + Equipment_Item.format_cp_value(gainedValue) + "。"
+                + (remaining > 0 ? "\n背包中还剩 " + remaining + " 件。" : "");
+    }
+
     private List<CombatantChoice> get_living_combatant_choices() {
+        return get_living_combatant_choices(null);
+    }
+
+    private List<CombatantChoice> get_living_combatant_choices(Combatant.Side sideFilter) {
         List<CombatantChoice> choices = new ArrayList<>();
         if (this.combat_engine == null) {
             return choices;
         }
         for (Combatant combatant : this.combat_engine.get_initiative_order()) {
-            if (combatant != null && combatant.is_alive()) {
+            if (combatant != null && combatant.is_alive()
+                    && (sideFilter == null || combatant.side == sideFilter)) {
                 choices.add(new CombatantChoice(combatant));
             }
         }
         return choices;
+    }
+
+    private boolean remove_status_from_combatant(Combatant combatant, Combat_Status_Type statusType) {
+        if (combatant == null || statusType == null) {
+            return false;
+        }
+        boolean removed = false;
+        for (int i = combatant.status_effects.size() - 1; i >= 0; i--) {
+            Combat_Status_Effect effect = combatant.status_effects.get(i);
+            if (effect.type == statusType) {
+                combatant.status_effects.remove(i);
+                removed = true;
+            }
+        }
+        return removed;
+    }
+
+    private List<String> clear_statuses_from_combatant(Combatant combatant) {
+        List<String> removedLabels = new ArrayList<>();
+        if (combatant == null) {
+            return removedLabels;
+        }
+        for (int i = combatant.status_effects.size() - 1; i >= 0; i--) {
+            Combat_Status_Effect effect = combatant.status_effects.get(i);
+            removedLabels.add(0, effect.get_label());
+            combatant.status_effects.remove(i);
+        }
+        return removedLabels;
+    }
+
+    private int get_scroll_spell_attack_bonus(Combatant combatant) {
+        if (combatant == null) {
+            return 5;
+        }
+        int bestMentalScore = Math.max(combatant.intelligence, Math.max(combatant.wisdom, combatant.charisma));
+        return combatant.proficiency_bonus + Combatant.get_modifier(bestMentalScore);
     }
 
     private void append_log(String text) {

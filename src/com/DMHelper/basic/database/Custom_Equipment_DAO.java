@@ -42,7 +42,8 @@ public class Custom_Equipment_DAO {
                             rs.getInt("attack_bonus"),
                             rs.getString("damage_type"),
                             rs.getInt("finesse") == 1,
-                            rs.getInt("ranged") == 1
+                            rs.getInt("ranged") == 1,
+                            rs.getInt("value_in_cp")
                     ));
                 } catch (IllegalArgumentException slotError) {
                     // 兼容旧数据或异常记录：无法识别槽位时跳过，避免影响整个物品库加载。
@@ -60,8 +61,8 @@ public class Custom_Equipment_DAO {
 
         String sql = "INSERT OR REPLACE INTO custom_equipment_items "
                 + "(item_key, owner_character_id, display_name, slot_name, description, armor_type, base_ac, shield_bonus, "
-                + "attack_dice_count, attack_die_size, attack_bonus, damage_type, finesse, ranged) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "attack_dice_count, attack_die_size, attack_bonus, damage_type, finesse, ranged, value_in_cp) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         Connection conn = DB_Helper.get_connection();
         if (conn == null) {
@@ -84,6 +85,7 @@ public class Custom_Equipment_DAO {
             pstmt.setString(12, item.damage_type == null ? "" : item.damage_type);
             pstmt.setInt(13, item.finesse ? 1 : 0);
             pstmt.setInt(14, item.ranged ? 1 : 0);
+            pstmt.setInt(15, item.value_in_cp);
             pstmt.executeUpdate();
             Equipment_Library.register_custom_item(item);
             return true;

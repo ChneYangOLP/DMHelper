@@ -30,6 +30,9 @@ public class Init_DB {
                 + "hp INTEGER DEFAULT 0, "
                 + "current_hp INTEGER DEFAULT 0, "
                 + "ac INTEGER DEFAULT 0, "
+                + "gold_pieces INTEGER DEFAULT 0, "
+                + "silver_pieces INTEGER DEFAULT 0, "
+                + "copper_pieces INTEGER DEFAULT 0, "
                 + "str INTEGER, dex INTEGER, con INTEGER, "
                 + "intel INTEGER, wis INTEGER, cha INTEGER, "
                 + "armor_name TEXT DEFAULT '普通旅行者服装', "
@@ -64,7 +67,8 @@ public class Init_DB {
                 + "attack_bonus INTEGER DEFAULT 0, "
                 + "damage_type TEXT DEFAULT '', "
                 + "finesse INTEGER DEFAULT 0, "
-                + "ranged INTEGER DEFAULT 0"
+                + "ranged INTEGER DEFAULT 0, "
+                + "value_in_cp INTEGER DEFAULT 0"
                 + ");";
 
         Connection conn = DB_Helper.get_connection();
@@ -92,6 +96,9 @@ public class Init_DB {
             ensure_column(stmt, "saved_characters", "armor_type", "TEXT DEFAULT 'None'");
             ensure_column(stmt, "saved_characters", "armor_base_ac", "INTEGER DEFAULT 10");
             ensure_column(stmt, "saved_characters", "has_shield", "INTEGER DEFAULT 0");
+            ensure_column(stmt, "saved_characters", "gold_pieces", "INTEGER DEFAULT 0");
+            ensure_column(stmt, "saved_characters", "silver_pieces", "INTEGER DEFAULT 0");
+            ensure_column(stmt, "saved_characters", "copper_pieces", "INTEGER DEFAULT 0");
             ensure_column(stmt, "saved_characters", "inventory_items", "TEXT DEFAULT ''");
             ensure_column(stmt, "saved_characters", "inventory_item_counts", "TEXT DEFAULT ''");
             ensure_column(stmt, "saved_characters", "equipped_armor_key", "TEXT DEFAULT ''");
@@ -115,6 +122,7 @@ public class Init_DB {
             ensure_column(stmt, "custom_equipment_items", "damage_type", "TEXT DEFAULT ''");
             ensure_column(stmt, "custom_equipment_items", "finesse", "INTEGER DEFAULT 0");
             ensure_column(stmt, "custom_equipment_items", "ranged", "INTEGER DEFAULT 0");
+            ensure_column(stmt, "custom_equipment_items", "value_in_cp", "INTEGER DEFAULT 0");
 
             System.out.println("[系统提示] 数据库表结构初始化成功！");
         } catch (SQLException e) {

@@ -33,6 +33,9 @@ public class Character_Sheet {
     public int current_hp;
     public int ac;
     public int experience_points;
+    public int gold_pieces;
+    public int silver_pieces;
+    public int copper_pieces;
 
     public Armor equipped_armor;
     public boolean has_shield;
@@ -64,6 +67,9 @@ public class Character_Sheet {
         this.job = job;
         this.stats = final_stats;
         this.experience_points = 0;
+        this.gold_pieces = 0;
+        this.silver_pieces = 0;
+        this.copper_pieces = 0;
         this.advancement_notes = new ArrayList<>();
         this.owned_equipment_keys = new ArrayList<>();
         this.inventory_item_counts = new LinkedHashMap<>();
@@ -181,6 +187,40 @@ public class Character_Sheet {
         sync_legacy_equipment_state();
         recalculate_derived_stats();
         return true;
+    }
+
+    public int get_total_currency_cp() {
+        return Math.max(0, this.gold_pieces) * 100 + Math.max(0, this.silver_pieces) * 10 + Math.max(0, this.copper_pieces);
+    }
+
+    public void add_currency_cp(int amountCp) {
+        if (amountCp <= 0) {
+            return;
+        }
+        set_currency_from_cp(get_total_currency_cp() + amountCp);
+    }
+
+    public boolean spend_currency_cp(int amountCp) {
+        if (amountCp <= 0) {
+            return true;
+        }
+        int currentTotal = get_total_currency_cp();
+        if (currentTotal < amountCp) {
+            return false;
+        }
+        set_currency_from_cp(currentTotal - amountCp);
+        return true;
+    }
+
+    public String get_currency_summary() {
+        return this.gold_pieces + " gp / " + this.silver_pieces + " sp / " + this.copper_pieces + " cp";
+    }
+
+    private void set_currency_from_cp(int totalCp) {
+        int safeTotal = Math.max(0, totalCp);
+        this.gold_pieces = safeTotal / 100;
+        this.silver_pieces = (safeTotal % 100) / 10;
+        this.copper_pieces = safeTotal % 10;
     }
 
     public int get_item_count(String itemKey) {

@@ -17,6 +17,7 @@ public class Equipment_Item {
     public final String damage_type;
     public final boolean finesse;
     public final boolean ranged;
+    public final int value_in_cp;
 
     public Equipment_Item(String key,
                           String display_name,
@@ -31,6 +32,24 @@ public class Equipment_Item {
                           String damage_type,
                           boolean finesse,
                           boolean ranged) {
+        this(key, display_name, slot, description, armor_type, base_ac, shield_bonus, attack_dice_count, attack_die_size,
+                attack_bonus, damage_type, finesse, ranged, 0);
+    }
+
+    public Equipment_Item(String key,
+                          String display_name,
+                          Equipment_Slot slot,
+                          String description,
+                          String armor_type,
+                          int base_ac,
+                          int shield_bonus,
+                          int attack_dice_count,
+                          int attack_die_size,
+                          int attack_bonus,
+                          String damage_type,
+                          boolean finesse,
+                          boolean ranged,
+                          int value_in_cp) {
         this.key = key;
         this.display_name = display_name;
         this.slot = slot;
@@ -44,6 +63,7 @@ public class Equipment_Item {
         this.damage_type = damage_type;
         this.finesse = finesse;
         this.ranged = ranged;
+        this.value_in_cp = Math.max(0, value_in_cp);
     }
 
     public String to_inventory_line() {
@@ -69,6 +89,9 @@ public class Equipment_Item {
             sb.append(" | AC +").append(this.shield_bonus);
         } else if (this.slot == Equipment_Slot.BACKPACK) {
             sb.append(" | 背包物品");
+        }
+        if (this.value_in_cp > 0) {
+            sb.append(" | 价值 ").append(get_value_summary());
         }
         sb.append(" | ").append(this.description);
         return sb.toString();
@@ -102,17 +125,26 @@ public class Equipment_Item {
     public int get_healing_dice_count() {
         if ("healing_potion".equals(this.key)) return 2;
         if ("greater_healing_potion".equals(this.key)) return 4;
+        if ("superior_healing_potion".equals(this.key)) return 8;
+        if ("supreme_healing_potion".equals(this.key)) return 10;
         return 0;
     }
 
     public int get_healing_die_size() {
-        if ("healing_potion".equals(this.key) || "greater_healing_potion".equals(this.key)) return 4;
+        if ("healing_potion".equals(this.key)
+                || "greater_healing_potion".equals(this.key)
+                || "superior_healing_potion".equals(this.key)
+                || "supreme_healing_potion".equals(this.key)) {
+            return 4;
+        }
         return 0;
     }
 
     public int get_healing_bonus() {
         if ("healing_potion".equals(this.key)) return 2;
         if ("greater_healing_potion".equals(this.key)) return 4;
+        if ("superior_healing_potion".equals(this.key)) return 8;
+        if ("supreme_healing_potion".equals(this.key)) return 20;
         return 0;
     }
 
@@ -142,6 +174,9 @@ public class Equipment_Item {
         if (is_bomb_item()) {
             return "投掷后造成一次爆炸伤害，并消耗该炸弹。";
         }
+        if (is_coin_item()) {
+            return "使用后会把钱币存入角色钱包，并消耗该钱币包。";
+        }
         if (is_key_item()) {
             return "用于解锁、开启或触发特定机关，不会自动消耗。";
         }
@@ -164,7 +199,10 @@ public class Equipment_Item {
                 || text.contains("炸弹") || text.contains("bomb") || text.contains("燃烧瓶")) {
             return "消耗品";
         }
-        if (text.contains("钥匙") || text.contains("地图") || text.contains("工具") || text.contains("徽记") || text.contains("纹章")) {
+        if (text.contains("钥匙") || text.contains("地图") || text.contains("工具") || text.contains("徽记")
+                || text.contains("纹章") || text.contains("火把") || text.contains("绳")
+                || text.contains("口粮") || text.contains("水袋") || text.contains("撬棍")
+                || text.contains("钩") || text.contains("医师") || text.contains("硬币") || text.contains("钱币")) {
             return "工具/任务";
         }
         if (this.key != null && this.key.startsWith("custom_")) {
@@ -193,6 +231,17 @@ public class Equipment_Item {
         return text.contains("地图") || text.contains("徽记") || text.contains("纹章") || text.contains("圣物") || text.contains("信物");
     }
 
+    public boolean is_coin_item() {
+        return "gold_pouch".equals(this.key) || "silver_pouch".equals(this.key) || "copper_pouch".equals(this.key);
+    }
+
+    public int get_currency_gain_cp() {
+        if ("gold_pouch".equals(this.key)) return 100;
+        if ("silver_pouch".equals(this.key)) return 50;
+        if ("copper_pouch".equals(this.key)) return 20;
+        return 0;
+    }
+
     public int get_bomb_dice_count() {
         if ("fire_bomb".equals(this.key)) return 2;
         if ("thunder_bomb".equals(this.key)) return 2;
@@ -213,5 +262,34 @@ public class Equipment_Item {
         if ("fire_bomb".equals(this.key)) return "火焰";
         if ("thunder_bomb".equals(this.key)) return "雷鸣";
         return this.damage_type == null || this.damage_type.trim().isEmpty() ? "伤害" : this.damage_type;
+    }
+
+    public String get_value_summary() {
+        return format_cp_value(this.value_in_cp);
+    }
+
+    public int get_sale_value_cp() {
+        if (is_coin_item()) {
+            return get_currency_gain_cp();
+        }
+        return this.value_in_cp <= 1 ? this.value_in_cp : Math.max(1, this.value_in_cp / 2);
+    }
+
+    public static String format_cp_value(int totalCp) {
+        int safeCp = Math.max(0, totalCp);
+        int gp = safeCp / 100;
+        int sp = (safeCp % 100) / 10;
+        int cp = safeCp % 10;
+        StringBuilder sb = new StringBuilder();
+        if (gp > 0) sb.append(gp).append(" gp");
+        if (sp > 0) {
+            if (sb.length() > 0) sb.append(" ");
+            sb.append(sp).append(" sp");
+        }
+        if (cp > 0 || sb.length() == 0) {
+            if (sb.length() > 0) sb.append(" ");
+            sb.append(cp).append(" cp");
+        }
+        return sb.toString();
     }
 }
