@@ -35,6 +35,7 @@ public class Create_Character_UI extends JFrame {
     public Create_Character_UI() {
         setTitle("创建新角色");
         setSize(560, 700);
+        setMinimumSize(new Dimension(620, 760));
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -51,33 +52,26 @@ public class Create_Character_UI extends JFrame {
         headerPanel.add(subtitleLabel, BorderLayout.SOUTH);
         rootPanel.add(headerPanel, BorderLayout.NORTH);
 
-        JPanel contentPanel = new JPanel(new GridLayout(2, 1, 12, 12));
-        JPanel baseInfoPanel = new JPanel(new GridLayout(5, 2, 10, 15));
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setOpaque(false);
+
+        JPanel baseInfoPanel = new JPanel(new GridBagLayout());
         baseInfoPanel.setBorder(BorderFactory.createCompoundBorder(
                 Ui_Theme.create_section_border("基础信息"),
                 BorderFactory.createEmptyBorder(14, 16, 14, 16)
         ));
 
-        JPanel statPanel = new JPanel(new GridLayout(6, 2, 10, 15));
+        JPanel statPanel = new JPanel(new GridBagLayout());
         statPanel.setBorder(BorderFactory.createCompoundBorder(
                 Ui_Theme.create_section_border("属性值"),
                 BorderFactory.createEmptyBorder(14, 16, 14, 16)
         ));
 
-        baseInfoPanel.add(new JLabel("角色姓名:"));
         name_field = new JTextField();
-        baseInfoPanel.add(name_field);
-
-        baseInfoPanel.add(new JLabel("角色年龄:"));
         age_spinner = new JSpinner(new SpinnerNumberModel(20, 1, 1000, 1));
-        baseInfoPanel.add(age_spinner);
-
-        baseInfoPanel.add(new JLabel("角色性别:"));
         String[] genders = {"男", "女", "无性别", "其他"};
         gender_box = new JComboBox<>(genders);
-        baseInfoPanel.add(gender_box);
-
-        baseInfoPanel.add(new JLabel("选择种族:"));
         // 严格限定为 9 大核心种族
         String[] races = {
                 "人类 (Human)", "精灵 (Elf)", "矮人 (Dwarf)", "半身人 (Halfling)",
@@ -85,38 +79,42 @@ public class Create_Character_UI extends JFrame {
                 "半兽人 (Half-Orc)", "提夫林 (Tiefling)"
         };
         race_box = new JComboBox<>(races);
-        baseInfoPanel.add(race_box);
-
-        baseInfoPanel.add(new JLabel("选择职业:"));
         String[] classes = {"战士 (Fighter)", "法师 (Wizard)", "术士 (Sorcerer)", "邪术士 (Warlock)", "圣武士 (Paladin)"};
         class_box = new JComboBox<>(classes);
-        baseInfoPanel.add(class_box);
-
-        statPanel.add(new JLabel("力量 (STR):"));
         str_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        statPanel.add(str_spinner);
-
-        statPanel.add(new JLabel("敏捷 (DEX):"));
         dex_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        statPanel.add(dex_spinner);
-
-        statPanel.add(new JLabel("体质 (CON):"));
         con_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        statPanel.add(con_spinner);
-
-        statPanel.add(new JLabel("智力 (INT):"));
         intel_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        statPanel.add(intel_spinner);
-
-        statPanel.add(new JLabel("感知 (WIS):"));
         wis_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        statPanel.add(wis_spinner);
-
-        statPanel.add(new JLabel("魅力 (CHA):"));
         cha_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        statPanel.add(cha_spinner);
+
+        install_form_component_size(name_field);
+        install_form_component_size(age_spinner);
+        install_form_component_size(gender_box);
+        install_form_component_size(race_box);
+        install_form_component_size(class_box);
+        install_form_component_size(str_spinner);
+        install_form_component_size(dex_spinner);
+        install_form_component_size(con_spinner);
+        install_form_component_size(intel_spinner);
+        install_form_component_size(wis_spinner);
+        install_form_component_size(cha_spinner);
+
+        add_form_row(baseInfoPanel, 0, "角色姓名:", name_field);
+        add_form_row(baseInfoPanel, 1, "角色年龄:", age_spinner);
+        add_form_row(baseInfoPanel, 2, "角色性别:", gender_box);
+        add_form_row(baseInfoPanel, 3, "选择种族:", race_box);
+        add_form_row(baseInfoPanel, 4, "选择职业:", class_box);
+
+        add_form_row(statPanel, 0, "力量 (STR):", str_spinner);
+        add_form_row(statPanel, 1, "敏捷 (DEX):", dex_spinner);
+        add_form_row(statPanel, 2, "体质 (CON):", con_spinner);
+        add_form_row(statPanel, 3, "智力 (INT):", intel_spinner);
+        add_form_row(statPanel, 4, "感知 (WIS):", wis_spinner);
+        add_form_row(statPanel, 5, "魅力 (CHA):", cha_spinner);
 
         contentPanel.add(baseInfoPanel);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 12)));
         contentPanel.add(statPanel);
 
         JPanel btn_panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -130,6 +128,35 @@ public class Create_Character_UI extends JFrame {
         rootPanel.add(btn_panel, BorderLayout.SOUTH);
         add(rootPanel);
         Ui_Theme.apply_window(this);
+    }
+
+    private void add_form_row(JPanel panel, int row, String labelText, JComponent field) {
+        GridBagConstraints labelConstraints = new GridBagConstraints();
+        labelConstraints.gridx = 0;
+        labelConstraints.gridy = row;
+        labelConstraints.weightx = 0;
+        labelConstraints.anchor = GridBagConstraints.WEST;
+        labelConstraints.fill = GridBagConstraints.NONE;
+        labelConstraints.insets = new Insets(8, 4, 8, 18);
+
+        JLabel label = new JLabel(labelText);
+        label.setFont(new Font("微软雅黑", Font.BOLD, 14));
+        panel.add(label, labelConstraints);
+
+        GridBagConstraints fieldConstraints = new GridBagConstraints();
+        fieldConstraints.gridx = 1;
+        fieldConstraints.gridy = row;
+        fieldConstraints.weightx = 1;
+        fieldConstraints.anchor = GridBagConstraints.CENTER;
+        fieldConstraints.fill = GridBagConstraints.HORIZONTAL;
+        fieldConstraints.insets = new Insets(8, 0, 8, 4);
+        panel.add(field, fieldConstraints);
+    }
+
+    private void install_form_component_size(JComponent component) {
+        Dimension size = new Dimension(260, 40);
+        component.setPreferredSize(size);
+        component.setMinimumSize(size);
     }
 
     private void build_character() {
