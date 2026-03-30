@@ -67,6 +67,10 @@ public class Character_Manager_UI extends JFrame {
         current_char = Global_Data.character_pool.get(0);
 
         JPanel top_panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        top_panel.setBorder(BorderFactory.createCompoundBorder(
+                Ui_Theme.create_section_border("当前角色"),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)
+        ));
         top_panel.add(new JLabel("当前管理角色: "));
         char_selector = new JComboBox<>();
         reload_selector_items(current_char);
@@ -87,8 +91,9 @@ public class Character_Manager_UI extends JFrame {
         tabbed_pane.setFont(new Font("微软雅黑", Font.BOLD, 14));
 
         JPanel stats_panel = new JPanel(new BorderLayout());
+        stats_panel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         stats_area = build_text_area();
-        stats_panel.add(new JScrollPane(stats_area), BorderLayout.CENTER);
+        stats_panel.add(Ui_Theme.wrap_scroll(stats_area), BorderLayout.CENTER);
         tabbed_pane.addTab("基础与属性", stats_panel);
 
         JPanel equip_panel = new JPanel(new BorderLayout(10, 10));
@@ -159,8 +164,8 @@ public class Character_Manager_UI extends JFrame {
         JPanel inventory_center_panel = new JPanel(new BorderLayout(8, 8));
         inventory_center_panel.setBorder(BorderFactory.createTitledBorder("背包物品"));
         inventory_center_panel.add(backpack_filter_box, BorderLayout.NORTH);
-        inventory_center_panel.add(new JScrollPane(backpack_list), BorderLayout.CENTER);
-        inventory_center_panel.add(new JScrollPane(inventory_detail_area), BorderLayout.SOUTH);
+        inventory_center_panel.add(Ui_Theme.wrap_scroll(backpack_list), BorderLayout.CENTER);
+        inventory_center_panel.add(Ui_Theme.wrap_scroll(inventory_detail_area), BorderLayout.SOUTH);
         JButton equip_btn = new JButton("应用当前装备");
         add_item_btn = new JButton("新增物品");
         buy_item_btn = new JButton("购买物品");
@@ -186,7 +191,7 @@ public class Character_Manager_UI extends JFrame {
         spell_btn_panel.add(manage_spellbook_btn);
         spell_btn_panel.add(manage_spell_selection_btn);
         spell_btn_panel.add(manage_prepared_spell_btn);
-        spell_panel.add(new JScrollPane(spellcasting_area), BorderLayout.CENTER);
+        spell_panel.add(Ui_Theme.wrap_scroll(spellcasting_area), BorderLayout.CENTER);
         spell_panel.add(spell_btn_panel, BorderLayout.SOUTH);
         tabbed_pane.addTab("施法与法术", spell_panel);
 
@@ -201,7 +206,7 @@ public class Character_Manager_UI extends JFrame {
         level_btn_panel.add(add_xp_btn);
         level_btn_panel.add(long_rest_btn);
         level_btn_panel.add(level_up_btn);
-        progression_panel.add(new JScrollPane(level_info_area), BorderLayout.CENTER);
+        progression_panel.add(Ui_Theme.wrap_scroll(level_info_area), BorderLayout.CENTER);
         progression_panel.add(level_btn_panel, BorderLayout.SOUTH);
         tabbed_pane.addTab("成长与升级", progression_panel);
 
@@ -220,6 +225,19 @@ public class Character_Manager_UI extends JFrame {
         add(top_panel, BorderLayout.NORTH);
         add(tabbed_pane, BorderLayout.CENTER);
 
+        Ui_Theme.style_primary_button(level_up_btn);
+        Ui_Theme.style_primary_button(use_item_btn);
+        Ui_Theme.style_secondary_button(add_xp_btn);
+        Ui_Theme.style_secondary_button(long_rest_btn);
+        Ui_Theme.style_secondary_button(add_item_btn);
+        Ui_Theme.style_secondary_button(buy_item_btn);
+        Ui_Theme.style_secondary_button(sell_item_btn);
+        Ui_Theme.style_secondary_button(manage_spellbook_btn);
+        Ui_Theme.style_secondary_button(manage_spell_selection_btn);
+        Ui_Theme.style_secondary_button(manage_prepared_spell_btn);
+        Ui_Theme.style_secondary_button(equip_btn);
+        Ui_Theme.apply_window(this);
+
         refresh_ui();
     }
 
@@ -228,6 +246,8 @@ public class Character_Manager_UI extends JFrame {
         area.setEditable(false);
         area.setFont(new Font("微软雅黑", Font.PLAIN, 15));
         area.setMargin(new Insets(15, 15, 15, 15));
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
         return area;
     }
 

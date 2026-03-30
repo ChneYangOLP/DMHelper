@@ -297,9 +297,17 @@ public class Fighter_Class extends Character_Class {
 
     public List<String> get_available_maneuvers() {
         List<String> maneuvers = new ArrayList<>();
+        maneuvers.add("Commander's Strike");
         maneuvers.add("Disarming Attack");
+        maneuvers.add("Distracting Strike");
+        maneuvers.add("Evasive Footwork");
+        maneuvers.add("Feinting Attack");
+        maneuvers.add("Goading Attack");
+        maneuvers.add("Lunging Attack");
+        maneuvers.add("Maneuvering Attack");
         maneuvers.add("Precision Attack");
         maneuvers.add("Riposte");
+        maneuvers.add("Sweeping Attack");
         maneuvers.add("Trip Attack");
         maneuvers.add("Menacing Attack");
         maneuvers.add("Parry");
@@ -310,14 +318,38 @@ public class Fighter_Class extends Character_Class {
     }
 
     public String get_maneuver_description(String maneuver_name) {
+        if ("Commander's Strike".equals(maneuver_name)) {
+            return "放弃自己的一次攻击并用附赠动作指挥盟友出手；盟友可用反应进行一次武器攻击，并把你的卓越骰加入伤害。";
+        }
         if ("Disarming Attack".equals(maneuver_name)) {
             return "命中时消耗 1 颗卓越骰，将卓越骰点数加入伤害；目标若力量豁免失败，则会丢掉手中一件物品。";
+        }
+        if ("Distracting Strike".equals(maneuver_name)) {
+            return "命中时消耗 1 颗卓越骰并把骰值加入伤害；下一次由其他生物对该目标进行的攻击检定在你下回合开始前具有优势。";
+        }
+        if ("Evasive Footwork".equals(maneuver_name)) {
+            return "移动时消耗 1 颗卓越骰，把骰值加入 AC，直到你停止移动为止。";
+        }
+        if ("Feinting Attack".equals(maneuver_name)) {
+            return "用附赠动作佯攻并消耗 1 颗卓越骰，对一个目标的下一次近战攻击具有优势，命中后把骰值加入伤害。";
+        }
+        if ("Goading Attack".equals(maneuver_name)) {
+            return "命中时消耗 1 颗卓越骰并把骰值加入伤害；目标若感知豁免失败，则在你下回合结束前对除你外的攻击具有劣势。";
+        }
+        if ("Lunging Attack".equals(maneuver_name)) {
+            return "近战攻击时消耗 1 颗卓越骰，使本次攻击触及额外延长 5 尺，若命中则把骰值加入伤害。";
+        }
+        if ("Maneuvering Attack".equals(maneuver_name)) {
+            return "命中时消耗 1 颗卓越骰并把骰值加入伤害；盟友可用反应移动至多自身速度一半，且不引发你的目标的借机攻击。";
         }
         if ("Precision Attack".equals(maneuver_name)) {
             return "在武器攻击检定前或检定后、结果宣布前消耗 1 颗卓越骰，将骰值加入本次命中判定。";
         }
         if ("Riposte".equals(maneuver_name)) {
             return "有生物近战攻击未命中你时，你可用反应与 1 颗卓越骰立刻进行一次近战武器反击，并将骰值加入伤害。";
+        }
+        if ("Sweeping Attack".equals(maneuver_name)) {
+            return "近战武器攻击命中时，可消耗 1 颗卓越骰尝试波及另一个邻近目标；若原攻击检定同样命中第二目标，则其承受卓越骰点数的伤害。";
         }
         if ("Trip Attack".equals(maneuver_name)) {
             return "命中时消耗 1 颗卓越骰并把骰值加入伤害；大型及以下目标若力量豁免失败，则被击倒。";
@@ -338,14 +370,38 @@ public class Fighter_Class extends Character_Class {
     }
 
     public String get_maneuver_label(String maneuver_name) {
+        if ("Commander's Strike".equals(maneuver_name)) {
+            return "指挥官打击 (Commander's Strike)";
+        }
         if ("Disarming Attack".equals(maneuver_name)) {
             return "缴械攻击 (Disarming Attack)";
+        }
+        if ("Distracting Strike".equals(maneuver_name)) {
+            return "扰敌打击 (Distracting Strike)";
+        }
+        if ("Evasive Footwork".equals(maneuver_name)) {
+            return "闪避步法 (Evasive Footwork)";
+        }
+        if ("Feinting Attack".equals(maneuver_name)) {
+            return "佯攻 (Feinting Attack)";
+        }
+        if ("Goading Attack".equals(maneuver_name)) {
+            return "嘲弄攻击 (Goading Attack)";
+        }
+        if ("Lunging Attack".equals(maneuver_name)) {
+            return "突刺攻击 (Lunging Attack)";
+        }
+        if ("Maneuvering Attack".equals(maneuver_name)) {
+            return "机动攻击 (Maneuvering Attack)";
         }
         if ("Precision Attack".equals(maneuver_name)) {
             return "精准攻击 (Precision Attack)";
         }
         if ("Riposte".equals(maneuver_name)) {
             return "反击 (Riposte)";
+        }
+        if ("Sweeping Attack".equals(maneuver_name)) {
+            return "横扫攻击 (Sweeping Attack)";
         }
         if ("Trip Attack".equals(maneuver_name)) {
             return "绊摔攻击 (Trip Attack)";

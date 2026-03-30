@@ -11,9 +11,22 @@ public class Character_Summary_UI extends JFrame {
 
     public Character_Summary_UI(Character_Sheet character) {
         setTitle("角色数据总览 - " + character.name);
-        setSize(560, 760);
+        setSize(720, 820);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        JPanel rootPanel = new JPanel(new BorderLayout(12, 12));
+        rootPanel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+
+        JPanel headerPanel = new JPanel(new BorderLayout(0, 6));
+        JLabel titleLabel = new JLabel(character.name + " 的角色总览");
+        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 24));
+        titleLabel.setForeground(Ui_Theme.ACCENT_PRIMARY);
+        JLabel subtitleLabel = new JLabel(character.race.race_name + " / " + character.job.class_name
+                + " / 等级 " + character.job.current_level);
+        subtitleLabel.setForeground(Ui_Theme.TEXT_MUTED);
+        headerPanel.add(titleLabel, BorderLayout.NORTH);
+        headerPanel.add(subtitleLabel, BorderLayout.SOUTH);
 
         JTextArea info_area = new JTextArea();
         info_area.setEditable(false);
@@ -97,12 +110,14 @@ public class Character_Summary_UI extends JFrame {
         info_area.setText(sb.toString());
         info_area.setCaretPosition(0);
 
-        JScrollPane scroll_pane = new JScrollPane(info_area);
-        add(scroll_pane, BorderLayout.CENTER);
+        JScrollPane scroll_pane = Ui_Theme.wrap_scroll(info_area);
+        scroll_pane.setBorder(Ui_Theme.create_section_border("角色详情"));
 
-        JPanel btn_panel = new JPanel();
+        JPanel btn_panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton continue_btn = new JButton("继续创建角色");
         JButton back_btn = new JButton("返回主界面");
+        Ui_Theme.style_secondary_button(continue_btn);
+        Ui_Theme.style_primary_button(back_btn);
 
         continue_btn.addActionListener(e -> {
             new Create_Character_UI().setVisible(true);
@@ -113,7 +128,11 @@ public class Character_Summary_UI extends JFrame {
 
         btn_panel.add(continue_btn);
         btn_panel.add(back_btn);
-        add(btn_panel, BorderLayout.SOUTH);
+        rootPanel.add(headerPanel, BorderLayout.NORTH);
+        rootPanel.add(scroll_pane, BorderLayout.CENTER);
+        rootPanel.add(btn_panel, BorderLayout.SOUTH);
+        add(rootPanel);
+        Ui_Theme.apply_window(this);
     }
 
     private void append_equipped_item(StringBuilder sb, String title, Equipment_Item item) {

@@ -78,12 +78,16 @@ public class Equipment_Item {
                 sb.append(" | ").append(get_armor_type_label());
             }
         } else if (this.slot == Equipment_Slot.MAIN_HAND) {
-            sb.append(" | 伤害 ").append(this.attack_dice_count).append("d").append(this.attack_die_size);
-            if (this.attack_bonus != 0) {
-                sb.append(this.attack_bonus > 0 ? "+" : "").append(this.attack_bonus);
-            }
-            if (this.damage_type != null && !this.damage_type.isEmpty()) {
-                sb.append(" ").append(this.damage_type);
+            if (this.attack_dice_count > 0 && this.attack_die_size > 0) {
+                sb.append(" | 伤害 ").append(this.attack_dice_count).append("d").append(this.attack_die_size);
+                if (this.attack_bonus != 0) {
+                    sb.append(this.attack_bonus > 0 ? "+" : "").append(this.attack_bonus);
+                }
+                if (this.damage_type != null && !this.damage_type.isEmpty()) {
+                    sb.append(" ").append(this.damage_type);
+                }
+            } else {
+                sb.append(" | 特殊武器");
             }
         } else if (this.slot == Equipment_Slot.OFF_HAND && this.shield_bonus > 0) {
             sb.append(" | AC +").append(this.shield_bonus);

@@ -16,14 +16,22 @@ public class View_Characters_UI extends JFrame {
 
     public View_Characters_UI() {
         setTitle("角色一览");
-        setSize(400, 500);
+        setSize(520, 620);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        JPanel top_panel = new JPanel();
+        JPanel top_panel = new JPanel(new BorderLayout());
+        top_panel.setBorder(BorderFactory.createCompoundBorder(
+                Ui_Theme.create_section_border("档案索引"),
+                BorderFactory.createEmptyBorder(12, 14, 12, 14)
+        ));
         JLabel title_label = new JLabel("已创建的角色列表");
         title_label.setFont(new Font("微软雅黑", Font.BOLD, 20));
-        top_panel.add(title_label);
+        title_label.setForeground(Ui_Theme.ACCENT_PRIMARY);
+        JLabel hintLabel = new JLabel("双击列表项可直接打开角色详情。");
+        hintLabel.setForeground(Ui_Theme.TEXT_MUTED);
+        top_panel.add(title_label, BorderLayout.NORTH);
+        top_panel.add(hintLabel, BorderLayout.SOUTH);
 
         list_model = new DefaultListModel<>();
         refresh_list();
@@ -31,6 +39,7 @@ public class View_Characters_UI extends JFrame {
         character_list_view = new JList<>(list_model);
         character_list_view.setFont(new Font("微软雅黑", Font.PLAIN, 16));
         character_list_view.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        Ui_Theme.style_component_tree(character_list_view);
 
         // --- 核心改进：添加鼠标双击监听器 ---
         character_list_view.addMouseListener(new MouseAdapter() {
@@ -48,12 +57,17 @@ public class View_Characters_UI extends JFrame {
             }
         });
 
-        JScrollPane scroll_pane = new JScrollPane(character_list_view);
-        scroll_pane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        JScrollPane scroll_pane = Ui_Theme.wrap_scroll(character_list_view);
+        scroll_pane.setBorder(BorderFactory.createCompoundBorder(
+                Ui_Theme.create_section_border("角色清单"),
+                BorderFactory.createEmptyBorder(10, 12, 10, 12)
+        ));
 
-        JPanel btn_panel = new JPanel();
+        JPanel btn_panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton view_btn = new JButton("查看详情");
         JButton delete_btn = new JButton("删除角色");
+        Ui_Theme.style_secondary_button(view_btn);
+        Ui_Theme.style_primary_button(delete_btn);
 
         // 保留原有的按钮点击逻辑，照顾不同使用习惯的玩家
         view_btn.addActionListener(e -> {
@@ -84,6 +98,7 @@ public class View_Characters_UI extends JFrame {
         add(top_panel, BorderLayout.NORTH);
         add(scroll_pane, BorderLayout.CENTER);
         add(btn_panel, BorderLayout.SOUTH);
+        Ui_Theme.apply_window(this);
     }
 
     private void refresh_list() {

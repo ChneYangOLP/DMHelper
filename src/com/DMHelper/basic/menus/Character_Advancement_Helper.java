@@ -10,6 +10,7 @@ import com.DMHelper.basic.playerclass.paladin.Paladin_Oath;
 import com.DMHelper.basic.playerclass.sorcerer.Sorcerer_Class;
 import com.DMHelper.basic.playerclass.sorcerer.Sorcerous_Origin;
 import com.DMHelper.basic.playerclass.warlock.Warlock_Class;
+import com.DMHelper.basic.playerclass.warlock.Warlock_Pact;
 import com.DMHelper.basic.playerclass.warlock.Warlock_Patron;
 import com.DMHelper.basic.playerclass.wizard.Wizard_Class;
 import com.DMHelper.basic.playerclass.wizard.Wizard_Subclass;
@@ -173,6 +174,12 @@ public class Character_Advancement_Helper {
                 Warlock_Class warlock = (Warlock_Class) character.job;
                 if (warlock.patron == Warlock_Patron.NONE) {
                     choose_warlock_patron(parent, character, warlock);
+                    character.recalculate_derived_stats();
+                    processedChoice = true;
+                }
+
+                if (character.job.current_level >= 3 && warlock.pact_boon == Warlock_Pact.NONE) {
+                    choose_warlock_pact_boon(parent, character, warlock);
                     character.recalculate_derived_stats();
                     processedChoice = true;
                 }
@@ -523,9 +530,17 @@ public class Character_Advancement_Helper {
     }
 
     private static String to_maneuver_key(String label) {
+        if (label.contains("Commander's Strike")) return "Commander's Strike";
         if (label.contains("Disarming Attack")) return "Disarming Attack";
+        if (label.contains("Distracting Strike")) return "Distracting Strike";
+        if (label.contains("Evasive Footwork")) return "Evasive Footwork";
+        if (label.contains("Feinting Attack")) return "Feinting Attack";
+        if (label.contains("Goading Attack")) return "Goading Attack";
+        if (label.contains("Lunging Attack")) return "Lunging Attack";
+        if (label.contains("Maneuvering Attack")) return "Maneuvering Attack";
         if (label.contains("Precision Attack")) return "Precision Attack";
         if (label.contains("Riposte")) return "Riposte";
+        if (label.contains("Sweeping Attack")) return "Sweeping Attack";
         if (label.contains("Trip Attack")) return "Trip Attack";
         if (label.contains("Menacing Attack")) return "Menacing Attack";
         if (label.contains("Parry")) return "Parry";
@@ -622,6 +637,26 @@ public class Character_Advancement_Helper {
                 + "旧日支配者 (The Great Old One)：偏向心灵、控制与诡异干扰。";
     }
 
+    private static void choose_warlock_pact_boon(Component parent, Character_Sheet character, Warlock_Class warlock) {
+        String selectedBoon = choose_single_option(
+                parent,
+                "选择契约恩赐",
+                build_warlock_pact_boon_prompt(),
+                Arrays.asList("刃之契约 (Pact of the Blade)", "链之契约 (Pact of the Chain)", "书之契约 (Pact of the Tome)")
+        );
+        if (selectedBoon.contains("刃之")) warlock.pact_boon = Warlock_Pact.BLADE;
+        else if (selectedBoon.contains("链之")) warlock.pact_boon = Warlock_Pact.CHAIN;
+        else warlock.pact_boon = Warlock_Pact.TOME;
+        character.record_advancement("选择契约恩赐：" + warlock.get_pact_boon_name());
+    }
+
+    private static String build_warlock_pact_boon_prompt() {
+        return "请选择 3 级契约恩赐：\n"
+                + "刃之契约 (Pact of the Blade)：获得契约武器，近战构筑更完整。\n"
+                + "链之契约 (Pact of the Chain)：获得强化魔宠，偏侦察、支援与诡计。\n"
+                + "书之契约 (Pact of the Tome)：获得影之书与额外戏法，偏法术工具箱与仪式能力。";
+    }
+
     private static List<String> build_warlock_invocation_labels(Warlock_Class warlock) {
         List<String> labels = new ArrayList<>();
         for (String key : warlock.get_available_invocation_options()) {
@@ -641,12 +676,36 @@ public class Character_Advancement_Helper {
     private static String to_warlock_invocation_key(String label) {
         if (label.contains("Agonizing Blast")) return "Agonizing Blast";
         if (label.contains("Armor of Shadows")) return "Armor of Shadows";
+        if (label.contains("Ascendant Step")) return "Ascendant Step";
+        if (label.contains("Beast Speech")) return "Beast Speech";
+        if (label.contains("Beguiling Influence")) return "Beguiling Influence";
+        if (label.contains("Bewitching Whispers")) return "Bewitching Whispers";
+        if (label.contains("Book of Ancient Secrets")) return "Book of Ancient Secrets";
+        if (label.contains("Chains of Carceri")) return "Chains of Carceri";
         if (label.contains("Devil's Sight")) return "Devil's Sight";
+        if (label.contains("Dreadful Word")) return "Dreadful Word";
         if (label.contains("Eldritch Sight")) return "Eldritch Sight";
+        if (label.contains("Eldritch Spear")) return "Eldritch Spear";
+        if (label.contains("Eyes of the Rune Keeper")) return "Eyes of the Rune Keeper";
         if (label.contains("Fiendish Vigor")) return "Fiendish Vigor";
+        if (label.contains("Gaze of Two Minds")) return "Gaze of Two Minds";
+        if (label.contains("Lifedrinker")) return "Lifedrinker";
         if (label.contains("Mask of Many Faces")) return "Mask of Many Faces";
+        if (label.contains("Master of Myriad Forms")) return "Master of Myriad Forms";
+        if (label.contains("Minions of Chaos")) return "Minions of Chaos";
+        if (label.contains("Mire the Mind")) return "Mire the Mind";
         if (label.contains("Misty Visions")) return "Misty Visions";
+        if (label.contains("One with Shadows")) return "One with Shadows";
+        if (label.contains("Otherworldly Leap")) return "Otherworldly Leap";
         if (label.contains("Repelling Blast")) return "Repelling Blast";
+        if (label.contains("Sculptor of Flesh")) return "Sculptor of Flesh";
+        if (label.contains("Sign of Ill Omen")) return "Sign of Ill Omen";
+        if (label.contains("Thief of Five Fates")) return "Thief of Five Fates";
+        if (label.contains("Thirsting Blade")) return "Thirsting Blade";
+        if (label.contains("Visions of Distant Realms")) return "Visions of Distant Realms";
+        if (label.contains("Voice of the Chain Master")) return "Voice of the Chain Master";
+        if (label.contains("Whispers of the Grave")) return "Whispers of the Grave";
+        if (label.contains("Witch Sight")) return "Witch Sight";
         return label;
     }
 
@@ -843,6 +902,9 @@ public class Character_Advancement_Helper {
             add(bottomPanel, BorderLayout.SOUTH);
 
             updateFooter();
+            Ui_Theme.style_secondary_button(cancelButton);
+            Ui_Theme.style_primary_button(this.confirmButton);
+            Ui_Theme.apply_window(this);
         }
 
         private void toggleSelection(String value) {

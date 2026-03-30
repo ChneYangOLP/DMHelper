@@ -34,27 +34,50 @@ public class Create_Character_UI extends JFrame {
 
     public Create_Character_UI() {
         setTitle("创建新角色");
-        setSize(400, 600);
+        setSize(560, 700);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        JPanel form_panel = new JPanel(new GridLayout(12, 2, 10, 15));
-        form_panel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+        JPanel rootPanel = new JPanel(new BorderLayout(12, 12));
+        rootPanel.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
 
-        form_panel.add(new JLabel("角色姓名:"));
+        JPanel headerPanel = new JPanel(new BorderLayout(0, 6));
+        JLabel titleLabel = new JLabel("创建新角色");
+        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 24));
+        titleLabel.setForeground(Ui_Theme.ACCENT_PRIMARY);
+        JLabel subtitleLabel = new JLabel("填写基础信息与六维属性，然后继续完善背景与性格。");
+        subtitleLabel.setForeground(Ui_Theme.TEXT_MUTED);
+        headerPanel.add(titleLabel, BorderLayout.NORTH);
+        headerPanel.add(subtitleLabel, BorderLayout.SOUTH);
+        rootPanel.add(headerPanel, BorderLayout.NORTH);
+
+        JPanel contentPanel = new JPanel(new GridLayout(2, 1, 12, 12));
+        JPanel baseInfoPanel = new JPanel(new GridLayout(5, 2, 10, 15));
+        baseInfoPanel.setBorder(BorderFactory.createCompoundBorder(
+                Ui_Theme.create_section_border("基础信息"),
+                BorderFactory.createEmptyBorder(14, 16, 14, 16)
+        ));
+
+        JPanel statPanel = new JPanel(new GridLayout(6, 2, 10, 15));
+        statPanel.setBorder(BorderFactory.createCompoundBorder(
+                Ui_Theme.create_section_border("属性值"),
+                BorderFactory.createEmptyBorder(14, 16, 14, 16)
+        ));
+
+        baseInfoPanel.add(new JLabel("角色姓名:"));
         name_field = new JTextField();
-        form_panel.add(name_field);
+        baseInfoPanel.add(name_field);
 
-        form_panel.add(new JLabel("角色年龄:"));
+        baseInfoPanel.add(new JLabel("角色年龄:"));
         age_spinner = new JSpinner(new SpinnerNumberModel(20, 1, 1000, 1));
-        form_panel.add(age_spinner);
+        baseInfoPanel.add(age_spinner);
 
-        form_panel.add(new JLabel("角色性别:"));
+        baseInfoPanel.add(new JLabel("角色性别:"));
         String[] genders = {"男", "女", "无性别", "其他"};
         gender_box = new JComboBox<>(genders);
-        form_panel.add(gender_box);
+        baseInfoPanel.add(gender_box);
 
-        form_panel.add(new JLabel("选择种族:"));
+        baseInfoPanel.add(new JLabel("选择种族:"));
         // 严格限定为 9 大核心种族
         String[] races = {
                 "人类 (Human)", "精灵 (Elf)", "矮人 (Dwarf)", "半身人 (Halfling)",
@@ -62,45 +85,51 @@ public class Create_Character_UI extends JFrame {
                 "半兽人 (Half-Orc)", "提夫林 (Tiefling)"
         };
         race_box = new JComboBox<>(races);
-        form_panel.add(race_box);
+        baseInfoPanel.add(race_box);
 
-        form_panel.add(new JLabel("选择职业:"));
+        baseInfoPanel.add(new JLabel("选择职业:"));
         String[] classes = {"战士 (Fighter)", "法师 (Wizard)", "术士 (Sorcerer)", "邪术士 (Warlock)", "圣武士 (Paladin)"};
         class_box = new JComboBox<>(classes);
-        form_panel.add(class_box);
+        baseInfoPanel.add(class_box);
 
-        form_panel.add(new JLabel("力量 (STR):"));
+        statPanel.add(new JLabel("力量 (STR):"));
         str_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        form_panel.add(str_spinner);
+        statPanel.add(str_spinner);
 
-        form_panel.add(new JLabel("敏捷 (DEX):"));
+        statPanel.add(new JLabel("敏捷 (DEX):"));
         dex_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        form_panel.add(dex_spinner);
+        statPanel.add(dex_spinner);
 
-        form_panel.add(new JLabel("体质 (CON):"));
+        statPanel.add(new JLabel("体质 (CON):"));
         con_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        form_panel.add(con_spinner);
+        statPanel.add(con_spinner);
 
-        form_panel.add(new JLabel("智力 (INT):"));
+        statPanel.add(new JLabel("智力 (INT):"));
         intel_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        form_panel.add(intel_spinner);
+        statPanel.add(intel_spinner);
 
-        form_panel.add(new JLabel("感知 (WIS):"));
+        statPanel.add(new JLabel("感知 (WIS):"));
         wis_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        form_panel.add(wis_spinner);
+        statPanel.add(wis_spinner);
 
-        form_panel.add(new JLabel("魅力 (CHA):"));
+        statPanel.add(new JLabel("魅力 (CHA):"));
         cha_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
-        form_panel.add(cha_spinner);
+        statPanel.add(cha_spinner);
 
-        JPanel btn_panel = new JPanel();
+        contentPanel.add(baseInfoPanel);
+        contentPanel.add(statPanel);
+
+        JPanel btn_panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton submit_btn = new JButton("生成角色面板");
+        Ui_Theme.style_primary_button(submit_btn);
         btn_panel.add(submit_btn);
 
         submit_btn.addActionListener(e -> build_character());
 
-        add(form_panel, BorderLayout.CENTER);
-        add(btn_panel, BorderLayout.SOUTH);
+        rootPanel.add(contentPanel, BorderLayout.CENTER);
+        rootPanel.add(btn_panel, BorderLayout.SOUTH);
+        add(rootPanel);
+        Ui_Theme.apply_window(this);
     }
 
     private void build_character() {
@@ -205,6 +234,9 @@ public class Create_Character_UI extends JFrame {
         buttonPanel.add(confirmButton);
         dialog.add(buttonPanel, BorderLayout.SOUTH);
 
+        Ui_Theme.style_secondary_button(cancelButton);
+        Ui_Theme.style_primary_button(confirmButton);
+        Ui_Theme.apply_window(dialog);
         dialog.setVisible(true);
         return result.values;
     }
@@ -249,8 +281,11 @@ public class Create_Character_UI extends JFrame {
 
     private JPanel wrap_profile_field(String title, JTextArea area) {
         JPanel panel = new JPanel(new BorderLayout(0, 6));
-        panel.add(new JLabel(title), BorderLayout.NORTH);
-        panel.add(new JScrollPane(area), BorderLayout.CENTER);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                Ui_Theme.create_section_border(title),
+                BorderFactory.createEmptyBorder(6, 8, 6, 8)
+        ));
+        panel.add(Ui_Theme.wrap_scroll(area), BorderLayout.CENTER);
         return panel;
     }
 

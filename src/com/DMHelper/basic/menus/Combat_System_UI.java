@@ -26,6 +26,16 @@ import java.util.Set;
 
 public class Combat_System_UI extends JFrame {
     private static Combat_System_UI active_instance;
+    private static final Color APP_BACKGROUND = new Color(241, 234, 218);
+    private static final Color PANEL_SURFACE = new Color(250, 246, 237);
+    private static final Color PANEL_ELEVATED = new Color(255, 251, 244);
+    private static final Color ACCENT_PRIMARY = new Color(52, 83, 66);
+    private static final Color ACCENT_SECONDARY = new Color(151, 112, 57);
+    private static final Color BORDER_COLOR = new Color(183, 166, 133);
+    private static final Color TEXT_PRIMARY = new Color(49, 39, 28);
+    private static final Color TEXT_MUTED = new Color(105, 93, 74);
+    private static final Color LIST_SELECTION = new Color(218, 228, 207);
+    private static final Color DEAD_TINT = new Color(130, 90, 90);
     private final CardLayout card_layout;
     private final JPanel root_panel;
 
@@ -72,6 +82,7 @@ public class Combat_System_UI extends JFrame {
 
         this.card_layout = new CardLayout();
         this.root_panel = new JPanel(this.card_layout);
+        this.root_panel.setBackground(APP_BACKGROUND);
 
         this.character_list_model = new DefaultListModel<>();
         this.character_list = new JList<>(this.character_list_model);
@@ -114,6 +125,7 @@ public class Combat_System_UI extends JFrame {
         root_panel.add(build_setup_panel(), "setup");
         root_panel.add(build_battle_panel(), "battle");
         add(root_panel);
+        getContentPane().setBackground(APP_BACKGROUND);
 
         reload_character_list();
         refresh_monster_search_results();
@@ -122,30 +134,45 @@ public class Combat_System_UI extends JFrame {
     private JPanel build_setup_panel() {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
         panel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        panel.setBackground(APP_BACKGROUND);
 
         JLabel header = new JLabel("选择参战角色与敌人");
-        header.setFont(new Font("微软雅黑", Font.BOLD, 22));
+        header.setFont(new Font("微软雅黑", Font.BOLD, 24));
+        header.setForeground(ACCENT_PRIMARY);
         panel.add(header, BorderLayout.NORTH);
 
         JSplitPane center = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         center.setResizeWeight(0.28);
         center.setDividerLocation(300);
         center.setBorder(null);
+        center.setOpaque(false);
 
-        JPanel characterPanel = new JPanel(new BorderLayout(8, 8));
-        characterPanel.setBorder(BorderFactory.createTitledBorder("参战角色"));
+        JPanel characterPanel = create_surface_panel();
+        characterPanel.setBorder(create_section_border("参战角色"));
         character_list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        character_list.setFixedCellHeight(34);
+        style_list(character_list);
         character_list.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
             JLabel label = new JLabel(value);
             label.setOpaque(true);
-            label.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
-            label.setBackground(isSelected ? new Color(210, 228, 255) : Color.WHITE);
-            if (selected_character_indices.contains(index)) {
+            label.setBorder(BorderFactory.createEmptyBorder(7, 10, 7, 10));
+            label.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+            label.setBackground(isSelected ? LIST_SELECTION : PANEL_ELEVATED);
+            label.setForeground(TEXT_PRIMARY);
+            Character_Sheet character = index >= 0 && index < Global_Data.character_pool.size()
+                    ? Global_Data.character_pool.get(index) : null;
+            boolean dead = character != null && !character.is_alive();
+            if (selected_character_indices.contains(index) && !dead) {
                 label.setText("[已选] " + value);
-                label.setForeground(new Color(20, 120, 40));
+                label.setForeground(ACCENT_PRIMARY);
                 label.setFont(label.getFont().deriveFont(Font.BOLD));
-            } else {
-                label.setForeground(Color.BLACK);
+            }
+            if (dead) {
+                label.setText("[已死亡] " + value);
+                label.setForeground(DEAD_TINT);
+                if (!isSelected) {
+                    label.setBackground(new Color(244, 232, 228));
+                }
             }
             return label;
         });
@@ -160,28 +187,41 @@ public class Combat_System_UI extends JFrame {
                 if (bounds == null || !bounds.contains(e.getPoint())) {
                     return;
                 }
+                if (!is_character_selectable(index)) {
+                    Character_Sheet character = Global_Data.character_pool.get(index);
+                    JOptionPane.showMessageDialog(Combat_System_UI.this,
+                            "[" + character.name + "] 当前生命值为 0，已视为死亡，不能加入本次战斗。");
+                    character_list.setSelectedIndex(index);
+                    return;
+                }
                 toggle_character_selection(index);
                 character_list.setSelectedIndex(index);
             }
         });
-        characterPanel.add(new JScrollPane(character_list), BorderLayout.CENTER);
-        JTextArea characterHint = build_text_area(13);
-        characterHint.setText("单击角色即可切换是否参战。\n带有 [已选] 标记的角色会参与先攻、战斗和经验结算。");
-        characterHint.setEditable(false);
-        characterHint.setBackground(panel.getBackground());
+        characterPanel.add(build_scroll_pane(character_list), BorderLayout.CENTER);
+        JTextArea characterHint = build_hint_area();
+        characterHint.setText("单击角色即可切换是否参战。\n生命值为 0 的角色会显示为 [已死亡]，不能加入本次战斗。");
         characterPanel.add(characterHint, BorderLayout.SOUTH);
         center.setLeftComponent(characterPanel);
 
-        JPanel enemyPanel = new JPanel(new BorderLayout(8, 8));
-        enemyPanel.setBorder(BorderFactory.createTitledBorder("敌人图鉴与遭遇配置"));
+        JPanel enemyPanel = create_surface_panel();
+        enemyPanel.setBorder(create_section_border("敌人图鉴与遭遇配置"));
 
         JPanel searchPanel = new JPanel(new BorderLayout(6, 6));
-        searchPanel.add(new JLabel("搜索敌人（支持中英双语）："), BorderLayout.NORTH);
+        searchPanel.setOpaque(false);
+        JLabel searchLabel = new JLabel("搜索敌人（支持中英双语）：");
+        searchLabel.setForeground(TEXT_MUTED);
+        searchPanel.add(searchLabel, BorderLayout.NORTH);
+        style_text_field(monster_search_field);
         searchPanel.add(monster_search_field, BorderLayout.CENTER);
         enemyPanel.add(searchPanel, BorderLayout.NORTH);
 
         monster_list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        monster_list.setFixedCellHeight(32);
+        style_list(monster_list);
         selected_enemy_list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        selected_enemy_list.setFixedCellHeight(32);
+        style_list(selected_enemy_list);
 
         monster_search_field.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -209,22 +249,34 @@ public class Combat_System_UI extends JFrame {
                 }
             }
         });
+        selected_enemy_list.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    remove_selected_monster();
+                }
+            }
+        });
 
         JSplitPane resultSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         resultSplit.setResizeWeight(0.68);
         resultSplit.setDividerLocation(470);
+        resultSplit.setOpaque(false);
 
-        JPanel libraryPanel = new JPanel(new BorderLayout(6, 6));
-        libraryPanel.add(new JLabel("图鉴检索结果"), BorderLayout.NORTH);
-        JScrollPane monsterScroll = new JScrollPane(monster_list);
+        JPanel libraryPanel = create_surface_panel();
+        JLabel libraryTitle = new JLabel("图鉴检索结果");
+        libraryTitle.setForeground(ACCENT_PRIMARY);
+        libraryPanel.add(libraryTitle, BorderLayout.NORTH);
+        JScrollPane monsterScroll = build_scroll_pane(monster_list);
         monsterScroll.setPreferredSize(new Dimension(420, 420));
         libraryPanel.add(monsterScroll, BorderLayout.CENTER);
 
         JSplitPane rightSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         rightSplit.setResizeWeight(0.38);
         rightSplit.setDividerLocation(190);
-        rightSplit.setTopComponent(wrap_with_title("已选敌人", new JScrollPane(selected_enemy_list)));
-        JScrollPane detailScroll = new JScrollPane(monster_detail_area);
+        rightSplit.setOpaque(false);
+        rightSplit.setTopComponent(wrap_with_title("已选敌人", build_scroll_pane(selected_enemy_list)));
+        JScrollPane detailScroll = build_scroll_pane(monster_detail_area);
         detailScroll.setPreferredSize(new Dimension(320, 260));
         rightSplit.setBottomComponent(wrap_with_title("敌人详情", detailScroll));
 
@@ -233,14 +285,20 @@ public class Combat_System_UI extends JFrame {
         enemyPanel.add(resultSplit, BorderLayout.CENTER);
 
         JPanel enemyButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        enemyButtonPanel.setOpaque(false);
         JButton addEnemyButton = new JButton("添加敌人");
         JButton removeEnemyButton = new JButton("移除已选敌人");
-        JLabel helpLabel = new JLabel("同一个敌人可以重复添加，表示多只。");
+        style_primary_button(addEnemyButton);
+        style_secondary_button(removeEnemyButton);
+        JLabel helpLabel = new JLabel("同一个敌人可以重复添加，表示多只；已选敌人支持双击移除。");
+        helpLabel.setForeground(TEXT_MUTED);
+        JLabel countLabel = new JLabel("当前图鉴数量：" + Monster_Library.get_all_monsters().size());
+        countLabel.setForeground(TEXT_MUTED);
         addEnemyButton.addActionListener(e -> add_selected_monster());
         removeEnemyButton.addActionListener(e -> remove_selected_monster());
         enemyButtonPanel.add(addEnemyButton);
         enemyButtonPanel.add(removeEnemyButton);
-        enemyButtonPanel.add(new JLabel("当前图鉴数量：" + Monster_Library.get_all_monsters().size()));
+        enemyButtonPanel.add(countLabel);
         enemyButtonPanel.add(helpLabel);
         enemyPanel.add(enemyButtonPanel, BorderLayout.SOUTH);
 
@@ -248,8 +306,10 @@ public class Combat_System_UI extends JFrame {
         panel.add(center, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottom.setOpaque(false);
         JButton startCombatButton = new JButton("开始战斗");
         startCombatButton.setFont(new Font("微软雅黑", Font.BOLD, 16));
+        style_primary_button(startCombatButton);
         startCombatButton.addActionListener(e -> start_combat());
         bottom.add(startCombatButton);
         panel.add(bottom, BorderLayout.SOUTH);
@@ -260,28 +320,35 @@ public class Combat_System_UI extends JFrame {
     private JPanel build_battle_panel() {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
         panel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        panel.setBackground(APP_BACKGROUND);
 
-        JPanel topPanel = new JPanel(new BorderLayout(8, 8));
+        JPanel topPanel = create_surface_panel();
         JLabel orderTitle = new JLabel("先攻顺序");
         orderTitle.setFont(new Font("微软雅黑", Font.BOLD, 18));
+        orderTitle.setForeground(ACCENT_PRIMARY);
         topPanel.add(orderTitle, BorderLayout.NORTH);
         initiative_area.setRows(3);
         initiative_area.setEditable(false);
-        topPanel.add(new JScrollPane(initiative_area), BorderLayout.CENTER);
+        topPanel.add(build_scroll_pane(initiative_area), BorderLayout.CENTER);
         panel.add(topPanel, BorderLayout.NORTH);
 
         JPanel centerPanel = new JPanel(new GridLayout(1, 2, 12, 12));
+        centerPanel.setOpaque(false);
         status_area.setEditable(false);
         log_area.setEditable(false);
-        centerPanel.add(wrap_with_title("战场状态", new JScrollPane(status_area)));
-        centerPanel.add(wrap_with_title("战斗日志", new JScrollPane(log_area)));
+        centerPanel.add(wrap_with_title("战场状态", build_scroll_pane(status_area)));
+        centerPanel.add(wrap_with_title("战斗日志", build_scroll_pane(log_area)));
         panel.add(centerPanel, BorderLayout.CENTER);
 
-        JPanel actionPanel = new JPanel(new BorderLayout(8, 8));
-        actionPanel.setBorder(BorderFactory.createTitledBorder("当前行动"));
+        JPanel actionPanel = create_surface_panel();
+        actionPanel.setBorder(create_section_border("当前行动"));
 
         JPanel currentPanel = new JPanel(new GridLayout(3, 2, 6, 6));
+        currentPanel.setOpaque(false);
         current_turn_label.setFont(new Font("微软雅黑", Font.BOLD, 16));
+        current_turn_label.setForeground(ACCENT_SECONDARY);
+        style_combo_box(attack_box);
+        style_combo_box(target_box);
         currentPanel.add(new JLabel("行动者："));
         currentPanel.add(current_turn_label);
         currentPanel.add(new JLabel("攻击方式："));
@@ -292,10 +359,15 @@ public class Combat_System_UI extends JFrame {
 
         attack_detail_area.setRows(4);
         attack_detail_area.setEditable(false);
-        actionPanel.add(new JScrollPane(attack_detail_area), BorderLayout.CENTER);
+        actionPanel.add(build_scroll_pane(attack_detail_area), BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setOpaque(false);
         JButton backSetupButton = new JButton("返回配置");
+        style_secondary_button(backSetupButton);
+        style_primary_button(perform_attack_button);
+        style_secondary_button(skip_turn_button);
+        style_secondary_button(use_item_button);
         perform_attack_button.addActionListener(e -> perform_attack());
         skip_turn_button.addActionListener(e -> skip_turn());
         use_item_button.addActionListener(e -> use_item_in_combat());
@@ -312,8 +384,8 @@ public class Combat_System_UI extends JFrame {
     }
 
     private JPanel wrap_with_title(String title, JComponent component) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(title));
+        JPanel panel = create_surface_panel();
+        panel.setBorder(create_section_border(title));
         panel.add(component, BorderLayout.CENTER);
         return panel;
     }
@@ -324,13 +396,107 @@ public class Combat_System_UI extends JFrame {
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
         area.setMargin(new Insets(10, 10, 10, 10));
+        area.setBackground(PANEL_ELEVATED);
+        area.setForeground(TEXT_PRIMARY);
+        area.setCaretColor(ACCENT_PRIMARY);
+        area.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
         return area;
+    }
+
+    private JTextArea build_hint_area() {
+        JTextArea area = build_text_area(13);
+        area.setEditable(false);
+        area.setBackground(PANEL_SURFACE);
+        area.setForeground(TEXT_MUTED);
+        area.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
+        return area;
+    }
+
+    private JPanel create_surface_panel() {
+        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.setBackground(PANEL_SURFACE);
+        return panel;
+    }
+
+    private javax.swing.border.Border create_section_border(String title) {
+        return BorderFactory.createTitledBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(BORDER_COLOR, 1, true),
+                        BorderFactory.createEmptyBorder(8, 8, 8, 8)
+                ),
+                title,
+                0,
+                0,
+                new Font("微软雅黑", Font.BOLD, 14),
+                ACCENT_PRIMARY
+        );
+    }
+
+    private JScrollPane build_scroll_pane(JComponent component) {
+        JScrollPane scrollPane = new JScrollPane(component);
+        scrollPane.setBorder(BorderFactory.createLineBorder(BORDER_COLOR, 1, true));
+        scrollPane.getViewport().setBackground(PANEL_ELEVATED);
+        scrollPane.setBackground(PANEL_ELEVATED);
+        return scrollPane;
+    }
+
+    private void style_list(JList<?> list) {
+        list.setBackground(PANEL_ELEVATED);
+        list.setForeground(TEXT_PRIMARY);
+        list.setSelectionBackground(LIST_SELECTION);
+        list.setSelectionForeground(TEXT_PRIMARY);
+        list.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+        list.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+    }
+
+    private void style_text_field(JTextField field) {
+        field.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        field.setBackground(PANEL_ELEVATED);
+        field.setForeground(TEXT_PRIMARY);
+        field.setCaretColor(ACCENT_PRIMARY);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER_COLOR, 1, true),
+                BorderFactory.createEmptyBorder(7, 10, 7, 10)
+        ));
+    }
+
+    private void style_combo_box(JComboBox<?> comboBox) {
+        comboBox.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        comboBox.setBackground(PANEL_ELEVATED);
+        comboBox.setForeground(TEXT_PRIMARY);
+    }
+
+    private void style_primary_button(AbstractButton button) {
+        button.setFont(new Font("微软雅黑", Font.BOLD, 13));
+        button.setBackground(ACCENT_PRIMARY);
+        button.setForeground(new Color(252, 247, 238));
+        button.setDisabledTextColor(new Color(236, 226, 211));
+        button.setFocusPainted(false);
+        button.setOpaque(true);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ACCENT_PRIMARY.darker(), 1, true),
+                BorderFactory.createEmptyBorder(8, 14, 8, 14)
+        ));
+    }
+
+    private void style_secondary_button(AbstractButton button) {
+        button.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        button.setBackground(new Color(230, 221, 204));
+        button.setForeground(TEXT_PRIMARY);
+        button.setDisabledTextColor(TEXT_MUTED);
+        button.setFocusPainted(false);
+        button.setOpaque(true);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER_COLOR, 1, true),
+                BorderFactory.createEmptyBorder(8, 14, 8, 14)
+        ));
     }
 
     private void reload_character_list() {
         Set<Integer> validSelection = new LinkedHashSet<>();
         for (Integer index : this.selected_character_indices) {
-            if (index != null && index >= 0 && index < Global_Data.character_pool.size()) {
+            if (index != null && index >= 0 && index < Global_Data.character_pool.size()
+                    && is_character_selectable(index)) {
                 validSelection.add(index);
             }
         }
@@ -338,13 +504,13 @@ public class Combat_System_UI extends JFrame {
         this.selected_character_indices.addAll(validSelection);
         character_list_model.clear();
         for (Character_Sheet character : Global_Data.character_pool) {
-            character_list_model.addElement(character.name + " | " + character.job.class_name + " | LV." + character.job.current_level);
+            character_list_model.addElement(build_character_setup_label(character));
         }
         character_list.repaint();
     }
 
     private void toggle_character_selection(int index) {
-        if (index < 0 || index >= Global_Data.character_pool.size()) {
+        if (!is_character_selectable(index)) {
             return;
         }
         if (this.selected_character_indices.contains(index)) {
@@ -420,10 +586,30 @@ public class Combat_System_UI extends JFrame {
         }
 
         List<Character_Sheet> selectedCharacters = new ArrayList<>();
+        List<String> removedDeadNames = new ArrayList<>();
         for (int index : this.selected_character_indices) {
             if (index >= 0 && index < Global_Data.character_pool.size()) {
-                selectedCharacters.add(Global_Data.character_pool.get(index));
+                Character_Sheet character = Global_Data.character_pool.get(index);
+                if (character.is_alive()) {
+                    selectedCharacters.add(character);
+                } else {
+                    removedDeadNames.add(character.name);
+                }
             }
+        }
+        if (!removedDeadNames.isEmpty()) {
+            this.selected_character_indices.removeIf(index ->
+                    index != null
+                            && index >= 0
+                            && index < Global_Data.character_pool.size()
+                            && !Global_Data.character_pool.get(index).is_alive());
+            character_list.repaint();
+            JOptionPane.showMessageDialog(this,
+                    "以下角色已死亡，已自动从参战列表中移除：\n" + String.join("、", removedDeadNames));
+        }
+        if (selectedCharacters.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "当前没有可参战的存活角色。");
+            return;
         }
 
         this.combat_engine = new Combat_Engine(selectedCharacters, selected_monsters);
@@ -431,6 +617,22 @@ public class Combat_System_UI extends JFrame {
         this.log_area.setText("战斗开始。\n");
         this.card_layout.show(this.root_panel, "battle");
         refresh_battle_ui();
+    }
+
+    private boolean is_character_selectable(int index) {
+        return index >= 0
+                && index < Global_Data.character_pool.size()
+                && Global_Data.character_pool.get(index) != null
+                && Global_Data.character_pool.get(index).is_alive();
+    }
+
+    private String build_character_setup_label(Character_Sheet character) {
+        if (character == null) {
+            return "";
+        }
+        return character.name + " | " + character.job.class_name
+                + " | LV." + character.job.current_level
+                + " | HP " + character.get_hp_summary();
     }
 
     private void refresh_battle_ui() {

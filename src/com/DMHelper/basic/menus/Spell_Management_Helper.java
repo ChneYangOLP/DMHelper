@@ -137,6 +137,9 @@ public class Spell_Management_Helper {
             add(bottomPanel, BorderLayout.SOUTH);
 
             refreshModels();
+            Ui_Theme.style_secondary_button(cancelButton);
+            Ui_Theme.style_primary_button(this.confirmButton);
+            Ui_Theme.apply_window(this);
         }
 
         private JPanel wrapList(String title, JList<String> list) {

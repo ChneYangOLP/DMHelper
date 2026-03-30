@@ -1,6 +1,8 @@
 package com.DMHelper.basic.equipment;
 
 import com.DMHelper.basic.armor.Armor;
+import com.DMHelper.basic.spell.Spell_Definition;
+import com.DMHelper.basic.spell.Spell_Library;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,20 +30,46 @@ public class Equipment_Library {
         add(new Equipment_Item("chain_mail", "锁子甲 (Chain Mail)", Equipment_Slot.ARMOR,
                 "经典重甲，提供稳定的高防护。", "Heavy", 16, 0, 0, 0, 0, "", false, false, 7500));
 
-        add(new Equipment_Item("club", "短棒", Equipment_Slot.OFF_HAND,
-                "小型武器","",0,0,1,4,0,"钝击", false,false,10));
-        add(new Equipment_Item("longsword", "长剑 (Longsword)", Equipment_Slot.MAIN_HAND,
-                "标准近战武器，适合战士与圣武士。", "", 0, 0, 1, 8, 0, "挥砍", false, false, 1500));
-        add(new Equipment_Item("greatsword", "巨剑 (Greatsword)", Equipment_Slot.MAIN_HAND,
-                "双手重武器，单次伤害更高。", "", 0, 0, 2, 6, 0, "挥砍", false, false, 5000));
-        add(new Equipment_Item("quarterstaff", "长棍 (Quarterstaff)", Equipment_Slot.MAIN_HAND,
-                "稳妥的法师近战武器，也能当法术施法媒介。", "", 0, 0, 1, 6, 0, "钝击", false, false, 20));
-        add(new Equipment_Item("dagger", "匕首 (Dagger)", Equipment_Slot.MAIN_HAND,
-                "轻便的灵巧武器，可近战也可投掷。", "", 0, 0, 1, 4, 0, "穿刺", true, false, 200));
-        add(new Equipment_Item("light_crossbow", "轻弩 (Light Crossbow)", Equipment_Slot.MAIN_HAND,
-                "可靠的远程武器，适合缺少法术位时使用。", "", 0, 0, 1, 8, 0, "穿刺", false, true, 2500));
-        add(new Equipment_Item("glaive", "长柄刀",Equipment_Slot.MAIN_HAND,
-                "重型双手武器", "", 0,0,1,10,0,"挥砍",true,false,2000));
+        add_weapon("club", "短棒 (Club)", "简易近战武器", 1, 4, "钝击", false, false, 10, "2 磅", "轻型");
+        add_weapon("dagger", "匕首 (Dagger)", "简易近战武器", 1, 4, "穿刺", true, false, 200, "1 磅", "灵巧、轻型、投掷（射程 20/60）");
+        add_weapon("greatclub", "巨棒 (Greatclub)", "简易近战武器", 1, 8, "钝击", false, false, 20, "10 磅", "双手");
+        add_weapon("handaxe", "手斧 (Handaxe)", "简易近战武器", 1, 6, "挥砍", false, false, 500, "2 磅", "轻型、投掷（射程 20/60）");
+        add_weapon("javelin", "标枪 (Javelin)", "简易近战武器", 1, 6, "穿刺", false, false, 50, "2 磅", "投掷（射程 30/120）");
+        add_weapon("light_hammer", "轻锤 (Light Hammer)", "简易近战武器", 1, 4, "钝击", false, false, 200, "2 磅", "轻型、投掷（射程 20/60）");
+        add_weapon("mace", "硬头锤 (Mace)", "简易近战武器", 1, 6, "钝击", false, false, 500, "4 磅", "");
+        add_weapon("quarterstaff", "长棍 (Quarterstaff)", "简易近战武器", 1, 6, "钝击", false, false, 20, "4 磅", "两用（1d8）");
+        add_weapon("sickle", "镰刀 (Sickle)", "简易近战武器", 1, 4, "挥砍", false, false, 100, "2 磅", "轻型");
+        add_weapon("spear", "矛 (Spear)", "简易近战武器", 1, 6, "穿刺", false, false, 100, "3 磅", "投掷（射程 20/60）、两用（1d8）");
+
+        add_weapon("light_crossbow", "轻弩 (Light Crossbow)", "简易远程武器", 1, 8, "穿刺", false, true, 2500, "5 磅", "弹药（射程 80/320）、装填、双手");
+        add_weapon("dart", "飞镖 (Dart)", "简易远程武器", 1, 4, "穿刺", true, true, 5, "1/4 磅", "灵巧、投掷（射程 20/60）");
+        add_weapon("shortbow", "短弓 (Shortbow)", "简易远程武器", 1, 6, "穿刺", false, true, 2500, "2 磅", "弹药（射程 80/320）、双手");
+        add_weapon("sling", "投石索 (Sling)", "简易远程武器", 1, 4, "钝击", false, true, 10, "-", "弹药（射程 30/120）");
+
+        add_weapon("battleaxe", "战斧 (Battleaxe)", "军用近战武器", 1, 8, "挥砍", false, false, 1000, "4 磅", "两用（1d10）");
+        add_weapon("flail", "链枷 (Flail)", "军用近战武器", 1, 8, "钝击", false, false, 1000, "2 磅", "");
+        add_weapon("glaive", "长柄刀 (Glaive)", "军用近战武器", 1, 10, "挥砍", false, false, 2000, "6 磅", "重型、触及、双手");
+        add_weapon("greataxe", "巨斧 (Greataxe)", "军用近战武器", 1, 12, "挥砍", false, false, 3000, "7 磅", "重型、双手");
+        add_weapon("greatsword", "巨剑 (Greatsword)", "军用近战武器", 2, 6, "挥砍", false, false, 5000, "6 磅", "重型、双手");
+        add_weapon("halberd", "戟 (Halberd)", "军用近战武器", 1, 10, "挥砍", false, false, 2000, "6 磅", "重型、触及、双手");
+        add_weapon("lance", "骑枪 (Lance)", "军用近战武器", 1, 12, "穿刺", false, false, 1000, "6 磅", "触及、特殊");
+        add_weapon("longsword", "长剑 (Longsword)", "军用近战武器", 1, 8, "挥砍", false, false, 1500, "3 磅", "两用（1d10）");
+        add_weapon("maul", "巨锤 (Maul)", "军用近战武器", 2, 6, "钝击", false, false, 1000, "10 磅", "重型、双手");
+        add_weapon("morningstar", "钉头锤 (Morningstar)", "军用近战武器", 1, 8, "穿刺", false, false, 1500, "4 磅", "");
+        add_weapon("pike", "长矛 (Pike)", "军用近战武器", 1, 10, "穿刺", false, false, 500, "18 磅", "重型、触及、双手");
+        add_weapon("rapier", "刺剑 (Rapier)", "军用近战武器", 1, 8, "穿刺", true, false, 2500, "2 磅", "灵巧");
+        add_weapon("scimitar", "弯刀 (Scimitar)", "军用近战武器", 1, 6, "挥砍", true, false, 2500, "3 磅", "灵巧、轻型");
+        add_weapon("shortsword", "短剑 (Shortsword)", "军用近战武器", 1, 6, "穿刺", true, false, 1000, "2 磅", "灵巧、轻型");
+        add_weapon("trident", "三叉戟 (Trident)", "军用近战武器", 1, 6, "穿刺", false, false, 500, "4 磅", "投掷（射程 20/60）、两用（1d8）");
+        add_weapon("war_pick", "战镐 (War Pick)", "军用近战武器", 1, 8, "穿刺", false, false, 500, "2 磅", "");
+        add_weapon("warhammer", "战锤 (Warhammer)", "军用近战武器", 1, 8, "钝击", false, false, 1500, "2 磅", "两用（1d10）");
+        add_weapon("whip", "鞭 (Whip)", "军用近战武器", 1, 4, "挥砍", true, false, 200, "3 磅", "灵巧、触及");
+
+        add_weapon("blowgun", "吹箭筒 (Blowgun)", "军用远程武器", 1, 1, "穿刺", false, true, 1000, "1 磅", "弹药（射程 25/100）、装填");
+        add_weapon("hand_crossbow", "手弩 (Hand Crossbow)", "军用远程武器", 1, 6, "穿刺", false, true, 7500, "3 磅", "弹药（射程 30/120）、轻型、装填");
+        add_weapon("heavy_crossbow", "重弩 (Heavy Crossbow)", "军用远程武器", 1, 10, "穿刺", false, true, 5000, "18 磅", "弹药（射程 100/400）、重型、装填、双手");
+        add_weapon("longbow", "长弓 (Longbow)", "军用远程武器", 1, 8, "穿刺", false, true, 5000, "2 磅", "弹药（射程 150/600）、重型、双手");
+        add_special_weapon("net", "捕网 (Net)", "军用远程武器", 100, "3 磅", "特殊、投掷（射程 5/15）");
         add(new Equipment_Item("shield", "盾牌 (Shield)", Equipment_Slot.OFF_HAND,
                 "标准盾牌，装备时 AC +2。", "", 0, 2, 0, 0, 0, "", false, false, 1000));
         add(new Equipment_Item("spellbook_focus", "奥术书册", Equipment_Slot.OFF_HAND,
@@ -129,6 +157,23 @@ public class Equipment_Library {
                 "施放一次寒霜射线，对目标造成寒冷伤害并留下短暂迟缓效果。", "", 0, 0, 0, 0, 0, "寒冷", false, false, 9000));
         add(new Equipment_Item("scroll_of_dispel_magic", "解除魔法卷轴", Equipment_Slot.BACKPACK,
                 "施放一次解除魔法，移除目标身上的持续魔法状态或战斗效果。", "", 0, 0, 0, 0, 0, "", false, false, 15000));
+        add_spell_scroll("burning_hands", 2500, "火焰");
+        add_spell_scroll("thunderwave", 2500, "雷鸣");
+        add_spell_scroll("mirror_image", 9000, "");
+        add_spell_scroll("invisibility", 9000, "");
+        add_spell_scroll("suggestion", 9000, "");
+        add_spell_scroll("blur", 9000, "");
+        add_spell_scroll("counterspell", 15000, "");
+        add_spell_scroll("lightning_bolt", 15000, "闪电");
+        add_spell_scroll("fly", 15000, "");
+        add_spell_scroll("fear", 15000, "");
+        add_spell_scroll("haste", 15000, "");
+        add_spell_scroll("slow", 15000, "");
+        add_spell_scroll("hypnotic_pattern", 15000, "");
+        add_spell_scroll("dimension_door", 30000, "");
+        add_spell_scroll("polymorph", 30000, "");
+        add_spell_scroll("cone_of_cold", 60000, "寒冷");
+        add_spell_scroll("hold_monster", 60000, "");
         add(new Equipment_Item("beast_claw", "兽爪", Equipment_Slot.BACKPACK,
                 "完整保留下来的大型兽爪。", "", 0, 0, 0, 0, 0, "", false, false, 80));
         add(new Equipment_Item("healing_potion", "治疗药水 (Potion of Healing)", Equipment_Slot.BACKPACK,
@@ -184,6 +229,64 @@ public class Equipment_Library {
     }
 
     private Equipment_Library() {
+    }
+
+    private static void add_weapon(String key,
+                                   String displayName,
+                                   String category,
+                                   int attackDiceCount,
+                                   int attackDieSize,
+                                   String damageType,
+                                   boolean finesse,
+                                   boolean ranged,
+                                   int valueInCp,
+                                   String weight,
+                                   String properties) {
+        StringBuilder description = new StringBuilder(category).append("。");
+        if (weight != null && !weight.trim().isEmpty()) {
+            description.append(" 重量 ").append(weight.trim()).append("。");
+        }
+        if (properties != null && !properties.trim().isEmpty()) {
+            description.append(" 属性：").append(properties.trim()).append("。");
+        }
+        add(new Equipment_Item(key, displayName, Equipment_Slot.MAIN_HAND,
+                description.toString(), "", 0, 0, attackDiceCount, attackDieSize, 0, damageType, finesse, ranged, valueInCp));
+    }
+
+    private static void add_special_weapon(String key,
+                                           String displayName,
+                                           String category,
+                                           int valueInCp,
+                                           String weight,
+                                           String properties) {
+        StringBuilder description = new StringBuilder(category).append("。特殊武器，不以常规伤害骰结算。");
+        if (weight != null && !weight.trim().isEmpty()) {
+            description.append(" 重量 ").append(weight.trim()).append("。");
+        }
+        if (properties != null && !properties.trim().isEmpty()) {
+            description.append(" 属性：").append(properties.trim()).append("。");
+        }
+        add(new Equipment_Item(key, displayName, Equipment_Slot.MAIN_HAND,
+                description.toString(), "", 0, 0, 0, 0, 0, "", false, true, valueInCp));
+    }
+
+    private static void add_spell_scroll(String spellKey, int valueInCp, String damageType) {
+        Spell_Definition spell = Spell_Library.get_spell(spellKey);
+        if (spell == null) {
+            return;
+        }
+        String localizedName = extract_localized_spell_name(spell.display_name);
+        add(new Equipment_Item("scroll_of_" + spellKey, localizedName + "卷轴", Equipment_Slot.BACKPACK,
+                "施放一次 " + localizedName + "。" + spell.short_description,
+                "", 0, 0, 0, 0, 0, damageType == null ? "" : damageType.trim(), false, false, valueInCp));
+    }
+
+    private static String extract_localized_spell_name(String spellDisplayName) {
+        if (spellDisplayName == null) {
+            return "未知法术";
+        }
+        int idx = spellDisplayName.indexOf(" (");
+        return idx > 0 ? spellDisplayName.substring(0, idx).trim() : spellDisplayName.trim();
     }
 
     private static void add(Equipment_Item item) {

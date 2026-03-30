@@ -13,7 +13,26 @@ import java.util.List;
 import java.util.Map;
 
 public class Warlock_Class extends Character_Class {
+    private static final class Invocation_Option {
+        final String key;
+        final String label;
+        final String description;
+        final int minLevel;
+        final Warlock_Pact requiredPact;
+        final String requiredSpellKey;
+
+        Invocation_Option(String key, String label, String description, int minLevel, Warlock_Pact requiredPact, String requiredSpellKey) {
+            this.key = key;
+            this.label = label;
+            this.description = description;
+            this.minLevel = minLevel;
+            this.requiredPact = requiredPact;
+            this.requiredSpellKey = requiredSpellKey;
+        }
+    }
+
     public Warlock_Patron patron;
+    public Warlock_Pact pact_boon;
     public List<String> traits;
     public int cantrips_known;
     public int spells_known_count;
@@ -51,6 +70,7 @@ public class Warlock_Class extends Character_Class {
     public Warlock_Class() {
         super("WARLOCK", "邪术士 (Warlock)", 8);
         this.patron = Warlock_Patron.NONE;
+        this.pact_boon = Warlock_Pact.NONE;
         this.traits = new ArrayList<>();
         this.invocation_keys = new ArrayList<>();
         this.known_cantrip_keys = new ArrayList<>();
@@ -97,7 +117,7 @@ public class Warlock_Class extends Character_Class {
             this.traits.add("邪术祈请 (Eldritch Invocations)：从多个持续强化中挑选独特秘法。");
         }
         if (this.current_level >= 3) {
-            this.traits.add("契约恩赐 (Pact Boon)：获得额外的契约赠礼。");
+            this.traits.add("契约恩赐 (Pact Boon)：" + get_pact_boon_summary());
         }
         if (this.current_level >= 11) {
             this.traits.add("神秘秘法 (Mystic Arcanum)：可获得高环一次性法术。");
@@ -183,40 +203,22 @@ public class Warlock_Class extends Character_Class {
 
     public List<String> get_available_invocation_options() {
         List<String> options = new ArrayList<>();
-        options.add("Agonizing Blast");
-        options.add("Armor of Shadows");
-        options.add("Devil's Sight");
-        options.add("Eldritch Sight");
-        options.add("Fiendish Vigor");
-        options.add("Mask of Many Faces");
-        options.add("Misty Visions");
-        options.add("Repelling Blast");
-        options.removeAll(this.invocation_keys);
+        for (Invocation_Option option : get_all_invocation_options()) {
+            if (!this.invocation_keys.contains(option.key) && meets_invocation_prerequisite(option)) {
+                options.add(option.key);
+            }
+        }
         return options;
     }
 
     public String get_invocation_label(String key) {
-        if ("Agonizing Blast".equals(key)) return "苦痛魔能爆 (Agonizing Blast)";
-        if ("Armor of Shadows".equals(key)) return "阴影护甲 (Armor of Shadows)";
-        if ("Devil's Sight".equals(key)) return "魔鬼视界 (Devil's Sight)";
-        if ("Eldritch Sight".equals(key)) return "异界视界 (Eldritch Sight)";
-        if ("Fiendish Vigor".equals(key)) return "邪魔活力 (Fiendish Vigor)";
-        if ("Mask of Many Faces".equals(key)) return "千面伪装 (Mask of Many Faces)";
-        if ("Misty Visions".equals(key)) return "迷雾幻景 (Misty Visions)";
-        if ("Repelling Blast".equals(key)) return "斥退魔能爆 (Repelling Blast)";
-        return key;
+        Invocation_Option option = find_invocation_option(key);
+        return option == null ? key : option.label;
     }
 
     public String get_invocation_description(String key) {
-        if ("Agonizing Blast".equals(key)) return "你的魔能爆伤害额外加入魅力调整值。";
-        if ("Armor of Shadows".equals(key)) return "可随意施放法师护甲，不消耗法术位。";
-        if ("Devil's Sight".equals(key)) return "可在黑暗与魔法黑暗中正常视物。";
-        if ("Eldritch Sight".equals(key)) return "可随意施放侦测魔法。";
-        if ("Fiendish Vigor".equals(key)) return "可随意施放虚假生命。";
-        if ("Mask of Many Faces".equals(key)) return "可随意施放易容术。";
-        if ("Misty Visions".equals(key)) return "可随意施放寂静幻影。";
-        if ("Repelling Blast".equals(key)) return "你的魔能爆命中时可把目标推开。";
-        return key;
+        Invocation_Option option = find_invocation_option(key);
+        return option == null ? key : option.description;
     }
 
     public List<String> get_available_spell_options() {
@@ -288,6 +290,9 @@ public class Warlock_Class extends Character_Class {
     @Override
     public List<String> get_feature_summaries() {
         List<String> summaries = new ArrayList<>(this.traits);
+        if (this.current_level >= 3) {
+            summaries.add("契约恩赐详情： " + get_pact_boon_summary());
+        }
         summaries.add("契约法术位： " + get_pact_slot_summary());
         summaries.add("戏法已知数： " + this.cantrips_known);
         summaries.add("法术已知数： " + this.spells_known_count);
@@ -307,6 +312,7 @@ public class Warlock_Class extends Character_Class {
     public List<String> get_pending_choices() {
         List<String> pending = new ArrayList<>();
         if (this.patron == Warlock_Patron.NONE) pending.add("选择异界恩主");
+        if (this.current_level >= 3 && this.pact_boon == Warlock_Pact.NONE) pending.add("选择契约恩赐");
         int pendingCantrips = Math.max(0, this.cantrips_known - this.known_cantrip_keys.size());
         if (pendingCantrips > 0) pending.add("选择 " + pendingCantrips + " 个邪术士戏法");
         int pendingSpells = Math.max(0, this.spells_known_count - this.known_spell_keys.size());
@@ -320,6 +326,7 @@ public class Warlock_Class extends Character_Class {
     public Map<String, String> export_class_state() {
         Map<String, String> state = new LinkedHashMap<>();
         state.put("patron", this.patron.name());
+        state.put("pact_boon", this.pact_boon.name());
         state.put("invocations", Persistence_Util.encode_list(this.invocation_keys));
         state.put("known_cantrips", Persistence_Util.encode_list(this.known_cantrip_keys));
         state.put("known_spells", Persistence_Util.encode_list(this.known_spell_keys));
@@ -331,6 +338,8 @@ public class Warlock_Class extends Character_Class {
     public void import_class_state(Map<String, String> class_state) {
         String patronValue = class_state.get("patron");
         if (patronValue != null && !patronValue.trim().isEmpty()) this.patron = Warlock_Patron.valueOf(patronValue);
+        String pactValue = class_state.get("pact_boon");
+        if (pactValue != null && !pactValue.trim().isEmpty()) this.pact_boon = Warlock_Pact.valueOf(pactValue);
         this.invocation_keys.clear();
         this.invocation_keys.addAll(Persistence_Util.decode_list(class_state.get("invocations")));
         this.known_cantrip_keys.clear();
@@ -353,6 +362,85 @@ public class Warlock_Class extends Character_Class {
             return "暂无";
         }
         return this.current_pact_slot_count + "/" + this.pact_slot_count + " 个 " + this.pact_slot_level + " 环位";
+    }
+
+    public String get_pact_boon_name() {
+        if (this.pact_boon == Warlock_Pact.BLADE) return "刃之契约 (Pact of the Blade)";
+        if (this.pact_boon == Warlock_Pact.CHAIN) return "链之契约 (Pact of the Chain)";
+        if (this.pact_boon == Warlock_Pact.TOME) return "书之契约 (Pact of the Tome)";
+        return "待选择";
+    }
+
+    public String get_pact_boon_summary() {
+        if (this.pact_boon == Warlock_Pact.BLADE) {
+            return get_pact_boon_name() + "：召唤并熟练使用契约武器，后续可解锁近战向祈请。";
+        }
+        if (this.pact_boon == Warlock_Pact.CHAIN) {
+            return get_pact_boon_name() + "：获得强化魔宠，后续可解锁链契专属祈请。";
+        }
+        if (this.pact_boon == Warlock_Pact.TOME) {
+            return get_pact_boon_name() + "：获得影之书与额外戏法，后续可解锁仪式施法祈请。";
+        }
+        return "获得额外的契约赠礼，但尚未选择具体恩赐。";
+    }
+
+    private boolean meets_invocation_prerequisite(Invocation_Option option) {
+        if (this.current_level < option.minLevel) {
+            return false;
+        }
+        if (option.requiredPact != Warlock_Pact.NONE && this.pact_boon != option.requiredPact) {
+            return false;
+        }
+        if (option.requiredSpellKey != null && !option.requiredSpellKey.trim().isEmpty()) {
+            return this.known_cantrip_keys.contains(option.requiredSpellKey) || this.known_spell_keys.contains(option.requiredSpellKey);
+        }
+        return true;
+    }
+
+    private Invocation_Option find_invocation_option(String key) {
+        for (Invocation_Option option : get_all_invocation_options()) {
+            if (option.key.equals(key)) {
+                return option;
+            }
+        }
+        return null;
+    }
+
+    private List<Invocation_Option> get_all_invocation_options() {
+        List<Invocation_Option> options = new ArrayList<>();
+        options.add(new Invocation_Option("Agonizing Blast", "苦痛魔能爆 (Agonizing Blast)", "你的魔能爆伤害额外加入魅力调整值。", 2, Warlock_Pact.NONE, "eldritch_blast"));
+        options.add(new Invocation_Option("Armor of Shadows", "阴影护甲 (Armor of Shadows)", "可随意施放法师护甲，不消耗法术位。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Ascendant Step", "登天步 (Ascendant Step)", "9 级起可对自己随意施放浮空术。", 9, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Beast Speech", "兽语者 (Beast Speech)", "可随意施放与动物交谈。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Beguiling Influence", "蛊惑影响 (Beguiling Influence)", "获得欺瞒与游说熟练。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Bewitching Whispers", "惑心低语 (Bewitching Whispers)", "7 级起可用法术位每长休施放一次强迫术。", 7, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Book of Ancient Secrets", "古秘之书 (Book of Ancient Secrets)", "书契专属：影之书可抄录并施放 1 环仪式法术。", 2, Warlock_Pact.TOME, null));
+        options.add(new Invocation_Option("Chains of Carceri", "卡瑟瑞锁链 (Chains of Carceri)", "15 级起，链契专属：可随意对天界、邪魔或元素生物施放怪物定身术。", 15, Warlock_Pact.CHAIN, null));
+        options.add(new Invocation_Option("Devil's Sight", "魔鬼视界 (Devil's Sight)", "可在黑暗与魔法黑暗中正常视物，范围 120 尺。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Dreadful Word", "可怖真言 (Dreadful Word)", "7 级起可用法术位每长休施放一次困惑术。", 7, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Eldritch Sight", "异界视界 (Eldritch Sight)", "可随意施放侦测魔法。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Eldritch Spear", "魔能长枪 (Eldritch Spear)", "你的魔能爆射程提升至 300 尺。", 2, Warlock_Pact.NONE, "eldritch_blast"));
+        options.add(new Invocation_Option("Eyes of the Rune Keeper", "符文守秘之眼 (Eyes of the Rune Keeper)", "你可以阅读一切文字。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Fiendish Vigor", "邪魔活力 (Fiendish Vigor)", "可随意施放虚假生命。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Gaze of Two Minds", "双心注视 (Gaze of Two Minds)", "接触一名自愿目标后，可借其感官观察世界。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Lifedrinker", "生命饮者 (Lifedrinker)", "12 级起，刃契专属：契约武器命中时额外造成魅力调整值的死灵伤害。", 12, Warlock_Pact.BLADE, null));
+        options.add(new Invocation_Option("Mask of Many Faces", "千面伪装 (Mask of Many Faces)", "可随意施放易容术。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Master of Myriad Forms", "万相之主 (Master of Myriad Forms)", "15 级起可随意施放变身术。", 15, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Minions of Chaos", "混沌仆从 (Minions of Chaos)", "9 级起可用法术位每长休施放一次召唤元素。", 9, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Mire the Mind", "泥沼缠心 (Mire the Mind)", "5 级起可用法术位每长休施放一次缓慢术。", 5, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Misty Visions", "迷雾幻景 (Misty Visions)", "可随意施放寂静幻影。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("One with Shadows", "影中同化 (One with Shadows)", "5 级起，在昏暗或黑暗中静止时可令自己隐形。", 5, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Otherworldly Leap", "异界长跃 (Otherworldly Leap)", "9 级起可随意对自己施放跳跃术。", 9, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Repelling Blast", "斥退魔能爆 (Repelling Blast)", "你的魔能爆命中时可把目标推开最多 10 尺。", 2, Warlock_Pact.NONE, "eldritch_blast"));
+        options.add(new Invocation_Option("Sculptor of Flesh", "血肉雕塑师 (Sculptor of Flesh)", "7 级起可用法术位每长休施放一次变形术。", 7, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Sign of Ill Omen", "凶兆印记 (Sign of Ill Omen)", "5 级起可用法术位每长休施放一次降咒术。", 5, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Thief of Five Fates", "五命窃贼 (Thief of Five Fates)", "可用法术位每长休施放一次灾祸术。", 2, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Thirsting Blade", "饥渴之刃 (Thirsting Blade)", "5 级起，刃契专属：使用契约武器执行攻击动作时可攻击两次。", 5, Warlock_Pact.BLADE, null));
+        options.add(new Invocation_Option("Visions of Distant Realms", "远界幻见 (Visions of Distant Realms)", "15 级起可随意施放探知秘眼。", 15, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Voice of the Chain Master", "链主之声 (Voice of the Chain Master)", "链契专属：可透过魔宠感知，并能借其说话。", 2, Warlock_Pact.CHAIN, null));
+        options.add(new Invocation_Option("Whispers of the Grave", "墓中低语 (Whispers of the Grave)", "9 级起可随意施放死者交谈。", 9, Warlock_Pact.NONE, null));
+        options.add(new Invocation_Option("Witch Sight", "巫视 (Witch Sight)", "15 级起，可看穿 30 尺内变形者与幻术伪装的真实形态。", 15, Warlock_Pact.NONE, null));
+        return options;
     }
 
     @Override

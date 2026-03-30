@@ -12,37 +12,73 @@ public class Main_Menu extends JFrame {
 
     public Main_Menu() {
         setTitle("DND 辅助工具 - DM控制台");
-        setSize(400, 550);
+        setSize(520, 620);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
         JPanel main_panel = new JPanel();
         main_panel.setLayout(new BoxLayout(main_panel, BoxLayout.Y_AXIS));
-        main_panel.setBorder(BorderFactory.createEmptyBorder(40, 50, 40, 50));
+        main_panel.setBorder(BorderFactory.createEmptyBorder(36, 42, 36, 42));
+        main_panel.setBackground(Ui_Theme.APP_BACKGROUND);
 
         JLabel title_label = new JLabel("DND 辅助系统");
-        title_label.setFont(new Font("微软雅黑", Font.BOLD, 30));
+        title_label.setFont(new Font("微软雅黑", Font.BOLD, 32));
+        title_label.setForeground(Ui_Theme.ACCENT_PRIMARY);
         title_label.setAlignmentX(Component.CENTER_ALIGNMENT);
-        main_panel.add(title_label);
-        main_panel.add(Box.createRigidArea(new Dimension(0, 40)));
+        JLabel subtitleLabel = new JLabel("DM 控制台 / 角色、战斗与成长管理");
+        subtitleLabel.setFont(new Font("微软雅黑", Font.PLAIN, 15));
+        subtitleLabel.setForeground(Ui_Theme.TEXT_MUTED);
+        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JPanel heroPanel = new JPanel();
+        heroPanel.setLayout(new BoxLayout(heroPanel, BoxLayout.Y_AXIS));
+        heroPanel.setBackground(Ui_Theme.PANEL_SURFACE);
+        heroPanel.setBorder(BorderFactory.createCompoundBorder(
+                Ui_Theme.create_section_border("主控面板"),
+                BorderFactory.createEmptyBorder(16, 18, 18, 18)
+        ));
+        heroPanel.add(title_label);
+        heroPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+        heroPanel.add(subtitleLabel);
+        heroPanel.add(Box.createRigidArea(new Dimension(0, 28)));
+
+        JPanel buttonColumn = new JPanel();
+        buttonColumn.setLayout(new BoxLayout(buttonColumn, BoxLayout.Y_AXIS));
+        buttonColumn.setOpaque(false);
 
         JButton create_char_btn = new JButton("创建角色");
         JButton view_char_btn = new JButton("角色一览 (只读)");
         JButton manage_char_btn = new JButton("角色管理 (装备与升级)");
         JButton combat_sys_btn = new JButton("战斗系统");
 
-        Dimension btn_size = new Dimension(250, 50);
-        Font btn_font = new Font("微软雅黑", Font.PLAIN, 18);
+        Dimension btn_size = new Dimension(320, 52);
+        Font btn_font = new Font("微软雅黑", Font.PLAIN, 17);
 
         JButton[] buttons = {create_char_btn, view_char_btn, manage_char_btn, combat_sys_btn};
-        for (JButton btn : buttons) {
+        for (int i = 0; i < buttons.length; i++) {
+            JButton btn = buttons[i];
             btn.setMaximumSize(btn_size);
             btn.setFont(btn_font);
             btn.setAlignmentX(Component.CENTER_ALIGNMENT);
-            btn.setFocusPainted(false);
-            main_panel.add(btn);
-            main_panel.add(Box.createRigidArea(new Dimension(0, 20)));
+            if (i == 0 || i == buttons.length - 1) {
+                Ui_Theme.style_primary_button(btn);
+            } else {
+                Ui_Theme.style_secondary_button(btn);
+            }
+            buttonColumn.add(btn);
+            if (i < buttons.length - 1) {
+                buttonColumn.add(Box.createRigidArea(new Dimension(0, 16)));
+            }
         }
+        heroPanel.add(buttonColumn);
+        heroPanel.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JLabel footerLabel = new JLabel("从这里进入所有核心工作流。");
+        footerLabel.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        footerLabel.setForeground(Ui_Theme.TEXT_MUTED);
+        footerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        heroPanel.add(footerLabel);
+        main_panel.add(heroPanel);
 
         create_char_btn.addActionListener(e -> new Create_Character_UI().setVisible(true));
         view_char_btn.addActionListener(e -> new View_Characters_UI().setVisible(true));
@@ -64,10 +100,12 @@ public class Main_Menu extends JFrame {
         });
 
         add(main_panel);
+        Ui_Theme.apply_window(this);
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
+            Ui_Theme.install_global_theme();
             Init_DB.setup_database();
             Custom_Equipment_DAO.load_all_custom_items();
             Character_DAO.load_all_characters();

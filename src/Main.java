@@ -2,6 +2,7 @@ import com.DMHelper.basic.database.Character_DAO;
 import com.DMHelper.basic.database.Custom_Equipment_DAO;
 import com.DMHelper.basic.database.Init_DB;
 import com.DMHelper.basic.menus.Main_Menu;
+import com.DMHelper.basic.menus.Ui_Theme;
 
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
@@ -50,16 +51,15 @@ public class Main {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {
-            // 如果系统外观加载失败，继续使用默认 Swing 外观即可。
         }
+        Ui_Theme.install_global_theme();
     }
 
     private static void install_global_exception_handler() {
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> show_startup_error(throwable));
     }
 
-    private static void boot_application() {
-        // 先准备数据库和内存中的角色池，再打开主界面。
+    private static void boot_application() {。
         Init_DB.setup_database();
         Custom_Equipment_DAO.load_all_custom_items();
         Character_DAO.load_all_characters();
@@ -80,7 +80,6 @@ public class Main {
                 Taskbar.getTaskbar().setIconImage(icon);
             }
         } catch (UnsupportedOperationException | SecurityException ignored) {
-            // 某些平台或运行环境不支持直接设置应用图标，忽略即可。
         }
     }
 
@@ -93,7 +92,6 @@ public class Main {
             if (inputStream == null) {
                 return null;
             }
-            // 图标资源会被打进 jar/app 包中，因此通过 classpath 读取最稳。
             cachedAppIcon = ImageIO.read(inputStream);
             return cachedAppIcon;
         } catch (IOException ignored) {

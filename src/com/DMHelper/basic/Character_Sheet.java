@@ -479,6 +479,10 @@ public class Character_Sheet {
         return this.current_hp + "/" + this.hp;
     }
 
+    public boolean is_alive() {
+        return this.current_hp > 0;
+    }
+
     public void sync_from_combatant(Combatant combatant) {
         if (combatant == null) {
             return;
