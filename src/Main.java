@@ -59,7 +59,7 @@ public class Main {
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> show_startup_error(throwable));
     }
 
-    private static void boot_application() {。
+    private static void boot_application() {
         Init_DB.setup_database();
         Custom_Equipment_DAO.load_all_custom_items();
         Character_DAO.load_all_characters();
