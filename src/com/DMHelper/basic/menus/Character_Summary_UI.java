@@ -55,6 +55,12 @@ public class Character_Summary_UI extends JFrame {
         append_equipped_item(sb, "护符", character.get_equipped_item(Equipment_Slot.ACCESSORY));
         sb.append("武器/护甲熟练: ").append(String.join(", ", character.job.equipment_proficiencies)).append("\n\n");
 
+        sb.append("=== 种族特性 ===\n");
+        for (String feature : character.race.get_feature_summaries()) {
+            sb.append("- ").append(feature).append("\n");
+        }
+        sb.append("\n");
+
         sb.append("=== 豁免检定加值 ===\n");
         sb.append(String.format("力量: %+d | 敏捷: %+d | 体质: %+d\n",
                 character.get_saving_throw_bonus("Strength"),

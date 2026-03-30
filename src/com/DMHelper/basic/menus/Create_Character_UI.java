@@ -149,19 +149,7 @@ public class Create_Character_UI extends JFrame {
         );
 
         String selected_race = (String) race_box.getSelectedItem();
-        Character_Race race = null;
-
-        // 9 大核心种族的实例化路由
-        if (selected_race.equals("人类 (Human)")) race = new Human_Race();
-        else if (selected_race.equals("精灵 (Elf)")) race = new Elf_Race();
-        else if (selected_race.equals("矮人 (Dwarf)")) race = new Dwarf_Race();
-        else if (selected_race.equals("半身人 (Halfling)")) race = new Halfling_Race();
-        else if (selected_race.equals("龙裔 (Dragonborn)")) race = new Dragonborn_Race();
-        else if (selected_race.equals("侏儒 (Gnome)")) race = new Gnome_Race();
-        else if (selected_race.equals("半精灵 (Half-Elf)")) race = new Half_Elf_Race();
-        else if (selected_race.equals("半兽人 (Half-Orc)")) race = new Half_Orc_Race();
-        else if (selected_race.equals("提夫林 (Tiefling)")) race = new Tiefling_Race();
-        else race = new Human_Race();
+        Character_Race race = build_selected_race(selected_race);
 
         String selected_class = (String) class_box.getSelectedItem();
         Character_Class job = null;
@@ -239,6 +227,102 @@ public class Create_Character_UI extends JFrame {
         Ui_Theme.apply_window(dialog);
         dialog.setVisible(true);
         return result.values;
+    }
+
+    private Character_Race build_selected_race(String selectedRace) {
+        if ("精灵 (Elf)".equals(selectedRace)) {
+            String choice = choose_option("选择精灵子种族",
+                    "请选择精灵子种族：",
+                    new String[]{"高等精灵 (High Elf)", "木精灵 (Wood Elf)", "卓尔精灵 (Drow)"});
+            if (choice.contains("木精灵")) return new Elf_Race("WOOD");
+            if (choice.contains("卓尔")) return new Elf_Race("DROW");
+            return new Elf_Race("HIGH");
+        }
+        if ("矮人 (Dwarf)".equals(selectedRace)) {
+            String choice = choose_option("选择矮人子种族",
+                    "请选择矮人子种族：",
+                    new String[]{"丘陵矮人 (Hill Dwarf)", "山地矮人 (Mountain Dwarf)"});
+            return choice.contains("山地") ? new Dwarf_Race("MOUNTAIN") : new Dwarf_Race("HILL");
+        }
+        if ("半身人 (Halfling)".equals(selectedRace)) {
+            String choice = choose_option("选择半身人子种族",
+                    "请选择半身人子种族：",
+                    new String[]{"轻足半身人 (Lightfoot Halfling)", "健壮半身人 (Stout Halfling)"});
+            return choice.contains("健壮") ? new Halfling_Race("STOUT") : new Halfling_Race("LIGHTFOOT");
+        }
+        if ("龙裔 (Dragonborn)".equals(selectedRace)) {
+            String choice = choose_option("选择龙裔血脉",
+                    "请选择龙裔的龙族先祖：",
+                    new String[]{
+                            "黑龙 (Black) - 强酸", "蓝龙 (Blue) - 闪电", "黄铜龙 (Brass) - 火焰", "青铜龙 (Bronze) - 闪电",
+                            "赤铜龙 (Copper) - 强酸", "金龙 (Gold) - 火焰", "绿龙 (Green) - 毒素", "红龙 (Red) - 火焰",
+                            "银龙 (Silver) - 寒冷", "白龙 (White) - 寒冷"
+                    });
+            if (choice.contains("黑龙")) return new Dragonborn_Race("BLACK");
+            if (choice.contains("蓝龙")) return new Dragonborn_Race("BLUE");
+            if (choice.contains("黄铜")) return new Dragonborn_Race("BRASS");
+            if (choice.contains("青铜")) return new Dragonborn_Race("BRONZE");
+            if (choice.contains("赤铜")) return new Dragonborn_Race("COPPER");
+            if (choice.contains("金龙")) return new Dragonborn_Race("GOLD");
+            if (choice.contains("绿龙")) return new Dragonborn_Race("GREEN");
+            if (choice.contains("银龙")) return new Dragonborn_Race("SILVER");
+            if (choice.contains("白龙")) return new Dragonborn_Race("WHITE");
+            return new Dragonborn_Race("RED");
+        }
+        if ("侏儒 (Gnome)".equals(selectedRace)) {
+            String choice = choose_option("选择侏儒子种族",
+                    "请选择侏儒子种族：",
+                    new String[]{"森林侏儒 (Forest Gnome)", "岩侏儒 (Rock Gnome)"});
+            return choice.contains("岩侏儒") ? new Gnome_Race("ROCK") : new Gnome_Race("FOREST");
+        }
+        if ("半精灵 (Half-Elf)".equals(selectedRace)) {
+            String first = choose_option("选择半精灵属性加值",
+                    "请选择半精灵额外 +1 的第一项属性：",
+                    new String[]{"力量", "敏捷", "体质", "智力", "感知"});
+            String second = choose_option("选择半精灵属性加值",
+                    "请选择半精灵额外 +1 的第二项属性：",
+                    build_remaining_half_elf_options(first));
+            return new Half_Elf_Race(to_half_elf_bonus_key(first), to_half_elf_bonus_key(second));
+        }
+        if ("半兽人 (Half-Orc)".equals(selectedRace)) return new Half_Orc_Race();
+        if ("提夫林 (Tiefling)".equals(selectedRace)) return new Tiefling_Race();
+        if ("人类 (Human)".equals(selectedRace)) return new Human_Race();
+        return new Human_Race();
+    }
+
+    private String[] build_remaining_half_elf_options(String first) {
+        java.util.List<String> options = new java.util.ArrayList<>();
+        for (String option : new String[]{"力量", "敏捷", "体质", "智力", "感知"}) {
+            if (!option.equals(first)) {
+                options.add(option);
+            }
+        }
+        return options.toArray(new String[0]);
+    }
+
+    private String to_half_elf_bonus_key(String label) {
+        if ("力量".equals(label)) return "STR";
+        if ("敏捷".equals(label)) return "DEX";
+        if ("体质".equals(label)) return "CON";
+        if ("智力".equals(label)) return "INT";
+        if ("感知".equals(label)) return "WIS";
+        return "DEX";
+    }
+
+    private String choose_option(String title, String prompt, String[] options) {
+        String selected = (String) JOptionPane.showInputDialog(
+                this,
+                prompt,
+                title,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                options,
+                options.length > 0 ? options[0] : null
+        );
+        if (selected == null || selected.trim().isEmpty()) {
+            return options.length > 0 ? options[0] : "";
+        }
+        return selected;
     }
 
     private JTextArea build_profile_area(String hint) {

@@ -1118,6 +1118,11 @@ public class Character_Manager_UI extends JFrame {
             if (!current_char.flaws.trim().isEmpty()) sb_stats.append("缺陷弱点: ").append(current_char.flaws).append("\n");
         }
         sb_stats.append("--------------------------------------------------\n");
+        sb_stats.append("[种族特性]\n");
+        for (String feature : current_char.race.get_feature_summaries()) {
+            sb_stats.append("- ").append(feature).append("\n");
+        }
+        sb_stats.append("--------------------------------------------------\n");
         sb_stats.append("[豁免检定加值]\n");
         sb_stats.append(String.format("力量: %+d | 敏捷: %+d | 体质: %+d\n",
                 current_char.get_saving_throw_bonus("Strength"),

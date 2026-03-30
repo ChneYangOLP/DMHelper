@@ -241,34 +241,7 @@ public class Character_DAO {
     }
 
     private static Character_Race build_race(String race_name) {
-        if ("人类 (Human)".equals(race_name)) {
-            return new Human_Race();
-        }
-        if ("精灵 (Elf)".equals(race_name)) {
-            return new Elf_Race();
-        }
-        if ("矮人 (Dwarf)".equals(race_name)) {
-            return new Dwarf_Race();
-        }
-        if ("半身人 (Halfling)".equals(race_name)) {
-            return new Halfling_Race();
-        }
-        if ("龙裔 (Dragonborn)".equals(race_name)) {
-            return new Dragonborn_Race();
-        }
-        if ("侏儒 (Gnome)".equals(race_name)) {
-            return new Gnome_Race();
-        }
-        if ("半精灵 (Half-Elf)".equals(race_name)) {
-            return new Half_Elf_Race();
-        }
-        if ("半兽人 (Half-Orc)".equals(race_name)) {
-            return new Half_Orc_Race();
-        }
-        if ("提夫林 (Tiefling)".equals(race_name)) {
-            return new Tiefling_Race();
-        }
-        return new Human_Race();
+        return Race_Factory.from_saved_name(race_name);
     }
 
     private static Character_Class build_job(String class_name) {

@@ -470,7 +470,6 @@ public class Combat_System_UI extends JFrame {
         button.setFont(new Font("微软雅黑", Font.BOLD, 13));
         button.setBackground(ACCENT_PRIMARY);
         button.setForeground(new Color(252, 247, 238));
-        button.setDisabledTextColor(new Color(236, 226, 211));
         button.setFocusPainted(false);
         button.setOpaque(true);
         button.setBorder(BorderFactory.createCompoundBorder(
@@ -483,7 +482,6 @@ public class Combat_System_UI extends JFrame {
         button.setFont(new Font("微软雅黑", Font.PLAIN, 13));
         button.setBackground(new Color(230, 221, 204));
         button.setForeground(TEXT_PRIMARY);
-        button.setDisabledTextColor(TEXT_MUTED);
         button.setFocusPainted(false);
         button.setOpaque(true);
         button.setBorder(BorderFactory.createCompoundBorder(
