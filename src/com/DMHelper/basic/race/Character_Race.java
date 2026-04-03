@@ -3,7 +3,6 @@ package com.DMHelper.basic.race;
 import java.util.ArrayList;
 import java.util.List;
 
-// 种族的抽象基类
 public abstract class Character_Race {
     public String race_name;
     public String subrace_name;
@@ -14,7 +13,6 @@ public abstract class Character_Race {
     public List<String> languages;
     public List<String> racial_traits;
 
-    // 基类构造函数
     public Character_Race(String race_name, int base_speed, Creature_Size creature_size, Ability_Bonuses racial_bonuses) {
         this.race_name = race_name;
         this.subrace_name = "";
@@ -26,7 +24,6 @@ public abstract class Character_Race {
         this.racial_traits = new ArrayList<>();
     }
 
-    // 抽象方法：应用种族特有能力交由具体子类实现
     public abstract void apply_racial_traits();
 
     protected void reset_traits() {

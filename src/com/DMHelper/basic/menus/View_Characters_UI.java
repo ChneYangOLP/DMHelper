@@ -41,13 +41,10 @@ public class View_Characters_UI extends JFrame {
         character_list_view.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         Ui_Theme.style_component_tree(character_list_view);
 
-        // --- 核心改进：添加鼠标双击监听器 ---
         character_list_view.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent evt) {
-                // 判断是否是双击 (ClickCount == 2)
                 if (evt.getClickCount() == 2) {
-                    // 获取鼠标双击位置对应的列表索引
                     int selected_index = character_list_view.locationToIndex(evt.getPoint());
                     if (selected_index != -1) {
                         Character_Sheet selected_char = Global_Data.character_pool.get(selected_index);
@@ -69,7 +66,6 @@ public class View_Characters_UI extends JFrame {
         Ui_Theme.style_secondary_button(view_btn);
         Ui_Theme.style_primary_button(delete_btn);
 
-        // 保留原有的按钮点击逻辑，照顾不同使用习惯的玩家
         view_btn.addActionListener(e -> {
             int selected_index = character_list_view.getSelectedIndex();
             if (selected_index != -1) {

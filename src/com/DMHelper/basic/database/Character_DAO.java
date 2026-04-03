@@ -69,7 +69,7 @@ public class Character_DAO {
              ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
-                // 先恢复种族/职业，再恢复职业专属状态，最后再把角色本体字段组装起来。
+                // 读档时先恢复职业与职业专属状态，再组装角色本体，避免派生数据被后续覆盖。
                 Character_Race race = build_race(rs.getString("race_name"));
                 Character_Class job = build_job(rs.getString("class_name"));
                 job.current_level = rs.getInt("current_level");
@@ -135,7 +135,6 @@ public class Character_DAO {
 
     public static void update_character(Character_Sheet character) {
         if (character.database_id <= 0) {
-            // 新角色尚未拿到数据库主键时，直接走首次保存。
             save_character(character);
             return;
         }
@@ -192,7 +191,6 @@ public class Character_DAO {
     }
 
     private static void bind_character(PreparedStatement pstmt, Character_Sheet character) throws SQLException {
-        // 这里同时序列化角色基础字段、装备持有状态、成长记录，以及职业专属状态。
         pstmt.setString(1, character.name);
         pstmt.setInt(2, character.age);
         pstmt.setString(3, character.gender);

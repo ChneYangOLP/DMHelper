@@ -1,13 +1,11 @@
 package com.DMHelper.basic.race;
 
-// 人类种族类，继承自种族抽象基类
 public class Human_Race extends Character_Race {
     public Human_Race() {
         super("人类 (Human)", 30, Creature_Size.MEDIUM, new Ability_Bonuses(1, 1, 1, 1, 1, 1));
         apply_racial_traits();
     }
 
-    // 重写父类的抽象方法，用于处理人类特有的种族能力
     @Override
     public void apply_racial_traits() {
         reset_traits();

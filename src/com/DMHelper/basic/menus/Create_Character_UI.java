@@ -72,7 +72,6 @@ public class Create_Character_UI extends JFrame {
         age_spinner = new JSpinner(new SpinnerNumberModel(20, 1, 1000, 1));
         String[] genders = {"男", "女", "无性别", "其他"};
         gender_box = new JComboBox<>(genders);
-        // 严格限定为 9 大核心种族
         String[] races = {
                 "人类 (Human)", "精灵 (Elf)", "矮人 (Dwarf)", "半身人 (Halfling)",
                 "龙裔 (Dragonborn)", "侏儒 (Gnome)", "半精灵 (Half-Elf)",
