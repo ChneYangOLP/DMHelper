@@ -107,11 +107,11 @@ public final class Ui_Theme {
         } else if (component instanceof JTextField) {
             style_text_field((JTextField) component);
         } else if (component instanceof JComboBox) {
-            style_combo_box((JComboBox<?>) component);
+            apply_combo_box_style((JComboBox<?>) component);
         } else if (component instanceof JSpinner) {
             style_spinner((JSpinner) component);
         } else if (component instanceof JList) {
-            style_list((JList<?>) component);
+            apply_list_style((JList<?>) component);
         } else if (component instanceof JScrollPane) {
             style_scroll_pane((JScrollPane) component);
         } else if (component instanceof JTabbedPane) {
@@ -149,6 +149,14 @@ public final class Ui_Theme {
 
     public static void style_secondary_button(AbstractButton button) {
         style_button(button);
+    }
+
+    public static void style_combo_box(JComboBox<?> comboBox) {
+        apply_combo_box_style(comboBox);
+    }
+
+    public static void style_list(JList<?> list) {
+        apply_list_style(list);
     }
 
     public static Border create_section_border(String title) {
@@ -221,7 +229,7 @@ public final class Ui_Theme {
         ));
     }
 
-    private static void style_combo_box(JComboBox<?> comboBox) {
+    private static void apply_combo_box_style(JComboBox<?> comboBox) {
         comboBox.setFont(UI_FONT_PLAIN);
         comboBox.setBackground(PANEL_ELEVATED);
         comboBox.setForeground(TEXT_PRIMARY);
@@ -241,19 +249,21 @@ public final class Ui_Theme {
                 return button;
             }
         });
+        // 下拉弹层在不同平台会套用各自的高亮前景色，这里强制统一成主题色，避免浅底白字。
         comboBox.setRenderer(new BasicComboBoxRenderer() {
             @Override
             public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 setFont(UI_FONT_PLAIN);
                 setText(value == null ? "" : value.toString());
-                setForeground(TEXT_PRIMARY);
                 setOpaque(true);
                 if (index >= 0) {
                     setBackground(isSelected ? LIST_SELECTION : PANEL_ELEVATED);
+                    setForeground(TEXT_PRIMARY);
                     setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
                 } else {
                     setBackground(PANEL_ELEVATED);
+                    setForeground(TEXT_PRIMARY);
                     setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
                 }
                 return this;
@@ -271,7 +281,7 @@ public final class Ui_Theme {
         }
     }
 
-    private static void style_list(JList<?> list) {
+    private static void apply_list_style(JList<?> list) {
         list.setFont(UI_FONT_PLAIN);
         list.setBackground(PANEL_ELEVATED);
         list.setForeground(TEXT_PRIMARY);

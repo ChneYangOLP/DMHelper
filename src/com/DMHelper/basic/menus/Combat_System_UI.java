@@ -18,6 +18,7 @@ import com.DMHelper.basic.database.Global_Data;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.plaf.basic.BasicComboBoxRenderer;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -372,7 +373,7 @@ public class Combat_System_UI extends JFrame {
         skip_turn_button.addActionListener(e -> skip_turn());
         use_item_button.addActionListener(e -> use_item_in_combat());
         backSetupButton.addActionListener(e -> return_to_setup());
-        attack_box.addActionListener(e -> refresh_attack_detail());
+        attack_box.addActionListener(e -> refresh_target_options_for_selected_attack());
         buttonPanel.add(backSetupButton);
         buttonPanel.add(use_item_button);
         buttonPanel.add(skip_turn_button);
@@ -464,6 +465,17 @@ public class Combat_System_UI extends JFrame {
         comboBox.setFont(new Font("微软雅黑", Font.PLAIN, 13));
         comboBox.setBackground(PANEL_ELEVATED);
         comboBox.setForeground(TEXT_PRIMARY);
+        comboBox.setRenderer(new BasicComboBoxRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setText(value == null ? "" : value.toString());
+                setOpaque(true);
+                setForeground(TEXT_PRIMARY);
+                setBackground(index >= 0 && isSelected ? LIST_SELECTION : PANEL_ELEVATED);
+                return this;
+            }
+        });
     }
 
     private void style_primary_button(AbstractButton button) {
@@ -725,25 +737,22 @@ public class Combat_System_UI extends JFrame {
         }
 
         current_turn_label.setText(active.display_name);
-        current_targets = this.combat_engine.get_valid_targets();
         current_attacks = new ArrayList<>(active.attack_options);
 
-        for (Combatant target : current_targets) {
-            target_box.addItem(target.display_name + " | AC " + target.get_effective_armor_class() + " | HP " + target.current_hp + "/" + target.max_hp);
-        }
         for (Attack_Option attack : current_attacks) {
             attack_box.addItem(attack.to_display_label());
         }
 
-        boolean hasAction = !this.combat_engine.is_combat_finished() && !current_targets.isEmpty() && !current_attacks.isEmpty();
-        perform_attack_button.setEnabled(hasAction && !active.is_turn_blocked());
         skip_turn_button.setEnabled(!this.combat_engine.is_combat_finished());
         use_item_button.setEnabled(can_active_combatant_use_item(active));
         if (active.is_turn_blocked()) {
             attack_detail_area.setText("当前角色处于无法行动状态，只能结束回合。\n资源：" + get_resource_summary(active));
             return;
         }
-        refresh_attack_detail();
+        if (!current_attacks.isEmpty()) {
+            attack_box.setSelectedIndex(0);
+        }
+        refresh_target_options_for_selected_attack();
     }
 
     private void refresh_attack_detail() {
@@ -764,6 +773,23 @@ public class Combat_System_UI extends JFrame {
             }
         }
         attack_detail_area.setCaretPosition(0);
+    }
+
+    private void refresh_target_options_for_selected_attack() {
+        target_box.removeAllItems();
+        current_targets = new ArrayList<>();
+        int attackIndex = attack_box.getSelectedIndex();
+        if (attackIndex >= 0 && attackIndex < current_attacks.size() && this.combat_engine != null) {
+            // 支援技、治疗和自我增益的目标范围不同，目标列表必须跟随当前技能动态切换。
+            current_targets = this.combat_engine.get_valid_targets(current_attacks.get(attackIndex));
+            for (Combatant target : current_targets) {
+                target_box.addItem(target.display_name + " | AC " + target.get_effective_armor_class() + " | HP " + target.current_hp + "/" + target.max_hp);
+            }
+        }
+        Combatant active = this.combat_engine == null ? null : this.combat_engine.get_active_combatant();
+        boolean hasAction = !current_attacks.isEmpty() && !current_targets.isEmpty() && active != null && !this.combat_engine.is_combat_finished();
+        perform_attack_button.setEnabled(hasAction && !active.is_turn_blocked());
+        refresh_attack_detail();
     }
 
     private void perform_attack() {
@@ -1969,6 +1995,9 @@ public class Combat_System_UI extends JFrame {
         }
         if (combatant.sorcery_points_remaining > 0) {
             parts.add("术法点 " + combatant.sorcery_points_remaining);
+        }
+        if (combatant.bardic_inspiration_remaining > 0) {
+            parts.add("吟游激励 " + combatant.bardic_inspiration_remaining);
         }
         if (combatant.superiority_dice_remaining > 0) {
             parts.add("卓越骰 " + combatant.superiority_dice_remaining + "d" + combatant.superiority_dice_size);

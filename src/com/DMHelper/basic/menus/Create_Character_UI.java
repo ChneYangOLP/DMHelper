@@ -3,6 +3,7 @@ package com.DMHelper.basic.menus;
 import com.DMHelper.basic.Character_Sheet;
 import com.DMHelper.basic.playerclass.Character_Class;
 import com.DMHelper.basic.playerclass.Fighter.Fighter_Class;
+import com.DMHelper.basic.playerclass.bard.Bard_Class;
 import com.DMHelper.basic.playerclass.paladin.Paladin_Class;
 import com.DMHelper.basic.playerclass.sorcerer.Sorcerer_Class;
 import com.DMHelper.basic.playerclass.warlock.Warlock_Class;
@@ -34,8 +35,8 @@ public class Create_Character_UI extends JFrame {
 
     public Create_Character_UI() {
         setTitle("创建新角色");
-        setSize(560, 700);
-        setMinimumSize(new Dimension(620, 760));
+        setSize(620, 720);
+        setMinimumSize(new Dimension(560, 540));
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -78,7 +79,7 @@ public class Create_Character_UI extends JFrame {
                 "半兽人 (Half-Orc)", "提夫林 (Tiefling)"
         };
         race_box = new JComboBox<>(races);
-        String[] classes = {"战士 (Fighter)", "法师 (Wizard)", "术士 (Sorcerer)", "邪术士 (Warlock)", "圣武士 (Paladin)"};
+        String[] classes = {"战士 (Fighter)", "法师 (Wizard)", "术士 (Sorcerer)", "邪术士 (Warlock)", "圣武士 (Paladin)", "吟游诗人 (Bard)"};
         class_box = new JComboBox<>(classes);
         str_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
         dex_spinner = new JSpinner(new SpinnerNumberModel(10, 1, 20, 1));
@@ -116,6 +117,14 @@ public class Create_Character_UI extends JFrame {
         contentPanel.add(Box.createRigidArea(new Dimension(0, 12)));
         contentPanel.add(statPanel);
 
+        JPanel scrollContent = new JPanel(new BorderLayout());
+        scrollContent.setOpaque(false);
+        scrollContent.add(contentPanel, BorderLayout.NORTH);
+
+        JScrollPane formScrollPane = Ui_Theme.wrap_scroll(scrollContent);
+        formScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        formScrollPane.getVerticalScrollBar().setUnitIncrement(18);
+
         JPanel btn_panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton submit_btn = new JButton("生成角色面板");
         Ui_Theme.style_primary_button(submit_btn);
@@ -123,10 +132,14 @@ public class Create_Character_UI extends JFrame {
 
         submit_btn.addActionListener(e -> build_character());
 
-        rootPanel.add(contentPanel, BorderLayout.CENTER);
+        // 仅让表单内容滚动，保持标题和提交按钮始终可见。
+        rootPanel.add(formScrollPane, BorderLayout.CENTER);
         rootPanel.add(btn_panel, BorderLayout.SOUTH);
         add(rootPanel);
         Ui_Theme.apply_window(this);
+        formScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        formScrollPane.setOpaque(false);
+        formScrollPane.getViewport().setOpaque(false);
     }
 
     private void add_form_row(JPanel panel, int row, String labelText, JComponent field) {
@@ -184,6 +197,7 @@ public class Create_Character_UI extends JFrame {
         else if (selected_class.equals("术士 (Sorcerer)")) job = new Sorcerer_Class();
         else if (selected_class.equals("邪术士 (Warlock)")) job = new Warlock_Class();
         else if (selected_class.equals("圣武士 (Paladin)")) job = new Paladin_Class();
+        else if (selected_class.equals("吟游诗人 (Bard)")) job = new Bard_Class();
         else job = new Fighter_Class();
 
         Character_Sheet new_character = Character_Sheet.create_new_character(name, age, gender, race, job, raw_stats);

@@ -12,6 +12,7 @@ public class Spell_Library {
     private static final List<String> SORCERER_SPELL_KEYS = new ArrayList<>();
     private static final List<String> WARLOCK_SPELL_KEYS = new ArrayList<>();
     private static final List<String> PALADIN_SPELL_KEYS = new ArrayList<>();
+    private static final List<String> BARD_SPELL_KEYS = new ArrayList<>();
 
     static {
         addWizard("fire_bolt", "火焰箭 (Fire Bolt)", 0, "塑能", "发射火焰远程攻击，命中造成火焰伤害。");
@@ -196,6 +197,48 @@ public class Spell_Library {
         addPaladin("destructive_wave", "毁灭波 (Destructive Wave)", 5, "打击", "神圣冲击波席卷周围敌人。");
         addPaladin("holy_weapon", "圣武器 (Holy Weapon)", 5, "增益", "显著强化武器并附带光耀爆发。");
         addPaladin("raise_dead", "死者复活 (Raise Dead)", 5, "复苏", "将死者带回人间。");
+
+        addBard("vicious_mockery", "恶言相加 (Vicious Mockery)", 0, "惑控", "精神羞辱目标并削弱它下一次攻击。");
+        addBard("dancing_lights", "舞光术 (Dancing Lights)", 0, "塑能", "制造可移动的灵光，用于表演或照明。");
+        addBard("friends");
+        addBard("light");
+        addBard("mage_hand");
+        addBard("minor_illusion");
+        addBard("prestidigitation");
+        addBard("true_strike", "识破先机 (True Strike)", 0, "预言", "短暂洞悉目标破绽，为下一击做准备。");
+
+        addBard("charm_person");
+        addBard("comprehend_languages", "通晓语言 (Comprehend Languages)", 1, "预言", "理解任何语言文字，为交涉与探索提供帮助。");
+        addBard("cure_wounds");
+        addBard("detect_magic");
+        addBard("dissonant_whispers", "不谐低语 (Dissonant Whispers)", 1, "惑控", "用刺耳心音冲击目标心智并逼迫其退却。");
+        addBard("faerie_fire", "妖火 (Faerie Fire)", 1, "塑能", "以灵光标记敌人，让其更容易被命中。");
+        addBard("healing_word", "治疗真言 (Healing Word)", 1, "治疗", "以附赠动作远程治疗盟友。");
+        addBard("heroism");
+        addBard("sleep");
+        addBard("tashas_hideous_laughter", "塔莎狂笑术 (Tasha's Hideous Laughter)", 1, "惑控", "让目标失控大笑并倒地失能。");
+        addBard("thunderwave");
+
+        addBard("calm_emotions", "平静情绪 (Calm Emotions)", 2, "惑控", "压制魅惑、恐惧或敌意，为谈判与脱战创造空间。");
+        addBard("hold_person");
+        addBard("invisibility");
+        addBard("shatter", "粉碎音波 (Shatter)", 2, "塑能", "爆发刺耳震响，对区域内目标造成雷鸣伤害。");
+        addBard("silence", "沉默术 (Silence)", 2, "幻术", "制造一片无声区域，压制施法与沟通。");
+        addBard("suggestion");
+
+        addBard("fear");
+        addBard("hypnotic_pattern");
+        addBard("dispel_magic");
+        addBard("sending", "短讯术 (Sending)", 3, "塑能", "向远处目标发送简短心灵讯息。");
+        addBard("tongues", "巧言术 (Tongues)", 3, "预言", "让目标能理解并说出任何语言。");
+
+        addBard("dimension_door");
+        addBard("greater_invisibility");
+        addBard("polymorph");
+
+        addBard("animate_objects");
+        addBard("hold_monster");
+        addBard("scrying");
     }
 
     private static void addWizard(String key, String name, int level, String school, String desc) {
@@ -219,6 +262,15 @@ public class Spell_Library {
     private static void addPaladin(String key, String name, int level, String school, String desc) {
         SPELLS.put(key, new Spell_Definition(key, name, level, school, desc));
         PALADIN_SPELL_KEYS.add(key);
+    }
+
+    private static void addBard(String key) {
+        BARD_SPELL_KEYS.add(key);
+    }
+
+    private static void addBard(String key, String name, int level, String school, String desc) {
+        SPELLS.put(key, new Spell_Definition(key, name, level, school, desc));
+        BARD_SPELL_KEYS.add(key);
     }
 
     public static Spell_Definition get_spell(String key) {
@@ -251,6 +303,25 @@ public class Spell_Library {
 
     public static List<String> get_paladin_spell_keys_up_to_level(int max_spell_level) {
         return filter_by_level(PALADIN_SPELL_KEYS, 1, max_spell_level);
+    }
+
+    public static List<String> get_bard_spell_keys_up_to_level(int max_spell_level) {
+        return filter_by_level(BARD_SPELL_KEYS, 1, max_spell_level);
+    }
+
+    public static List<String> get_bard_cantrip_keys() {
+        return filter_by_level(BARD_SPELL_KEYS, 0, 0);
+    }
+
+    public static List<String> get_all_spell_keys_up_to_level(int max_spell_level) {
+        List<String> filtered = new ArrayList<>();
+        for (Map.Entry<String, Spell_Definition> entry : SPELLS.entrySet()) {
+            Spell_Definition spell = entry.getValue();
+            if (spell != null && spell.level >= 1 && spell.level <= max_spell_level) {
+                filtered.add(entry.getKey());
+            }
+        }
+        return filtered;
     }
 
     private static List<String> filter_by_level(List<String> keys, int min_spell_level, int max_spell_level) {

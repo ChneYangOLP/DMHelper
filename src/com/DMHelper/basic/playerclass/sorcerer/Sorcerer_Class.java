@@ -419,6 +419,13 @@ public class Sorcerer_Class extends Character_Class {
     }
 
     @Override
+    public void restore_short_rest_resources() {
+        if (this.current_level >= 20) {
+            this.current_sorcery_points = Math.min(this.sorcery_points, this.current_sorcery_points + 4);
+        }
+    }
+
+    @Override
     public void restore_long_rest_resources() {
         this.current_spell_slots = this.spell_slots.clone();
         this.current_sorcery_points = this.sorcery_points;

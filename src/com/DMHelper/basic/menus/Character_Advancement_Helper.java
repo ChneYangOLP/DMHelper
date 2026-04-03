@@ -5,6 +5,8 @@ import com.DMHelper.basic.feat.Feat_Library;
 import com.DMHelper.basic.playerclass.Character_Class;
 import com.DMHelper.basic.playerclass.Fighter.Fighter_Class;
 import com.DMHelper.basic.playerclass.Fighter.Fighter_Subclass;
+import com.DMHelper.basic.playerclass.bard.Bard_Class;
+import com.DMHelper.basic.playerclass.bard.Bard_College;
 import com.DMHelper.basic.playerclass.paladin.Paladin_Class;
 import com.DMHelper.basic.playerclass.paladin.Paladin_Oath;
 import com.DMHelper.basic.playerclass.sorcerer.Sorcerer_Class;
@@ -230,6 +232,67 @@ public class Character_Advancement_Helper {
                 }
             }
 
+            if (character.job instanceof Bard_Class) {
+                Bard_Class bard = (Bard_Class) character.job;
+                if (character.job.current_level >= 3 && bard.bard_college == Bard_College.NONE) {
+                    String selectedCollege = choose_single_option(
+                            parent,
+                            "选择吟游学院",
+                            build_bard_college_prompt(),
+                            Arrays.asList("学识学院 (College of Lore)", "勇气学院 (College of Valor)")
+                    );
+                    bard.bard_college = selectedCollege.contains("学识") ? Bard_College.LORE : Bard_College.VALOR;
+                    character.record_advancement("选择吟游学院：" + bard.get_subclass_name());
+                    character.recalculate_derived_stats();
+                    processedChoice = true;
+                }
+
+                if (bard.pending_bonus_skill_choices > 0) {
+                    List<String> selectedSkills = choose_multi_options(
+                            parent,
+                            "选择学院额外技能",
+                            build_bard_bonus_skill_prompt(bard.pending_bonus_skill_choices),
+                            bard.get_available_bonus_skill_options(),
+                            bard.pending_bonus_skill_choices
+                    );
+                    bard.add_lore_bonus_skills(selectedSkills);
+                    character.record_advancement("学识学院获得额外技能：" + String.join("、", selectedSkills));
+                    character.recalculate_derived_stats();
+                    processedChoice = true;
+                }
+
+                if (bard.pending_expertise_choices > 0) {
+                    List<String> selectedSkills = choose_multi_options(
+                            parent,
+                            "选择专精技能",
+                            build_bard_expertise_prompt(bard.pending_expertise_choices),
+                            bard.get_available_expertise_options(),
+                            bard.pending_expertise_choices
+                    );
+                    bard.add_expertise_skills(selectedSkills);
+                    character.record_advancement("获得技能专精：" + String.join("、", selectedSkills));
+                    character.recalculate_derived_stats();
+                    processedChoice = true;
+                }
+
+                if (bard.pending_magical_secret_choices > 0) {
+                    List<String> selectedSecrets = Spell_Management_Helper.open_required_selection_dialog(
+                            parent,
+                            "选择魔法秘辛",
+                            build_bard_magical_secrets_prompt(bard.pending_magical_secret_choices, bard.get_max_spell_level()),
+                            bard.get_available_magical_secret_options(),
+                            new ArrayList<>(),
+                            bard.pending_magical_secret_choices
+                    );
+                    if (selectedSecrets.size() == bard.pending_magical_secret_choices) {
+                        bard.add_magical_secret_spells(selectedSecrets);
+                        character.record_advancement("学习魔法秘辛：" + join_spell_names(selectedSecrets));
+                        character.recalculate_derived_stats();
+                        processedChoice = true;
+                    }
+                }
+            }
+
             if (resolve_spellcasting_progression(parent, character)) {
                 character.recalculate_derived_stats();
                 processedChoice = true;
@@ -253,6 +316,9 @@ public class Character_Advancement_Helper {
         }
         if (character.job instanceof Warlock_Class) {
             return resolve_warlock_spell_choices(parent, character, (Warlock_Class) character.job);
+        }
+        if (character.job instanceof Bard_Class) {
+            return resolve_bard_spell_choices(parent, character, (Bard_Class) character.job);
         }
         return false;
     }
@@ -365,6 +431,44 @@ public class Character_Advancement_Helper {
             if (selected.size() == missingSpells) {
                 warlock.known_spell_keys.addAll(selected);
                 character.record_advancement("学习邪术士法术：" + join_spell_names(selected));
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private static boolean resolve_bard_spell_choices(Component parent, Character_Sheet character, Bard_Class bard) {
+        boolean changed = false;
+        int missingCantrips = Math.max(0, bard.cantrips_known - bard.known_cantrip_keys.size());
+        if (missingCantrips > 0) {
+            List<String> selected = Spell_Management_Helper.open_required_selection_dialog(
+                    parent,
+                    "选择吟游诗人戏法",
+                    "请选择 " + missingCantrips + " 个新的吟游诗人戏法。",
+                    bard.get_available_cantrip_options(),
+                    new ArrayList<>(),
+                    missingCantrips
+            );
+            if (selected.size() == missingCantrips) {
+                bard.known_cantrip_keys.addAll(selected);
+                character.record_advancement("学习吟游诗人戏法：" + join_spell_names(selected));
+                changed = true;
+            }
+        }
+
+        int missingSpells = Math.max(0, bard.base_spells_known_count - bard.known_spell_keys.size());
+        if (missingSpells > 0) {
+            List<String> selected = Spell_Management_Helper.open_required_selection_dialog(
+                    parent,
+                    "选择吟游诗人法术",
+                    "请选择 " + missingSpells + " 个新的吟游诗人法术。当前最高可学 " + bard.get_max_spell_level() + " 环。",
+                    bard.get_available_spell_options(),
+                    new ArrayList<>(),
+                    missingSpells
+            );
+            if (selected.size() == missingSpells) {
+                bard.known_spell_keys.addAll(selected);
+                character.record_advancement("学习吟游诗人法术：" + join_spell_names(selected));
                 changed = true;
             }
         }
@@ -500,6 +604,7 @@ public class Character_Advancement_Helper {
         if (job instanceof Sorcerer_Class) return ((Sorcerer_Class) job).pending_asi_count;
         if (job instanceof Warlock_Class) return ((Warlock_Class) job).pending_asi_count;
         if (job instanceof Paladin_Class) return ((Paladin_Class) job).pending_asi_count;
+        if (job instanceof Bard_Class) return ((Bard_Class) job).pending_asi_count;
         return 0;
     }
 
@@ -775,6 +880,25 @@ public class Character_Advancement_Helper {
                 + "奉献誓言 (Oath of Devotion)：标准圣骑士路线，偏保护、净化与圣光打击。\n"
                 + "远古誓言 (Oath of the Ancients)：自然与光明守护者，擅长抗法与持久战。\n"
                 + "复仇誓言 (Oath of Vengeance)：专精追猎强敌与单体压制。";
+    }
+
+    private static String build_bard_college_prompt() {
+        return "请选择吟游学院：\n"
+                + "学识学院 (College of Lore)：更擅长技能、控制与跨职业法术获取。\n"
+                + "勇气学院 (College of Valor)：更擅长护甲、武器与战斗支援。";
+    }
+
+    private static String build_bard_bonus_skill_prompt(int count) {
+        return "请选择 " + count + " 项学院额外技能熟练。";
+    }
+
+    private static String build_bard_expertise_prompt(int count) {
+        return "请选择 " + count + " 项已熟练技能，将其熟练加值翻倍。";
+    }
+
+    private static String build_bard_magical_secrets_prompt(int count, int maxSpellLevel) {
+        return "请选择 " + count + " 个魔法秘辛法术。\n"
+                + "这些法术可以来自任意职业法术表，且最高不超过你当前可施放的 " + maxSpellLevel + " 环。";
     }
 
     private static Paladin_Oath to_paladin_oath(String label) {

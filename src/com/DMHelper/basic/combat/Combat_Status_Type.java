@@ -12,6 +12,7 @@ public enum Combat_Status_Type {
     CURSED("诅咒", -1, 0, 0, false, 0, 0, ""),
     SLOWED("迟缓", 0, 0, 0, false, 0, 0, ""),
     SHIELDED("护盾", 0, 5, 0, false, 0, 0, ""),
+    INSPIRED("激励", 0, 0, 0, false, 0, 0, ""),
     INVISIBLE("隐形", 2, 2, 0, false, 0, 0, "");
 
     public final String label;

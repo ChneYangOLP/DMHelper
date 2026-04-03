@@ -23,6 +23,7 @@ public class Wizard_Class extends Character_Class {
     public int spells_in_spellbook;
     public int prepared_spell_limit;
     public int arcane_recovery_level;
+    public boolean arcane_recovery_available;
     public List<String> known_cantrip_keys;
     public List<String> spellbook_spell_keys;
     public List<String> prepared_spell_keys;
@@ -64,6 +65,7 @@ public class Wizard_Class extends Character_Class {
         this.spells_in_spellbook = 6;
         this.prepared_spell_limit = 1;
         this.arcane_recovery_level = 1;
+        this.arcane_recovery_available = true;
         this.known_cantrip_keys = new ArrayList<>();
         this.spellbook_spell_keys = new ArrayList<>();
         this.prepared_spell_keys = new ArrayList<>();
@@ -480,6 +482,7 @@ public class Wizard_Class extends Character_Class {
         summaries.add("法术书容量： " + this.spells_in_spellbook);
         summaries.add("可准备法术数： 法师等级 " + this.prepared_spell_limit + " + 智力调整值");
         summaries.add("奥术回能额度：可恢复总环级不超过 " + this.arcane_recovery_level);
+        summaries.add("奥术回能状态： " + get_arcane_recovery_status());
         if (!this.feat_names.isEmpty()) {
             for (String feat_name : this.feat_names) {
                 summaries.add("专长 - " + Feat_Library.get_summary_line(feat_name));
@@ -511,9 +514,72 @@ public class Wizard_Class extends Character_Class {
         return Math.max(1, this.prepared_spell_limit + intelligence_modifier);
     }
 
+    public String get_arcane_recovery_status() {
+        return this.arcane_recovery_available ? "可用" : "本次长休后已用";
+    }
+
+    public int get_missing_spell_slots_at_level(int spellLevel) {
+        if (spellLevel <= 0 || spellLevel >= this.spell_slots.length) {
+            return 0;
+        }
+        return Math.max(0, this.spell_slots[spellLevel] - this.current_spell_slots[spellLevel]);
+    }
+
+    public boolean can_use_arcane_recovery() {
+        if (!this.arcane_recovery_available) {
+            return false;
+        }
+        for (int spellLevel = 1; spellLevel <= Math.min(5, get_max_spell_level()); spellLevel++) {
+            if (get_missing_spell_slots_at_level(spellLevel) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public int get_arcane_recovery_total(int[] recoveryByLevel) {
+        int total = 0;
+        if (recoveryByLevel == null) {
+            return 0;
+        }
+        for (int spellLevel = 1; spellLevel < recoveryByLevel.length; spellLevel++) {
+            total += Math.max(0, recoveryByLevel[spellLevel]) * spellLevel;
+        }
+        return total;
+    }
+
+    public boolean apply_arcane_recovery(int[] recoveryByLevel) {
+        if (!this.arcane_recovery_available || recoveryByLevel == null) {
+            return false;
+        }
+        int totalLevel = 0;
+        for (int spellLevel = 1; spellLevel < recoveryByLevel.length; spellLevel++) {
+            int recoverCount = Math.max(0, recoveryByLevel[spellLevel]);
+            if (recoverCount == 0) {
+                continue;
+            }
+            if (spellLevel > 5 || spellLevel >= this.current_spell_slots.length) {
+                return false;
+            }
+            if (recoverCount > get_missing_spell_slots_at_level(spellLevel)) {
+                return false;
+            }
+            totalLevel += spellLevel * recoverCount;
+        }
+        if (totalLevel <= 0 || totalLevel > this.arcane_recovery_level) {
+            return false;
+        }
+        for (int spellLevel = 1; spellLevel < recoveryByLevel.length; spellLevel++) {
+            this.current_spell_slots[spellLevel] += Math.max(0, recoveryByLevel[spellLevel]);
+        }
+        this.arcane_recovery_available = false;
+        return true;
+    }
+
     @Override
     public void restore_long_rest_resources() {
         this.current_spell_slots = this.spell_slots.clone();
+        this.arcane_recovery_available = true;
     }
 
     @Override
@@ -556,6 +622,7 @@ public class Wizard_Class extends Character_Class {
         state.put("spellbook", Persistence_Util.encode_list(this.spellbook_spell_keys));
         state.put("prepared", Persistence_Util.encode_list(this.prepared_spell_keys));
         state.put("current_spell_slots", Persistence_Util.encode_int_array(this.current_spell_slots));
+        state.put("arcane_recovery_available", Boolean.toString(this.arcane_recovery_available));
         return state;
     }
 
@@ -574,6 +641,9 @@ public class Wizard_Class extends Character_Class {
         if (class_state.containsKey("current_spell_slots")) {
             this.current_spell_slots = Persistence_Util.decode_int_array(class_state.get("current_spell_slots"), 10);
             this.preserve_loaded_current_slots = true;
+        }
+        if (class_state.containsKey("arcane_recovery_available")) {
+            this.arcane_recovery_available = Boolean.parseBoolean(class_state.get("arcane_recovery_available"));
         }
         rebuild_progression();
     }

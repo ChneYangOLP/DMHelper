@@ -68,6 +68,21 @@ public abstract class Character_Class {
         return 0;
     }
 
+    public boolean has_skill_expertise(String skill_name) {
+        return false;
+    }
+
+    public int get_untrained_ability_check_bonus() {
+        return 0;
+    }
+
+    public int get_initiative_bonus() {
+        return 0;
+    }
+
+    public void restore_short_rest_resources() {
+    }
+
     public void restore_long_rest_resources() {
     }
 

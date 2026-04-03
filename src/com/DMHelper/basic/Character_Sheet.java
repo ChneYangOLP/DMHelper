@@ -2,6 +2,7 @@ package com.DMHelper.basic;
 
 import com.DMHelper.basic.combat.Combatant;
 import com.DMHelper.basic.playerclass.Character_Class;
+import com.DMHelper.basic.playerclass.bard.Bard_Class;
 import com.DMHelper.basic.playerclass.paladin.Paladin_Class;
 import com.DMHelper.basic.playerclass.Dnd5e_Progression;
 import com.DMHelper.basic.armor.Armor;
@@ -31,6 +32,8 @@ public class Character_Sheet {
 
     public int hp;
     public int current_hp;
+    public int max_hit_dice;
+    public int available_hit_dice;
     public int ac;
     public int experience_points;
     public int gold_pieces;
@@ -387,11 +390,27 @@ public class Character_Sheet {
     public void take_long_rest() {
         recalculate_derived_stats();
         this.current_hp = this.hp;
+        recover_hit_dice_after_long_rest();
         this.job.restore_long_rest_resources();
+        if (this.job instanceof Bard_Class) {
+            ((Bard_Class) this.job).sync_charisma_resource_caps(this.stats.get_mod(this.stats.cha), true);
+        }
         if (this.job instanceof Paladin_Class) {
             ((Paladin_Class) this.job).sync_charisma_resource_caps(this.stats.get_mod(this.stats.cha), true);
         }
-        record_advancement("完成一次长休：恢复生命值、法术位与职业资源到完整状态。");
+        record_advancement("完成一次长休：恢复生命值、法术位与职业资源到完整状态，并回补部分生命骰。");
+    }
+
+    public int take_short_rest(int spentHitDice, int recoveredHp) {
+        int beforeHp = this.current_hp;
+        int actualSpentHitDice = Math.max(0, Math.min(spentHitDice, this.available_hit_dice));
+        this.available_hit_dice -= actualSpentHitDice;
+        set_current_hp(this.current_hp + Math.max(0, recoveredHp));
+        this.job.restore_short_rest_resources();
+        int actualRecoveredHp = this.current_hp - beforeHp;
+        record_advancement("完成一次短休：消耗生命骰 " + actualSpentHitDice + " 颗，恢复生命值 "
+                + actualRecoveredHp + " 点，并结算短休资源恢复。");
+        return actualRecoveredHp;
     }
 
     public boolean can_level_up() {
@@ -415,12 +434,18 @@ public class Character_Sheet {
 
     public void recalculate_derived_stats() {
         int previousMaxHp = this.hp;
+        int previousMaxHitDice = this.max_hit_dice;
         this.job.rebuild_progression();
+        if (this.job instanceof Bard_Class) {
+            ((Bard_Class) this.job).sync_charisma_resource_caps(this.stats.get_mod(this.stats.cha), false);
+        }
         if (this.job instanceof Paladin_Class) {
             ((Paladin_Class) this.job).sync_charisma_resource_caps(this.stats.get_mod(this.stats.cha), false);
         }
         sync_legacy_equipment_state();
         this.hp = calculate_max_hp();
+        this.max_hit_dice = Math.max(1, this.job.current_level);
+        sync_hit_dice_progress(previousMaxHitDice);
         this.ac = calculate_armor_class();
         // 升级、换装、专长变化后最大 HP 可能变化，这里尽量保留“当前血量相对进度”。
         if (previousMaxHp <= 0) {
@@ -475,8 +500,16 @@ public class Character_Sheet {
         this.current_hp = Math.max(0, Math.min(value, this.hp));
     }
 
+    public void set_available_hit_dice(int value) {
+        this.available_hit_dice = Math.max(0, Math.min(value, this.max_hit_dice));
+    }
+
     public String get_hp_summary() {
         return this.current_hp + "/" + this.hp;
+    }
+
+    public String get_hit_dice_summary() {
+        return this.available_hit_dice + "/" + this.max_hit_dice + " 颗 d" + this.job.hp_dice;
     }
 
     public boolean is_alive() {
@@ -496,6 +529,24 @@ public class Character_Sheet {
         return (this.job.current_level - 1) / 4 + 2;
     }
 
+    private void sync_hit_dice_progress(int previousMaxHitDice) {
+        if (previousMaxHitDice <= 0) {
+            this.available_hit_dice = this.max_hit_dice;
+            return;
+        }
+        int gainedHitDice = Math.max(0, this.max_hit_dice - previousMaxHitDice);
+        this.available_hit_dice = Math.max(0, Math.min(this.available_hit_dice + gainedHitDice, this.max_hit_dice));
+    }
+
+    private void recover_hit_dice_after_long_rest() {
+        int recovery = Math.max(1, this.max_hit_dice / 2);
+        this.available_hit_dice = Math.min(this.max_hit_dice, this.available_hit_dice + recovery);
+    }
+
+    public int get_initiative_modifier() {
+        return this.stats.get_mod(this.stats.dex) + this.job.get_initiative_bonus();
+    }
+
     public int get_saving_throw_bonus(String stat_name) {
         int bonus = get_ability_modifier(stat_name);
         if (this.job.saving_throws.contains(stat_name)) {
@@ -506,6 +557,7 @@ public class Character_Sheet {
 
     public int get_skill_bonus(String skill_name) {
         int bonus = 0;
+        boolean proficient = this.job.skill_proficiencies.contains(skill_name);
         if (skill_name.contains("运动")) {
             bonus = this.stats.get_mod(this.stats.str);
         } else if (skill_name.contains("杂技") || skill_name.contains("巧手") || skill_name.contains("隐匿")) {
@@ -521,8 +573,13 @@ public class Character_Sheet {
             bonus = this.stats.get_mod(this.stats.cha);
         }
 
-        if (this.job.skill_proficiencies.contains(skill_name)) {
+        if (proficient) {
             bonus += get_proficiency_bonus();
+            if (this.job.has_skill_expertise(skill_name)) {
+                bonus += get_proficiency_bonus();
+            }
+        } else {
+            bonus += this.job.get_untrained_ability_check_bonus();
         }
         return bonus;
     }

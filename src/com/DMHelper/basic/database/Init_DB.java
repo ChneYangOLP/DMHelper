@@ -29,6 +29,7 @@ public class Init_DB {
                 + "experience_points INTEGER DEFAULT 0, "
                 + "hp INTEGER DEFAULT 0, "
                 + "current_hp INTEGER DEFAULT 0, "
+                + "available_hit_dice INTEGER DEFAULT -1, "
                 + "ac INTEGER DEFAULT 0, "
                 + "gold_pieces INTEGER DEFAULT 0, "
                 + "silver_pieces INTEGER DEFAULT 0, "
@@ -92,6 +93,7 @@ public class Init_DB {
             ensure_column(stmt, "saved_characters", "flaws", "TEXT DEFAULT ''");
             ensure_column(stmt, "saved_characters", "experience_points", "INTEGER DEFAULT 0");
             ensure_column(stmt, "saved_characters", "current_hp", "INTEGER DEFAULT 0");
+            ensure_column(stmt, "saved_characters", "available_hit_dice", "INTEGER DEFAULT -1");
             ensure_column(stmt, "saved_characters", "armor_name", "TEXT DEFAULT '普通旅行者服装'");
             ensure_column(stmt, "saved_characters", "armor_type", "TEXT DEFAULT 'None'");
             ensure_column(stmt, "saved_characters", "armor_base_ac", "INTEGER DEFAULT 10");

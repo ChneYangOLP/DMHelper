@@ -12,6 +12,8 @@ import java.util.Map;
 
 public class Fighter_Class extends Character_Class {
 
+    public int second_wind_uses;
+    public int current_second_wind_uses;
     public int action_surge_uses;
     public int current_action_surge_uses;
     public int indomitable_uses;
@@ -29,6 +31,7 @@ public class Fighter_Class extends Character_Class {
     public List<Trait> traits;
     public String fighting_style_name;
     public String extra_fighting_style_name;
+    private boolean preserve_loaded_second_wind;
     private boolean preserve_loaded_action_surge;
     private boolean preserve_loaded_indomitable;
     private boolean preserve_loaded_superiority_dice;
@@ -36,6 +39,8 @@ public class Fighter_Class extends Character_Class {
     public Fighter_Class() {
         super("FIGHTER", "战士 (Fighter)", 10);
 
+        this.second_wind_uses = 1;
+        this.current_second_wind_uses = 1;
         this.action_surge_uses = 0;
         this.current_action_surge_uses = 0;
         this.indomitable_uses = 0;
@@ -69,9 +74,11 @@ public class Fighter_Class extends Character_Class {
 
     @Override
     public void rebuild_progression() {
+        int previousSecondWind = this.second_wind_uses;
         int previousActionSurge = this.action_surge_uses;
         int previousIndomitable = this.indomitable_uses;
         int previousSuperiorityDice = this.superiority_dice;
+        this.second_wind_uses = 1;
         this.action_surge_uses = 0;
         this.indomitable_uses = 0;
         this.attacks_per_action = 1;
@@ -86,6 +93,12 @@ public class Fighter_Class extends Character_Class {
             apply_level_features(level);
         }
 
+        if (!this.preserve_loaded_second_wind
+                && previousSecondWind == 0
+                && this.second_wind_uses > 0
+                && this.current_second_wind_uses == 0) {
+            this.current_second_wind_uses = this.second_wind_uses;
+        }
         if (!this.preserve_loaded_action_surge
                 && previousActionSurge == 0
                 && this.action_surge_uses > 0
@@ -104,9 +117,11 @@ public class Fighter_Class extends Character_Class {
                 && this.current_superiority_dice == 0) {
             this.current_superiority_dice = this.superiority_dice;
         }
+        this.current_second_wind_uses = Math.max(0, Math.min(this.current_second_wind_uses, this.second_wind_uses));
         this.current_action_surge_uses = Math.max(0, Math.min(this.current_action_surge_uses, this.action_surge_uses));
         this.current_indomitable_uses = Math.max(0, Math.min(this.current_indomitable_uses, this.indomitable_uses));
         this.current_superiority_dice = Math.max(0, Math.min(this.current_superiority_dice, this.superiority_dice));
+        this.preserve_loaded_second_wind = false;
         this.preserve_loaded_action_surge = false;
         this.preserve_loaded_indomitable = false;
         this.preserve_loaded_superiority_dice = false;
@@ -484,6 +499,7 @@ public class Fighter_Class extends Character_Class {
             }
         }
         summaries.add("动作如潮： " + get_action_surge_summary());
+        summaries.add("复苏之风： " + get_second_wind_summary());
         summaries.add("不屈： " + get_indomitable_summary());
         if (this.superiority_dice > 0) {
             summaries.add("卓越骰： " + get_superiority_dice_summary());
@@ -525,6 +541,7 @@ public class Fighter_Class extends Character_Class {
         state.put("fighting_style", this.fighting_style_name == null ? "" : this.fighting_style_name);
         state.put("extra_fighting_style", this.extra_fighting_style_name == null ? "" : this.extra_fighting_style_name);
         state.put("maneuvers", Persistence_Util.encode_list(this.maneuver_names));
+        state.put("current_second_wind", Integer.toString(this.current_second_wind_uses));
         state.put("current_action_surge", Integer.toString(this.current_action_surge_uses));
         state.put("current_indomitable", Integer.toString(this.current_indomitable_uses));
         state.put("current_superiority_dice", Integer.toString(this.current_superiority_dice));
@@ -541,6 +558,14 @@ public class Fighter_Class extends Character_Class {
         this.extra_fighting_style_name = empty_to_null(class_state.get("extra_fighting_style"));
         this.maneuver_names.clear();
         this.maneuver_names.addAll(Persistence_Util.decode_list(class_state.get("maneuvers")));
+        if (class_state.containsKey("current_second_wind")) {
+            try {
+                this.current_second_wind_uses = Integer.parseInt(class_state.get("current_second_wind"));
+                this.preserve_loaded_second_wind = true;
+            } catch (NumberFormatException ignored) {
+                this.current_second_wind_uses = 1;
+            }
+        }
         if (class_state.containsKey("current_action_surge")) {
             try {
                 this.current_action_surge_uses = Integer.parseInt(class_state.get("current_action_surge"));
@@ -568,6 +593,10 @@ public class Fighter_Class extends Character_Class {
         rebuild_progression();
     }
 
+    public String get_second_wind_summary() {
+        return this.current_second_wind_uses + "/" + this.second_wind_uses;
+    }
+
     public String get_action_surge_summary() {
         return this.current_action_surge_uses + "/" + this.action_surge_uses;
     }
@@ -584,7 +613,15 @@ public class Fighter_Class extends Character_Class {
     }
 
     @Override
+    public void restore_short_rest_resources() {
+        this.current_second_wind_uses = this.second_wind_uses;
+        this.current_action_surge_uses = this.action_surge_uses;
+        this.current_superiority_dice = this.superiority_dice;
+    }
+
+    @Override
     public void restore_long_rest_resources() {
+        this.current_second_wind_uses = this.second_wind_uses;
         this.current_action_surge_uses = this.action_surge_uses;
         this.current_indomitable_uses = this.indomitable_uses;
         this.current_superiority_dice = this.superiority_dice;

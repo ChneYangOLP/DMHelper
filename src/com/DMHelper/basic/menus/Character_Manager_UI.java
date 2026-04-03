@@ -13,6 +13,7 @@ import com.DMHelper.basic.equipment.Equipment_Item;
 import com.DMHelper.basic.equipment.Equipment_Library;
 import com.DMHelper.basic.equipment.Equipment_Slot;
 import com.DMHelper.basic.playerclass.Fighter.Fighter_Class;
+import com.DMHelper.basic.playerclass.bard.Bard_Class;
 import com.DMHelper.basic.playerclass.paladin.Paladin_Class;
 import com.DMHelper.basic.playerclass.sorcerer.Sorcerer_Class;
 import com.DMHelper.basic.playerclass.warlock.Warlock_Class;
@@ -49,7 +50,9 @@ public class Character_Manager_UI extends JFrame {
     private JComboBox<EquipmentChoice> accessory_box;
     private JButton level_up_btn;
     private JButton add_xp_btn;
+    private JButton short_rest_btn;
     private JButton long_rest_btn;
+    private JButton use_second_wind_btn;
     private JButton manage_spellbook_btn;
     private JButton manage_spell_selection_btn;
     private JButton manage_prepared_spell_btn;
@@ -123,7 +126,7 @@ public class Character_Manager_UI extends JFrame {
             label.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
             if (isSelected) {
                 label.setBackground(list.getSelectionBackground());
-                label.setForeground(list.getSelectionForeground());
+                label.setForeground(Ui_Theme.TEXT_PRIMARY);
             } else {
                 label.setBackground(list.getBackground());
                 label.setForeground(list.getForeground());
@@ -199,12 +202,16 @@ public class Character_Manager_UI extends JFrame {
         level_info_area = build_text_area();
         JPanel level_btn_panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         add_xp_btn = new JButton("添加经验值");
+        short_rest_btn = new JButton("进行短休");
         long_rest_btn = new JButton("进行长休");
+        use_second_wind_btn = new JButton("使用复苏之风");
         level_up_btn = new JButton("执行升级");
         level_up_btn.setFont(new Font("微软雅黑", Font.BOLD, 16));
         level_up_btn.setForeground(Color.RED);
         level_btn_panel.add(add_xp_btn);
+        level_btn_panel.add(short_rest_btn);
         level_btn_panel.add(long_rest_btn);
+        level_btn_panel.add(use_second_wind_btn);
         level_btn_panel.add(level_up_btn);
         progression_panel.add(Ui_Theme.wrap_scroll(level_info_area), BorderLayout.CENTER);
         progression_panel.add(level_btn_panel, BorderLayout.SOUTH);
@@ -216,7 +223,9 @@ public class Character_Manager_UI extends JFrame {
         sell_item_btn.addActionListener(e -> handle_sell_selected_item());
         use_item_btn.addActionListener(e -> handle_use_selected_item());
         add_xp_btn.addActionListener(e -> handle_add_experience());
+        short_rest_btn.addActionListener(e -> handle_short_rest());
         long_rest_btn.addActionListener(e -> handle_long_rest());
+        use_second_wind_btn.addActionListener(e -> handle_use_second_wind());
         level_up_btn.addActionListener(e -> handle_level_up());
         manage_spellbook_btn.addActionListener(e -> handle_manage_spellbook());
         manage_spell_selection_btn.addActionListener(e -> handle_manage_spell_selection());
@@ -228,7 +237,9 @@ public class Character_Manager_UI extends JFrame {
         Ui_Theme.style_primary_button(level_up_btn);
         Ui_Theme.style_primary_button(use_item_btn);
         Ui_Theme.style_secondary_button(add_xp_btn);
+        Ui_Theme.style_secondary_button(short_rest_btn);
         Ui_Theme.style_secondary_button(long_rest_btn);
+        Ui_Theme.style_secondary_button(use_second_wind_btn);
         Ui_Theme.style_secondary_button(add_item_btn);
         Ui_Theme.style_secondary_button(buy_item_btn);
         Ui_Theme.style_secondary_button(sell_item_btn);
@@ -351,7 +362,7 @@ public class Character_Manager_UI extends JFrame {
             label.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
             if (isSelected) {
                 label.setBackground(list.getSelectionBackground());
-                label.setForeground(list.getSelectionForeground());
+                label.setForeground(Ui_Theme.TEXT_PRIMARY);
             } else {
                 label.setBackground(list.getBackground());
                 label.setForeground(list.getForeground());
@@ -438,7 +449,7 @@ public class Character_Manager_UI extends JFrame {
             label.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
             if (isSelected) {
                 label.setBackground(list.getSelectionBackground());
-                label.setForeground(list.getSelectionForeground());
+                label.setForeground(Ui_Theme.TEXT_PRIMARY);
             } else {
                 label.setBackground(list.getBackground());
                 label.setForeground(list.getForeground());
@@ -911,6 +922,280 @@ public class Character_Manager_UI extends JFrame {
         JOptionPane.showMessageDialog(this, "长休完成，角色已恢复到完整状态。");
     }
 
+    private void handle_short_rest() {
+        int missingHp = Math.max(0, current_char.hp - current_char.current_hp);
+        Wizard_Class wizard = current_char.job instanceof Wizard_Class ? (Wizard_Class) current_char.job : null;
+
+        while (true) {
+            JPanel panel = new JPanel();
+            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+            JTextArea summaryArea = new JTextArea(
+                    "短休会恢复系统内可追踪的短休资源。\n"
+                            + build_short_rest_resource_summary()
+                            + "\n\n请分别填写这次短休消耗的生命骰数量，以及最终恢复的生命值总量。"
+                            + (missingHp > 0 ? "若你已计入休憩之歌或体质调整值，也请直接填入最终恢复值。" : "当前生命值已满，可只处理资源恢复。")
+            );
+            summaryArea.setEditable(false);
+            summaryArea.setLineWrap(true);
+            summaryArea.setWrapStyleWord(true);
+            summaryArea.setOpaque(false);
+            summaryArea.setBorder(BorderFactory.createEmptyBorder());
+            summaryArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            JPanel inputPanel = new JPanel(new GridBagLayout());
+            inputPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.anchor = GridBagConstraints.WEST;
+            gbc.insets = new Insets(4, 0, 4, 10);
+
+            inputPanel.add(new JLabel("消耗生命骰"), gbc);
+            gbc.gridx = 1;
+            JSpinner hitDiceSpinner = new JSpinner(new SpinnerNumberModel(0, 0, current_char.available_hit_dice, 1));
+            inputPanel.add(hitDiceSpinner, gbc);
+            gbc.gridx = 2;
+            inputPanel.add(new JLabel("/ 最多 " + current_char.available_hit_dice), gbc);
+
+            gbc.gridx = 0;
+            gbc.gridy = 1;
+            inputPanel.add(new JLabel("恢复生命值"), gbc);
+            gbc.gridx = 1;
+            JSpinner healSpinner = new JSpinner(new SpinnerNumberModel(0, 0, missingHp, 1));
+            inputPanel.add(healSpinner, gbc);
+            gbc.gridx = 2;
+            inputPanel.add(new JLabel("/ 最多 " + missingHp), gbc);
+
+            panel.add(summaryArea);
+            panel.add(Box.createRigidArea(new Dimension(0, 8)));
+            panel.add(inputPanel);
+
+            JSpinner[] arcaneRecoverySpinners = null;
+            if (wizard != null && wizard.can_use_arcane_recovery()) {
+                JPanel arcanePanel = new JPanel(new GridBagLayout());
+                arcanePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                arcanePanel.setBorder(BorderFactory.createCompoundBorder(
+                        Ui_Theme.create_section_border("奥术回能"),
+                        BorderFactory.createEmptyBorder(8, 10, 8, 10)
+                ));
+                arcaneRecoverySpinners = new JSpinner[6];
+                final JSpinner[] finalArcaneRecoverySpinners = arcaneRecoverySpinners;
+                JLabel budgetLabel = new JLabel("剩余可恢复总环级：" + wizard.arcane_recovery_level);
+                int row = 0;
+                for (int spellLevel = 1; spellLevel <= Math.min(5, wizard.get_max_spell_level()); spellLevel++) {
+                    int missingSlots = wizard.get_missing_spell_slots_at_level(spellLevel);
+                    if (missingSlots <= 0) {
+                        continue;
+                    }
+                    GridBagConstraints arcaneConstraints = new GridBagConstraints();
+                    arcaneConstraints.gridx = 0;
+                    arcaneConstraints.gridy = row;
+                    arcaneConstraints.anchor = GridBagConstraints.WEST;
+                    arcaneConstraints.insets = new Insets(4, 0, 4, 8);
+                    arcanePanel.add(new JLabel(spellLevel + "环法术位"), arcaneConstraints);
+
+                    arcaneConstraints.gridx = 1;
+                    JSpinner slotSpinner = new JSpinner(new SpinnerNumberModel(0, 0, missingSlots, 1));
+                    arcaneRecoverySpinners[spellLevel] = slotSpinner;
+                    arcanePanel.add(slotSpinner, arcaneConstraints);
+
+                    arcaneConstraints.gridx = 2;
+                    arcanePanel.add(new JLabel("/ 缺失 " + missingSlots), arcaneConstraints);
+                    slotSpinner.addChangeListener(e -> update_arcane_recovery_budget_label(budgetLabel, wizard, finalArcaneRecoverySpinners));
+                    row++;
+                }
+
+                if (row > 0) {
+                    GridBagConstraints budgetConstraints = new GridBagConstraints();
+                    budgetConstraints.gridx = 0;
+                    budgetConstraints.gridy = row;
+                    budgetConstraints.gridwidth = 3;
+                    budgetConstraints.anchor = GridBagConstraints.WEST;
+                    budgetConstraints.insets = new Insets(8, 0, 0, 0);
+                    arcanePanel.add(budgetLabel, budgetConstraints);
+                    panel.add(Box.createRigidArea(new Dimension(0, 10)));
+                    panel.add(arcanePanel);
+                }
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(this, panel, "短休确认", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            if (confirm != JOptionPane.OK_OPTION) {
+                return;
+            }
+
+            int[] arcaneRecoverySelection = collect_arcane_recovery_selection(arcaneRecoverySpinners);
+            if (wizard != null && has_arcane_recovery_selection(arcaneRecoverySelection) && !wizard.apply_arcane_recovery(arcaneRecoverySelection)) {
+                JOptionPane.showMessageDialog(this, "奥术回能选择无效，请重新调整恢复的法术位。");
+                continue;
+            }
+
+            int healed = current_char.take_short_rest((Integer) hitDiceSpinner.getValue(), (Integer) healSpinner.getValue());
+            if (wizard != null && has_arcane_recovery_selection(arcaneRecoverySelection)) {
+                current_char.record_advancement("短休中发动奥术回能：恢复 " + describe_arcane_recovery_selection(arcaneRecoverySelection) + "。");
+            }
+
+            Character_DAO.update_character(current_char);
+            refresh_ui();
+            JOptionPane.showMessageDialog(this,
+                    "短休完成，恢复了 " + healed + " 点生命值。\n" + build_short_rest_result_summary());
+            return;
+        }
+    }
+
+    private String build_short_rest_resource_summary() {
+        StringBuilder summary = new StringBuilder();
+        summary.append("生命骰：").append(current_char.get_hit_dice_summary()).append("。");
+        if (current_char.job instanceof Fighter_Class) {
+            Fighter_Class fighter = (Fighter_Class) current_char.job;
+            summary.append("\n战士：恢复复苏之风、动作如潮与卓越骰；不屈仍需长休恢复。");
+            summary.append("\n当前复苏之风：").append(fighter.get_second_wind_summary()).append("。");
+            return summary.toString();
+        }
+        if (current_char.job instanceof Bard_Class) {
+            Bard_Class bard = (Bard_Class) current_char.job;
+            if (bard.current_level >= 5) {
+                summary.append("\n吟游诗人：恢复吟游激励次数。");
+            } else {
+                summary.append("\n吟游诗人：5 级前短休不会自动恢复吟游激励。");
+            }
+            return summary.toString();
+        }
+        if (current_char.job instanceof Warlock_Class) {
+            summary.append("\n邪术士：恢复全部契约法术位。");
+            return summary.toString();
+        }
+        if (current_char.job instanceof Sorcerer_Class) {
+            Sorcerer_Class sorcerer = (Sorcerer_Class) current_char.job;
+            if (sorcerer.current_level >= 20) {
+                summary.append("\n术士：通过术法回流恢复 4 点术法点（不超过上限）。");
+            } else {
+                summary.append("\n术士：当前等级暂无自动短休恢复资源。");
+            }
+            return summary.toString();
+        }
+        if (current_char.job instanceof Wizard_Class) {
+            Wizard_Class wizard = (Wizard_Class) current_char.job;
+            summary.append("\n法师：奥术回能").append(wizard.get_arcane_recovery_status());
+            if (wizard.can_use_arcane_recovery()) {
+                summary.append("，本次可恢复总环级 ").append(wizard.arcane_recovery_level).append("。");
+            } else {
+                summary.append("。");
+            }
+            return summary.toString();
+        }
+        summary.append("\n当前职业暂无已接入的自动短休恢复资源。");
+        return summary.toString();
+    }
+
+    private String build_short_rest_result_summary() {
+        StringBuilder result = new StringBuilder();
+        result.append("当前生命值：").append(current_char.get_hp_summary()).append("\n");
+        result.append("剩余生命骰：").append(current_char.get_hit_dice_summary());
+        if (current_char.job instanceof Fighter_Class) {
+            Fighter_Class fighter = (Fighter_Class) current_char.job;
+            result.append("\n复苏之风：").append(fighter.get_second_wind_summary());
+            result.append("\n动作如潮：").append(fighter.get_action_surge_summary());
+            result.append("\n卓越骰：").append(fighter.get_superiority_dice_summary());
+            return result.toString();
+        }
+        if (current_char.job instanceof Bard_Class) {
+            Bard_Class bard = (Bard_Class) current_char.job;
+            result.append("\n吟游激励：").append(bard.get_bardic_inspiration_summary());
+            return result.toString();
+        }
+        if (current_char.job instanceof Warlock_Class) {
+            Warlock_Class warlock = (Warlock_Class) current_char.job;
+            result.append("\n契约法术位：").append(warlock.get_pact_slot_summary());
+            return result.toString();
+        }
+        if (current_char.job instanceof Sorcerer_Class) {
+            Sorcerer_Class sorcerer = (Sorcerer_Class) current_char.job;
+            result.append("\n术法点：").append(sorcerer.get_sorcery_point_summary());
+            return result.toString();
+        }
+        if (current_char.job instanceof Wizard_Class) {
+            Wizard_Class wizard = (Wizard_Class) current_char.job;
+            result.append("\n").append(wizard.get_spell_slot_summary());
+            result.append("\n奥术回能：").append(wizard.get_arcane_recovery_status());
+            return result.toString();
+        }
+        result.append("\n短休资源已结算。");
+        return result.toString();
+    }
+
+    private int[] collect_arcane_recovery_selection(JSpinner[] spinners) {
+        if (spinners == null) {
+            return null;
+        }
+        int[] selection = new int[spinners.length];
+        for (int spellLevel = 1; spellLevel < spinners.length; spellLevel++) {
+            if (spinners[spellLevel] != null) {
+                selection[spellLevel] = (Integer) spinners[spellLevel].getValue();
+            }
+        }
+        return selection;
+    }
+
+    private boolean has_arcane_recovery_selection(int[] selection) {
+        if (selection == null) {
+            return false;
+        }
+        for (int spellLevel = 1; spellLevel < selection.length; spellLevel++) {
+            if (selection[spellLevel] > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void update_arcane_recovery_budget_label(JLabel label, Wizard_Class wizard, JSpinner[] spinners) {
+        if (label == null || wizard == null) {
+            return;
+        }
+        int remainingBudget = wizard.arcane_recovery_level - wizard.get_arcane_recovery_total(collect_arcane_recovery_selection(spinners));
+        label.setText("剩余可恢复总环级：" + remainingBudget);
+        label.setForeground(remainingBudget < 0 ? Color.RED : Ui_Theme.TEXT_PRIMARY);
+    }
+
+    private String describe_arcane_recovery_selection(int[] selection) {
+        List<String> parts = new ArrayList<>();
+        if (selection == null) {
+            return "";
+        }
+        for (int spellLevel = 1; spellLevel < selection.length; spellLevel++) {
+            if (selection[spellLevel] > 0) {
+                parts.add(spellLevel + "环位 x" + selection[spellLevel]);
+            }
+        }
+        return parts.isEmpty() ? "未恢复法术位" : String.join("，", parts);
+    }
+
+    private void handle_use_second_wind() {
+        if (!(current_char.job instanceof Fighter_Class)) {
+            JOptionPane.showMessageDialog(this, "当前角色不是战士，无法使用复苏之风。");
+            return;
+        }
+
+        Fighter_Class fighter = (Fighter_Class) current_char.job;
+        if (fighter.current_second_wind_uses <= 0) {
+            JOptionPane.showMessageDialog(this, "复苏之风已耗尽，请等待短休或长休后恢复。");
+            return;
+        }
+
+        int beforeHp = current_char.current_hp;
+        int healAmount = Dice_Util.roll_dice(1, 10) + fighter.current_level;
+        fighter.current_second_wind_uses--;
+        current_char.set_current_hp(current_char.current_hp + healAmount);
+        int actualHealed = current_char.current_hp - beforeHp;
+        current_char.record_advancement("使用复苏之风：恢复生命值 " + actualHealed + " 点，剩余次数 " + fighter.get_second_wind_summary());
+        Character_DAO.update_character(current_char);
+        refresh_ui();
+        JOptionPane.showMessageDialog(this,
+                current_char.name + " 使用了复苏之风，恢复 " + actualHealed + " 点生命值。\n当前 HP: "
+                        + current_char.get_hp_summary() + "\n复苏之风剩余: " + fighter.get_second_wind_summary());
+    }
+
     private void handle_level_up() {
         if (!current_char.can_level_up()) {
             JOptionPane.showMessageDialog(this, "当前经验值不足，暂时还不能升级。");
@@ -991,6 +1276,22 @@ public class Character_Manager_UI extends JFrame {
             current_char.recalculate_derived_stats();
             Character_DAO.update_character(current_char);
             refresh_ui();
+        } else if (current_char.job instanceof Bard_Class) {
+            Bard_Class bard = (Bard_Class) current_char.job;
+            List<String> selected = Spell_Management_Helper.open_selection_dialog(
+                    this,
+                    "管理吟游诗人戏法",
+                    "吟游诗人戏法已知上限：" + bard.cantrips_known + "。",
+                    Spell_Library.get_bard_cantrip_keys(),
+                    bard.known_cantrip_keys,
+                    bard.cantrips_known,
+                    bard.cantrips_known
+            );
+            bard.set_known_cantrips(selected);
+            current_char.record_advancement("调整吟游诗人戏法，当前数量：" + bard.known_cantrip_keys.size());
+            current_char.recalculate_derived_stats();
+            Character_DAO.update_character(current_char);
+            refresh_ui();
         }
     }
 
@@ -1034,6 +1335,20 @@ public class Character_Manager_UI extends JFrame {
             );
             warlock.set_known_spells(selected);
             current_char.record_advancement("调整邪术士已知法术，当前数量：" + warlock.known_spell_keys.size());
+        } else if (current_char.job instanceof Bard_Class) {
+            Bard_Class bard = (Bard_Class) current_char.job;
+            List<String> selected = Spell_Management_Helper.open_selection_dialog(
+                    this,
+                    "管理吟游诗人已知法术",
+                    "吟游诗人本职已知法术上限：" + bard.base_spells_known_count + "，当前最高可学 " + bard.get_max_spell_level()
+                            + " 环法术。魔法秘辛法术单独保留，不会在这里被移除。",
+                    Spell_Library.get_bard_spell_keys_up_to_level(bard.get_max_spell_level()),
+                    bard.known_spell_keys,
+                    bard.base_spells_known_count,
+                    bard.base_spells_known_count
+            );
+            bard.set_known_spells(selected);
+            current_char.record_advancement("调整吟游诗人已知法术，当前本职法术数量：" + bard.known_spell_keys.size());
         }
 
         current_char.recalculate_derived_stats();
@@ -1104,6 +1419,7 @@ public class Character_Manager_UI extends JFrame {
                 .append(" (总值 ").append(Equipment_Item.format_cp_value(current_char.get_total_currency_cp())).append(")\n");
         sb_stats.append("--------------------------------------------------\n");
         sb_stats.append("当前 HP: ").append(current_char.get_hp_summary()).append("\n");
+        sb_stats.append("生命骰: ").append(current_char.get_hit_dice_summary()).append("\n");
         sb_stats.append("当前护甲 AC: ").append(current_char.ac).append(" (护甲: ").append(current_char.equipped_armor.armor_name).append(")\n");
         Equipment_Item weaponItem = current_char.get_equipped_item(Equipment_Slot.MAIN_HAND);
         sb_stats.append("当前主手: ").append(weaponItem == null ? "空置" : weaponItem.display_name).append("\n");
@@ -1142,6 +1458,14 @@ public class Character_Manager_UI extends JFrame {
         refresh_spellcasting_panel();
         refresh_progression_panel();
 
+        boolean isFighter = current_char.job instanceof Fighter_Class;
+        use_second_wind_btn.setVisible(isFighter);
+        if (isFighter) {
+            Fighter_Class fighter = (Fighter_Class) current_char.job;
+            use_second_wind_btn.setEnabled(fighter.current_second_wind_uses > 0);
+            use_second_wind_btn.setText("使用复苏之风 (" + fighter.get_second_wind_summary() + ")");
+        }
+
         boolean canLevelUp = current_char.can_level_up();
         level_up_btn.setEnabled(canLevelUp);
         level_up_btn.setText(canLevelUp ? "执行升级" : "经验不足，暂不可升级");
@@ -1167,7 +1491,8 @@ public class Character_Manager_UI extends JFrame {
             sb.append("戏法已知数: ").append(wizard.cantrips_known).append("\n");
             sb.append("法术书容量: ").append(wizard.spells_in_spellbook).append("\n");
             sb.append("可准备法术数: ").append(wizard.get_prepared_spell_count(current_char.stats.get_mod(current_char.stats.intel))).append("\n");
-            sb.append("奥术回能额度: 最多恢复总环级 ").append(wizard.arcane_recovery_level).append("\n\n");
+            sb.append("奥术回能额度: 最多恢复总环级 ").append(wizard.arcane_recovery_level).append("\n");
+            sb.append("奥术回能状态: ").append(wizard.get_arcane_recovery_status()).append("\n\n");
             sb.append("【已知戏法】\n");
             if (wizard.get_known_cantrip_lines().isEmpty()) sb.append("- 暂无\n");
             else for (String line : wizard.get_known_cantrip_lines()) sb.append("- ").append(line).append("\n");
@@ -1215,6 +1540,28 @@ public class Character_Manager_UI extends JFrame {
             sb.append("【已知法术】\n");
             if (warlock.get_known_spell_lines().isEmpty()) sb.append("- 暂无\n");
             else for (String line : warlock.get_known_spell_lines()) sb.append("- ").append(line).append("\n");
+        } else if (current_char.job instanceof Bard_Class) {
+            Bard_Class bard = (Bard_Class) current_char.job;
+            manage_spellbook_btn.setVisible(true);
+            manage_spell_selection_btn.setVisible(true);
+            manage_spellbook_btn.setText("管理戏法");
+            manage_spell_selection_btn.setText("管理已知法术");
+
+            sb.append("【吟游诗人施法资源】\n");
+            sb.append(bard.get_spell_slot_summary()).append("\n");
+            sb.append("吟游激励: ").append(bard.get_bardic_inspiration_summary()).append("\n");
+            if (bard.song_of_rest_die_size > 0) {
+                sb.append("休憩之歌: d").append(bard.song_of_rest_die_size).append("\n");
+            }
+            sb.append("戏法已知数: ").append(bard.cantrips_known).append("\n");
+            sb.append("本职法术已知数: ").append(bard.base_spells_known_count).append("\n");
+            sb.append("魔法秘辛法术数: ").append(bard.magical_secrets_count).append("\n\n");
+            sb.append("【已知戏法】\n");
+            if (bard.get_known_cantrip_lines().isEmpty()) sb.append("- 暂无\n");
+            else for (String line : bard.get_known_cantrip_lines()) sb.append("- ").append(line).append("\n");
+            sb.append("【已知法术】\n");
+            if (bard.get_known_spell_lines().isEmpty()) sb.append("- 暂无\n");
+            else for (String line : bard.get_known_spell_lines()) sb.append("- ").append(line).append("\n");
         } else if (current_char.job instanceof Paladin_Class) {
             Paladin_Class paladin = (Paladin_Class) current_char.job;
             int charismaModifier = current_char.stats.get_mod(current_char.stats.cha);
@@ -1245,6 +1592,7 @@ public class Character_Manager_UI extends JFrame {
         StringBuilder progression = new StringBuilder();
         progression.append("当前等级: ").append(current_char.job.current_level).append("\n");
         progression.append("当前经验值: ").append(current_char.experience_points).append("\n");
+        progression.append("生命骰: ").append(current_char.get_hit_dice_summary()).append("\n");
         if (current_char.job.current_level < 20) {
             progression.append("下一级所需经验值: ").append(current_char.get_next_level_xp()).append("\n");
             progression.append("距离升级还差: ").append(current_char.get_xp_to_next_level()).append("\n");
@@ -1269,12 +1617,19 @@ public class Character_Manager_UI extends JFrame {
         if (current_char.job instanceof Fighter_Class) {
             Fighter_Class fighter = (Fighter_Class) current_char.job;
             progression.append("\n【战士资源】\n");
+            progression.append("复苏之风次数: ").append(fighter.get_second_wind_summary()).append("\n");
             progression.append("动作如潮次数: ").append(fighter.get_action_surge_summary()).append("\n");
             progression.append("不屈次数: ").append(fighter.get_indomitable_summary()).append("\n");
             progression.append("每次攻击动作攻击次数: ").append(fighter.attacks_per_action).append("\n");
             if (fighter.fighter_subclass == com.DMHelper.basic.playerclass.Fighter.Fighter_Subclass.BATTLE_MASTER) {
                 progression.append("卓越骰: ").append(fighter.get_superiority_dice_summary()).append("\n");
             }
+        } else if (current_char.job instanceof Wizard_Class) {
+            Wizard_Class wizard = (Wizard_Class) current_char.job;
+            progression.append("\n【法师资源】\n");
+            progression.append(wizard.get_spell_slot_summary()).append("\n");
+            progression.append("奥术回能: ").append(wizard.get_arcane_recovery_status())
+                    .append("（额度 ").append(wizard.arcane_recovery_level).append("）\n");
         } else if (current_char.job instanceof Sorcerer_Class) {
             Sorcerer_Class sorcerer = (Sorcerer_Class) current_char.job;
             progression.append("\n【术士资源】\n");
@@ -1287,6 +1642,15 @@ public class Character_Manager_UI extends JFrame {
             if (warlock.mystic_arcanum_level > 0) {
                 progression.append("神秘秘法: 1 个 ").append(warlock.mystic_arcanum_level).append(" 环秘法\n");
             }
+        } else if (current_char.job instanceof Bard_Class) {
+            Bard_Class bard = (Bard_Class) current_char.job;
+            progression.append("\n【吟游诗人资源】\n");
+            progression.append(bard.get_spell_slot_summary()).append("\n");
+            progression.append("吟游激励: ").append(bard.get_bardic_inspiration_summary()).append("\n");
+            if (bard.song_of_rest_die_size > 0) {
+                progression.append("休憩之歌: d").append(bard.song_of_rest_die_size).append("\n");
+            }
+            progression.append("每次攻击动作攻击次数: ").append(bard.attacks_per_action).append("\n");
         } else if (current_char.job instanceof Paladin_Class) {
             Paladin_Class paladin = (Paladin_Class) current_char.job;
             int charismaModifier = current_char.stats.get_mod(current_char.stats.cha);

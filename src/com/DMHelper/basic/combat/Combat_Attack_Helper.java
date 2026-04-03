@@ -4,6 +4,7 @@ import com.DMHelper.basic.Character_Sheet;
 import com.DMHelper.basic.equipment.Equipment_Item;
 import com.DMHelper.basic.equipment.Equipment_Slot;
 import com.DMHelper.basic.playerclass.Fighter.Fighter_Class;
+import com.DMHelper.basic.playerclass.bard.Bard_Class;
 import com.DMHelper.basic.playerclass.paladin.Paladin_Class;
 import com.DMHelper.basic.playerclass.sorcerer.Sorcerer_Class;
 import com.DMHelper.basic.playerclass.warlock.Warlock_Class;
@@ -17,13 +18,12 @@ public class Combat_Attack_Helper {
     }
 
     public static Combatant build_player_combatant(Character_Sheet character) {
-        int dexMod = character.stats.get_mod(character.stats.dex);
         return new Combatant(
                 character.name + " - " + character.job.class_name,
                 Combatant.Side.PLAYER,
                 character.ac,
                 character.hp,
-                dexMod,
+                character.get_initiative_modifier(),
                 character.stats.str,
                 character.stats.dex,
                 character.stats.con,
@@ -105,6 +105,9 @@ public class Combat_Attack_Helper {
         } else if (character.job instanceof Warlock_Class) {
             options.add(build_weapon_attack(character, pb, strMod, dexMod, 1, "基础近战攻击。"));
             options.addAll(build_warlock_attacks(character, chaMod, pb));
+        } else if (character.job instanceof Bard_Class) {
+            options.add(build_weapon_attack(character, pb, strMod, dexMod, ((Bard_Class) character.job).attacks_per_action, "吟游诗人武器攻击。"));
+            options.addAll(build_bard_attacks(character, chaMod, pb));
         } else {
             options.add(Attack_Option.attack_roll("简易武器攻击", "通用攻击。", pb + strMod, 1, 6, strMod, 1, "挥砍"));
         }
@@ -204,6 +207,49 @@ public class Combat_Attack_Helper {
         add_spell_if_present(options, warlockClass.known_spell_keys, "hold_person", Attack_Option.save_dc("人类定身术 (Hold Person)", "迫使目标麻痹。", spellDc, "Wisdom", 0, 1, 0, false, "控制").with_pact_slot_cost().with_status(Combat_Status_Type.PARALYZED, 2, "", 0));
         add_spell_if_present(options, warlockClass.known_spell_keys, "fear", Attack_Option.save_dc("恐惧术 (Fear)", "制造恐慌。", spellDc, "Wisdom", 0, 1, 0, false, "精神").with_pact_slot_cost().with_status(Combat_Status_Type.FRIGHTENED, 2, "", 0));
         add_spell_if_present(options, warlockClass.known_spell_keys, "blight", Attack_Option.save_dc("枯萎术 (Blight)", "死灵能量重创单体。", spellDc, "Constitution", 8, 8, 0, false, "死灵").with_pact_slot_cost());
+        return options;
+    }
+
+    private static List<Attack_Option> build_bard_attacks(Character_Sheet character, int castingMod, int pb) {
+        List<Attack_Option> options = new ArrayList<>();
+        Bard_Class bardClass = (Bard_Class) character.job;
+        int spellAttack = pb + castingMod;
+        int spellDc = 8 + pb + castingMod;
+
+        add_known_cantrip_attacks(options, bardClass.known_cantrip_keys, spellAttack, character.job.current_level, 0, false);
+        if (bardClass.known_cantrip_keys.contains("vicious_mockery")) {
+            options.add(Attack_Option.save_dc("恶言相加 (Vicious Mockery)", "精神打击并削弱目标后续攻击。", spellDc, "Wisdom",
+                    get_cantrip_dice_count(character.job.current_level), 4, 0, false, "心灵")
+                    .with_status(Combat_Status_Type.CURSED, 1, "", 0));
+        }
+
+        options.add(Attack_Option.auto_hit("吟游激励 (Bardic Inspiration)", "向一名队友提供可消耗的灵感。", 0, 0, 0, "激励")
+                .with_target_mode(Attack_Option.Target_Mode.FRIENDLY_OTHER)
+                .with_bardic_inspiration_cost(1)
+                .with_status(Combat_Status_Type.INSPIRED, 3, "", 0));
+
+        List<String> knownSpells = bardClass.get_all_known_spell_keys();
+        add_spell_if_present(options, knownSpells, "healing_word", Attack_Option.auto_hit("治疗真言 (Healing Word)", "以附赠动作快速治疗一名友方目标。", 0, 0, 0, "治疗")
+                .with_target_mode(Attack_Option.Target_Mode.FRIENDLY)
+                .with_spell_slot_cost(1)
+                .with_healing(1, 4, castingMod));
+        add_spell_if_present(options, knownSpells, "cure_wounds", Attack_Option.auto_hit("疗伤术 (Cure Wounds)", "稳定而直接的接触治疗。", 0, 0, 0, "治疗")
+                .with_target_mode(Attack_Option.Target_Mode.FRIENDLY)
+                .with_spell_slot_cost(1)
+                .with_healing(1, 8, castingMod));
+        add_spell_if_present(options, knownSpells, "dissonant_whispers", Attack_Option.save_dc("不谐低语 (Dissonant Whispers)", "心灵尖啸冲击目标。", spellDc, "Wisdom", 3, 6, 0, true, "心灵").with_spell_slot_cost(1));
+        add_spell_if_present(options, knownSpells, "thunderwave", Attack_Option.save_dc("雷鸣波 (Thunderwave)", "近距离爆发雷鸣并击退敌人。", spellDc, "Constitution", 2, 8, 0, true, "雷鸣").with_spell_slot_cost(1));
+        add_spell_if_present(options, knownSpells, "shatter", Attack_Option.save_dc("粉碎音波 (Shatter)", "刺耳震响轰击范围内目标。", spellDc, "Constitution", 3, 8, 0, true, "雷鸣").with_spell_slot_cost(2));
+        add_spell_if_present(options, knownSpells, "hold_person", Attack_Option.save_dc("人类定身术 (Hold Person)", "迫使目标麻痹。", spellDc, "Wisdom", 0, 1, 0, false, "控制").with_spell_slot_cost(2).with_status(Combat_Status_Type.PARALYZED, 2, "", 0));
+        add_spell_if_present(options, knownSpells, "hypnotic_pattern", Attack_Option.save_dc("催眠图纹 (Hypnotic Pattern)", "以迷幻图纹压制敌人行动。", spellDc, "Wisdom", 0, 1, 0, false, "精神").with_spell_slot_cost(3).with_status(Combat_Status_Type.CHARMED, 2, "", 0));
+        add_spell_if_present(options, knownSpells, "fear", Attack_Option.save_dc("恐惧术 (Fear)", "制造恐慌。", spellDc, "Wisdom", 0, 1, 0, false, "精神").with_spell_slot_cost(3).with_status(Combat_Status_Type.FRIGHTENED, 2, "", 0));
+        add_spell_if_present(options, knownSpells, "magic_missile", Attack_Option.auto_hit("魔法飞弹 (Magic Missile)", "魔法秘辛获取的稳定远程输出。", 3, 4, 3, "力场").with_spell_slot_cost(1));
+        add_spell_if_present(options, knownSpells, "fireball", Attack_Option.save_dc("火球术 (Fireball)", "魔法秘辛获取的范围爆发。", spellDc, "Dexterity", 8, 6, 0, true, "火焰").with_spell_slot_cost(3));
+        add_spell_if_present(options, knownSpells, "lightning_bolt", Attack_Option.save_dc("闪电束 (Lightning Bolt)", "魔法秘辛获取的直线爆发。", spellDc, "Dexterity", 8, 6, 0, true, "闪电").with_spell_slot_cost(3));
+        add_spell_if_present(options, knownSpells, "polymorph", Attack_Option.save_dc("变形术 (Polymorph)", "强行改变目标形态。", spellDc, "Wisdom", 0, 1, 0, false, "变化").with_spell_slot_cost(4).with_status(Combat_Status_Type.RESTRAINED, 2, "", 0));
+        add_spell_if_present(options, knownSpells, "blight", Attack_Option.save_dc("枯萎术 (Blight)", "魔法秘辛获取的死灵打击。", spellDc, "Constitution", 8, 8, 0, false, "死灵").with_spell_slot_cost(4));
+        add_spell_if_present(options, knownSpells, "hold_monster", Attack_Option.save_dc("怪物定身术 (Hold Monster)", "迫使目标麻痹。", spellDc, "Wisdom", 0, 1, 0, false, "控制").with_spell_slot_cost(5).with_status(Combat_Status_Type.PARALYZED, 2, "", 0));
+        add_spell_if_present(options, knownSpells, "cone_of_cold", Attack_Option.save_dc("寒冰锥 (Cone of Cold)", "魔法秘辛获取的大范围寒冷法术。", spellDc, "Constitution", 8, 8, 0, true, "寒冷").with_spell_slot_cost(5));
         return options;
     }
 

@@ -72,13 +72,31 @@ public class Combat_Engine {
     }
 
     public List<Combatant> get_valid_targets() {
+        return get_valid_targets(null);
+    }
+
+    public List<Combatant> get_valid_targets(Attack_Option attackOption) {
         Combatant active = get_active_combatant();
         List<Combatant> targets = new ArrayList<>();
         if (active == null) {
             return targets;
         }
+        Attack_Option.Target_Mode targetMode = attackOption == null ? Attack_Option.Target_Mode.HOSTILE : attackOption.target_mode;
+        if (targetMode == Attack_Option.Target_Mode.SELF) {
+            targets.add(active);
+            return targets;
+        }
         for (Combatant combatant : this.initiative_order) {
-            if (combatant.side != active.side && combatant.is_alive()) {
+            if (!combatant.is_alive()) {
+                continue;
+            }
+            if (targetMode == Attack_Option.Target_Mode.HOSTILE && combatant.side != active.side) {
+                targets.add(combatant);
+            } else if (targetMode == Attack_Option.Target_Mode.FRIENDLY && combatant.side == active.side) {
+                targets.add(combatant);
+            } else if (targetMode == Attack_Option.Target_Mode.FRIENDLY_OTHER
+                    && combatant.side == active.side
+                    && combatant != active) {
                 targets.add(combatant);
             }
         }
@@ -89,6 +107,9 @@ public class Combat_Engine {
         Combatant attacker = get_active_combatant();
         if (attacker == null || target == null || attackOption == null) {
             return "当前没有可执行的攻击。";
+        }
+        if (!is_target_mode_valid(attacker, target, attackOption.target_mode)) {
+            return "当前技能的目标类型不匹配。";
         }
         if (attacker.is_turn_blocked()) {
             return attacker.display_name + " 当前处于无法行动状态，只能结束回合。";
@@ -103,7 +124,14 @@ public class Combat_Engine {
         // 先扣资源，再结算攻击；这样战斗日志能准确反映真实消耗。
         consume_cost(attacker, attackOption, log);
 
-        if (attackOption.resolution_type == Attack_Option.Resolution_Type.ATTACK_ROLL) {
+        if (attackOption.healing_dice_count > 0) {
+            int healing = Math.max(0, attackOption.roll_healing());
+            int beforeHp = target.current_hp;
+            target.current_hp = Math.min(target.max_hp, target.current_hp + healing);
+            log.append("恢复 ").append(target.current_hp - beforeHp).append(" 点生命值，目标当前 HP ")
+                    .append(target.current_hp).append("/").append(target.max_hp).append("\n");
+            apply_status_if_needed(attackOption, target, log, true);
+        } else if (attackOption.resolution_type == Attack_Option.Resolution_Type.ATTACK_ROLL) {
             for (int i = 1; i <= attackOption.attack_count; i++) {
                 int d20 = Dice_Util.roll_d20();
                 int totalAttack = d20 + attackOption.attack_bonus + attacker.get_effective_attack_modifier();
@@ -148,9 +176,13 @@ public class Combat_Engine {
             }
         } else {
             int damage = Math.max(0, attackOption.roll_damage(false));
-            target.current_hp = Math.max(0, target.current_hp - damage);
-            log.append("自动命中，造成 ").append(damage).append(" 点").append(attackOption.damage_type)
-                    .append("伤害，目标剩余 HP ").append(target.current_hp).append("/").append(target.max_hp).append("\n");
+            if (damage > 0) {
+                target.current_hp = Math.max(0, target.current_hp - damage);
+                log.append("自动命中，造成 ").append(damage).append(" 点").append(attackOption.damage_type)
+                        .append("伤害，目标剩余 HP ").append(target.current_hp).append("/").append(target.max_hp).append("\n");
+            } else {
+                log.append("效果直接生效。\n");
+            }
             apply_status_if_needed(attackOption, target, log, true);
             if (!target.is_alive()) {
                 log.append(target.display_name).append(" 倒下了。\n");
@@ -373,6 +405,9 @@ public class Combat_Engine {
         if (option.sorcery_point_cost > 0 && attacker.sorcery_points_remaining < option.sorcery_point_cost) {
             return attacker.display_name + " 没有足够的术法点。";
         }
+        if (option.bardic_inspiration_cost > 0 && attacker.bardic_inspiration_remaining < option.bardic_inspiration_cost) {
+            return attacker.display_name + " 没有足够的吟游激励次数。";
+        }
         if (option.superiority_die_cost > 0 && attacker.superiority_dice_remaining < option.superiority_die_cost) {
             return attacker.display_name + " 没有足够的卓越骰。";
         }
@@ -394,6 +429,10 @@ public class Combat_Engine {
         if (option.sorcery_point_cost > 0) {
             attacker.sorcery_points_remaining -= option.sorcery_point_cost;
             log.append("消耗术法点 ").append(option.sorcery_point_cost).append(" 点。\n");
+        }
+        if (option.bardic_inspiration_cost > 0) {
+            attacker.bardic_inspiration_remaining -= option.bardic_inspiration_cost;
+            log.append("消耗吟游激励 ").append(option.bardic_inspiration_cost).append(" 次。\n");
         }
         if (option.superiority_die_cost > 0) {
             attacker.superiority_dice_remaining -= option.superiority_die_cost;
@@ -456,5 +495,21 @@ public class Combat_Engine {
                 combatant.status_effects.remove(i);
             }
         }
+    }
+
+    private boolean is_target_mode_valid(Combatant attacker, Combatant target, Attack_Option.Target_Mode targetMode) {
+        if (attacker == null || target == null) {
+            return false;
+        }
+        if (targetMode == Attack_Option.Target_Mode.SELF) {
+            return attacker == target;
+        }
+        if (targetMode == Attack_Option.Target_Mode.FRIENDLY) {
+            return attacker.side == target.side;
+        }
+        if (targetMode == Attack_Option.Target_Mode.FRIENDLY_OTHER) {
+            return attacker.side == target.side && attacker != target;
+        }
+        return attacker.side != target.side;
     }
 }

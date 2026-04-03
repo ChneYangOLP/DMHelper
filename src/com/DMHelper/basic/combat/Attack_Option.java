@@ -7,6 +7,13 @@ public class Attack_Option {
         AUTO_HIT
     }
 
+    public enum Target_Mode {
+        HOSTILE,
+        FRIENDLY,
+        FRIENDLY_OTHER,
+        SELF
+    }
+
     public final String name;
     public final String description;
     public final Resolution_Type resolution_type;
@@ -19,9 +26,14 @@ public class Attack_Option {
     public final int attack_count;
     public final boolean half_damage_on_save;
     public final String damage_type;
+    public Target_Mode target_mode;
+    public int healing_dice_count;
+    public int healing_dice_size;
+    public int healing_bonus;
     public int spell_slot_cost_level;
     public int pact_slot_cost;
     public int sorcery_point_cost;
+    public int bardic_inspiration_cost;
     public int superiority_die_cost;
     public int lay_on_hands_cost;
     public Combat_Status_Type applied_status_type;
@@ -53,6 +65,7 @@ public class Attack_Option {
         this.attack_count = Math.max(1, attack_count);
         this.half_damage_on_save = half_damage_on_save;
         this.damage_type = damage_type;
+        this.target_mode = Target_Mode.HOSTILE;
     }
 
     public static Attack_Option attack_roll(String name,
@@ -131,6 +144,10 @@ public class Attack_Option {
         return Dice_Util.roll_dice(diceCount, this.damage_dice_size) + this.damage_bonus;
     }
 
+    public int roll_healing() {
+        return Dice_Util.roll_dice(this.healing_dice_count, this.healing_dice_size) + this.healing_bonus;
+    }
+
     public String get_damage_label() {
         StringBuilder sb = new StringBuilder();
         sb.append(this.damage_dice_count).append("d").append(this.damage_dice_size);
@@ -144,15 +161,24 @@ public class Attack_Option {
 
     public String to_display_label() {
         String resourceText = get_resource_cost_label();
+        String effectLabel = get_primary_effect_label();
         if (this.resolution_type == Resolution_Type.ATTACK_ROLL) {
-            return this.name + " | 命中 +" + this.attack_bonus + " | 伤害 " + get_damage_label()
-                    + " " + this.damage_type + format_attack_count() + resourceText;
+            return this.name + " | 命中 +" + this.attack_bonus + " | " + effectLabel + format_attack_count() + resourceText;
         }
         if (this.resolution_type == Resolution_Type.SAVE_DC) {
-            return this.name + " | " + this.save_ability + " 豁免 DC " + this.save_dc + " | 伤害 "
-                    + get_damage_label() + " " + this.damage_type + resourceText;
+            return this.name + " | " + this.save_ability + " 豁免 DC " + this.save_dc + " | " + effectLabel + resourceText;
         }
-        return this.name + " | 自动命中 | 伤害 " + get_damage_label() + " " + this.damage_type + resourceText;
+        return this.name + " | 自动命中 | " + effectLabel + resourceText;
+    }
+
+    private String get_primary_effect_label() {
+        if (this.healing_dice_count > 0) {
+            return "治疗 " + get_healing_label();
+        }
+        if (this.damage_dice_count > 0 && this.damage_dice_size > 0) {
+            return "伤害 " + get_damage_label() + " " + this.damage_type;
+        }
+        return this.applied_status_type == null ? "效果" : "附加状态 " + this.applied_status_type.label;
     }
 
     private String format_attack_count() {
@@ -168,6 +194,9 @@ public class Attack_Option {
         }
         if (this.sorcery_point_cost > 0) {
             return " | 消耗 " + this.sorcery_point_cost + " 点术法点";
+        }
+        if (this.bardic_inspiration_cost > 0) {
+            return " | 消耗 " + this.bardic_inspiration_cost + " 次吟游激励";
         }
         if (this.superiority_die_cost > 0) {
             return " | 消耗 " + this.superiority_die_cost + " 颗卓越骰";
@@ -193,6 +222,11 @@ public class Attack_Option {
         return this;
     }
 
+    public Attack_Option with_bardic_inspiration_cost(int count) {
+        this.bardic_inspiration_cost = Math.max(0, count);
+        return this;
+    }
+
     public Attack_Option with_superiority_die_cost(int count) {
         this.superiority_die_cost = Math.max(0, count);
         return this;
@@ -209,5 +243,28 @@ public class Attack_Option {
         this.status_save_ability = saveAbility == null ? "" : saveAbility;
         this.status_save_dc = saveDc;
         return this;
+    }
+
+    public Attack_Option with_target_mode(Target_Mode targetMode) {
+        this.target_mode = targetMode == null ? Target_Mode.HOSTILE : targetMode;
+        return this;
+    }
+
+    public Attack_Option with_healing(int diceCount, int dieSize, int bonus) {
+        this.healing_dice_count = Math.max(0, diceCount);
+        this.healing_dice_size = Math.max(0, dieSize);
+        this.healing_bonus = bonus;
+        return this;
+    }
+
+    public String get_healing_label() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(this.healing_dice_count).append("d").append(this.healing_dice_size);
+        if (this.healing_bonus > 0) {
+            sb.append("+").append(this.healing_bonus);
+        } else if (this.healing_bonus < 0) {
+            sb.append(this.healing_bonus);
+        }
+        return sb.toString();
     }
 }

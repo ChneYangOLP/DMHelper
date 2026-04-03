@@ -2,6 +2,7 @@ package com.DMHelper.basic.combat;
 
 import com.DMHelper.basic.Character_Sheet;
 import com.DMHelper.basic.playerclass.Fighter.Fighter_Class;
+import com.DMHelper.basic.playerclass.bard.Bard_Class;
 import com.DMHelper.basic.playerclass.paladin.Paladin_Class;
 import com.DMHelper.basic.playerclass.sorcerer.Sorcerer_Class;
 import com.DMHelper.basic.playerclass.warlock.Warlock_Class;
@@ -39,6 +40,7 @@ public class Combatant {
     public int pact_slots_remaining;
     public int pact_slot_level;
     public int sorcery_points_remaining;
+    public int bardic_inspiration_remaining;
     public int superiority_dice_remaining;
     public int superiority_dice_size;
     public int lay_on_hands_remaining;
@@ -172,6 +174,10 @@ public class Combatant {
             Warlock_Class warlock = (Warlock_Class) this.linked_character.job;
             this.pact_slots_remaining = warlock.current_pact_slot_count;
             this.pact_slot_level = warlock.pact_slot_level;
+        } else if (this.linked_character.job instanceof Bard_Class) {
+            Bard_Class bard = (Bard_Class) this.linked_character.job;
+            this.spell_slots_remaining = bard.current_spell_slots.clone();
+            this.bardic_inspiration_remaining = bard.current_bardic_inspiration_uses;
         }
     }
 

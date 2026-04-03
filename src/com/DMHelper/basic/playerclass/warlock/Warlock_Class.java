@@ -444,6 +444,11 @@ public class Warlock_Class extends Character_Class {
     }
 
     @Override
+    public void restore_short_rest_resources() {
+        this.current_pact_slot_count = this.pact_slot_count;
+    }
+
+    @Override
     public void restore_long_rest_resources() {
         this.current_pact_slot_count = this.pact_slot_count;
     }
