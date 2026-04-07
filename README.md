@@ -112,60 +112,106 @@
 
 启动入口文件：
 
-- [Main.java](/Users/hatys/IdeaProjects/DMHelper/src/Main.java)
+- [Main.java](/Users/hatys/IdeaProjects/DMHelper/src/main/java/Main.java)
+
+## JavaFX 现代主界面
+
+`Main` 会优先加载 JavaFX 启动器 [`FxLauncher`](/Users/hatys/IdeaProjects/DMHelper/src/main/java/FxLauncher.java)，并把“建角、列表、管理、战斗”四个核心流程全部呈现在 JavaFX 原生界面中；Swing 版本仅作为遗留参考，不再自动弹出。
+
+JavaFX 面板的主题位于 [`main-menu.css`](/Users/hatys/IdeaProjects/DMHelper/src/main/java/com/DMHelper/basic/javafx/main-menu.css)，可以继续在其中调整配色、圆角、阴影等视觉细节。
+
+当前已完成的 JavaFX 窗体：
+
+- `CharacterCreateWindow`：重新设计的角色创建流程，包含基础信息、能力值与背景设定。
+- `CharacterRosterWindow`：角色列表与详情页，支持搜索、排序与即时刷新。
+- `CharacterManagerWindow`：角色装备/背包/资源的集中查看与基本维护，可执行短休/长休。
+- `CombatConsoleWindow`：简化版战斗控制台，支持添加参战者、掷先攻、轮次追踪与日志记录。
+
+### 使用 Maven 运行 JavaFX 版本
+
+1. 安装 JDK 17+ 与 Maven 3.9+。
+2. 在仓库根目录执行一次编译（会自动下载 sqlite-jdbc 与 OpenJFX）：
+
+   ```bash
+   mvn clean compile
+   ```
+
+3. 启动 JavaFX 主界面：
+
+   ```bash
+   mvn javafx:run
+   ```
+
+   - 默认会根据当前操作系统选择 `javafx.platform`。如果需要覆盖，可显式指定，例如 `mvn -Djavafx.platform=win javafx:run`（Windows）、`mvn -Djavafx.platform=mac javafx:run`（Intel Mac）、`mvn -Djavafx.platform=linux javafx:run`（Linux）。
+   - 纯命令行运行也可以使用 `mvn -Dmain.class=Main exec:java` 等方式，但 `javafx:run` 会自动加上 `--add-modules javafx.controls,javafx.graphics`。
+
+4. 若想回到旧体验，可直接在 IDE 中运行 `Main_Menu.main`（Swing 版仍保留）。
 
 ## 项目结构
 
 ```text
 src/
-├── Main.java
-├── META-INF/
-└── com/DMHelper/
-    ├── assets/                      # 图标与桌面资源
-    └── basic/
-        ├── Character_Sheet.java     # 角色核心模型
-        ├── Stats.java               # 六维与调整值
-        ├── armor/                   # 护甲兼容模型
-        ├── combat/                  # 战斗引擎、怪物、掉落、状态
-        ├── database/                # SQLite 连接、DAO、初始化、序列化
-        ├── equipment/               # 装备、物品库、槽位
-        ├── feat/                    # 专长定义与专长库
-        ├── menus/                   # Swing 界面与交互辅助
-        ├── playerclass/             # 职业、子职业、成长与资源
-        ├── race/                    # 种族、子种族与恢复工厂
-        └── spell/                   # 法术定义与法术库
+├── main/
+│   ├── java/
+│   │   ├── Main.java
+│   │   ├── FxLauncher.java
+│   │   └── com/DMHelper/
+│   │       ├── assets/                  # 图标与桌面资源（类路径访问）
+│   │       └── basic/
+│   │           ├── Character_Sheet.java # 角色核心模型
+│   │           ├── ...                  # 其他子模块
+│   └── resources/
+│       └── META-INF/                    # MANIFEST 等资源
+└── test/                                # 预留（当前为空）
 ```
 
 ## 运行环境
 
-- Java Swing 桌面环境
-- SQLite JDBC 驱动：
-  - `lib/sqlite-jdbc-3.51.3.0.jar`
-- 当前项目可使用以下方式直接编译运行
-
-如果你在 IDE 中运行，确认 `sqlite-jdbc-3.51.3.0.jar` 已加入 classpath。
+- JDK 17 或以上（推荐与系统保持一致，例如 macOS 上的 Temurin/OpenJDK）。
+- Maven 3.9 及以上版本。
+- OpenJFX 与 sqlite-jdbc 由 Maven 自动拉取，无需在 `lib/` 中手工放置 JAR。
 
 ## 本地运行
 
 ### 方式一：在 IDE 中运行
 
-直接运行：
-
-- [Main.java](/Users/hatys/IdeaProjects/DMHelper/src/Main.java)
+1. 以 “Open Existing Maven Project” 方式导入根目录（IDE 会自动识别 `pom.xml` 并下载依赖）。
+2. 运行 `Main.main` 即可启动，或直接使用 IDE 的 Maven 面板执行 `javafx:run` 获得同样效果。
 
 ### 方式二：命令行编译
 
-在项目根目录执行：
+Maven 已经封装好了编译流程，直接执行：
 
 ```bash
-javac -cp lib/sqlite-jdbc-3.51.3.0.jar -d out $(find src -name '*.java' | sort)
+mvn clean compile
 ```
 
-快速构建校验：
+若只想做一次快速校验，可省略清理步骤：
 
 ```bash
-javac -cp lib/sqlite-jdbc-3.51.3.0.jar -d /tmp/dmhelper-build $(find src -name '*.java' | sort)
+mvn -q -DskipTests compile
 ```
+
+## macOS 打包
+
+当前项目已经可以在 macOS 上直接打包为 `.app` 和 `.dmg`。
+
+仓库内置了打包脚本：
+
+```bash
+./scripts/package-macos-dmg.sh
+```
+
+产物位置：
+
+- `target/jpackage/dist/DMHelper.app`
+- `target/jpackage/dist/DMHelper-1.0.0.dmg`
+
+说明：
+
+- 脚本会自行编译源码、打包应用 jar，并调用 `jpackage` 生成安装包。
+- 依赖前提是本机已经安装 JDK 17+，并且本地 Maven 仓库里已有 OpenJFX 与 `sqlite-jdbc` 依赖。
+- 当前生成的是可本地安装分发的未公证包；如果要面向普通 macOS 用户直接分发，后续还需要 Apple Developer 签名与 notarization。
 
 ## 数据库存档位置
 
@@ -188,21 +234,21 @@ javac -cp lib/sqlite-jdbc-3.51.3.0.jar -d /tmp/dmhelper-build $(find src -name '
 
 数据库相关实现：
 
-- [DB_Helper.java](/Users/hatys/IdeaProjects/DMHelper/src/com/DMHelper/basic/database/DB_Helper.java)
-- [Init_DB.java](/Users/hatys/IdeaProjects/DMHelper/src/com/DMHelper/basic/database/Init_DB.java)
+- [DB_Helper.java](/Users/hatys/IdeaProjects/DMHelper/src/main/java/com/DMHelper/basic/database/DB_Helper.java)
+- [Init_DB.java](/Users/hatys/IdeaProjects/DMHelper/src/main/java/com/DMHelper/basic/database/Init_DB.java)
 
 ## 主要源码入口
 
 - 应用启动：
-  - [Main.java](/Users/hatys/IdeaProjects/DMHelper/src/Main.java)
+  - [Main.java](/Users/hatys/IdeaProjects/DMHelper/src/main/java/Main.java)
 - 主菜单：
-  - [Main_Menu.java](/Users/hatys/IdeaProjects/DMHelper/src/com/DMHelper/basic/menus/Main_Menu.java)
+  - [Main_Menu.java](/Users/hatys/IdeaProjects/DMHelper/src/main/java/com/DMHelper/basic/menus/Main_Menu.java)
 - 角色创建：
-  - [Create_Character_UI.java](/Users/hatys/IdeaProjects/DMHelper/src/com/DMHelper/basic/menus/Create_Character_UI.java)
+  - [Create_Character_UI.java](/Users/hatys/IdeaProjects/DMHelper/src/main/java/com/DMHelper/basic/menus/Create_Character_UI.java)
 - 角色管理：
-  - [Character_Manager_UI.java](/Users/hatys/IdeaProjects/DMHelper/src/com/DMHelper/basic/menus/Character_Manager_UI.java)
+  - [Character_Manager_UI.java](/Users/hatys/IdeaProjects/DMHelper/src/main/java/com/DMHelper/basic/menus/Character_Manager_UI.java)
 - 战斗系统：
-  - [Combat_System_UI.java](/Users/hatys/IdeaProjects/DMHelper/src/com/DMHelper/basic/menus/Combat_System_UI.java)
+  - [Combat_System_UI.java](/Users/hatys/IdeaProjects/DMHelper/src/main/java/com/DMHelper/basic/menus/Combat_System_UI.java)
 
 ## 规则实现说明
 
