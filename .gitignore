@@ -5,6 +5,14 @@ out/
 !**/src/test/**/out/
 .kotlin
 
+### Build Outputs ###
+target/
+build/
+*.dmg
+*.app
+hs_err_pid*.log
+dnd_data.db
+
 ### Eclipse ###
 .apt_generated
 .classpath

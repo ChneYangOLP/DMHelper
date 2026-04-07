@@ -1,0 +1,173 @@
+:root {
+    -fx-font-family: "SF Pro Display", "PingFang SC", "Microsoft YaHei UI", "Segoe UI", sans-serif;
+    -fx-text-fill: #2f2a24;
+}
+
+.home-shell {
+    -fx-background-color: linear-gradient(to bottom, #f5efe4 0%, #efe6d7 100%);
+}
+
+.home-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.home-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.home-content {
+    -fx-alignment: top-center;
+}
+
+.hero-banner {
+    -fx-max-width: 980px;
+    -fx-background-color: rgba(255, 252, 246, 0.96);
+    -fx-background-radius: 24px;
+    -fx-padding: 24px 28px 24px 28px;
+    -fx-border-color: rgba(122, 102, 71, 0.2);
+    -fx-border-radius: 24px;
+    -fx-effect: dropshadow(gaussian, rgba(67, 53, 33, 0.08), 18, 0.18, 0, 6);
+}
+
+.hero-badge {
+    -fx-background-color: rgba(101, 84, 57, 0.12);
+    -fx-text-fill: #5a4730;
+    -fx-padding: 5px 12px;
+    -fx-background-radius: 999px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.hero-title {
+    -fx-font-size: 34px;
+    -fx-font-weight: 700;
+    -fx-fill: #1d1a17;
+}
+
+.hero-description {
+    -fx-font-size: 17px;
+    -fx-fill: #55473a;
+}
+
+.hero-summary {
+    -fx-text-fill: #76624b;
+    -fx-font-size: 14px;
+}
+
+.action-grid {
+    -fx-max-width: 980px;
+    -fx-padding: 0;
+}
+
+.action-card {
+    -fx-background-color: rgba(255, 252, 246, 0.98);
+    -fx-background-radius: 22px;
+    -fx-padding: 22px;
+    -fx-border-color: rgba(122, 102, 71, 0.18);
+    -fx-border-radius: 22px;
+    -fx-effect: dropshadow(gaussian, rgba(67, 53, 33, 0.06), 14, 0.15, 0, 4);
+    -fx-cursor: hand;
+}
+
+.action-card:hover {
+    -fx-translate-y: -2px;
+    -fx-effect: dropshadow(gaussian, rgba(67, 53, 33, 0.12), 16, 0.16, 0, 6);
+}
+
+.action-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #2b241d;
+}
+
+.action-desc {
+    -fx-font-size: 14px;
+    -fx-line-spacing: 2px;
+    -fx-text-fill: #635243;
+}
+
+.primary-button {
+    -fx-background-color: linear-gradient(to bottom, #4d6a55 0%, #3f5948 100%);
+    -fx-text-fill: #fffaf2;
+    -fx-padding: 10px 22px;
+    -fx-background-radius: 14px;
+    -fx-font-weight: bold;
+    -fx-border-color: rgba(31, 47, 38, 0.18);
+    -fx-border-radius: 14px;
+}
+
+.primary-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #58755f 0%, #486553 100%);
+}
+
+.ghost-button {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(53, 83, 66, 0.4);
+    -fx-border-radius: 18px;
+    -fx-padding: 8px 18px;
+    -fx-text-fill: #365b45;
+}
+
+.dialog-shell {
+    -fx-background-color: linear-gradient(to bottom, #f7f1e6 0%, #efe6d7 100%);
+}
+
+.dialog-title {
+    -fx-font-size: 30px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #2a2722;
+}
+
+.dialog-subtitle {
+    -fx-text-fill: #675e4f;
+    -fx-font-size: 15px;
+}
+
+.card {
+    -fx-background-color: rgba(255, 255, 255, 0.95);
+    -fx-background-radius: 22px;
+    -fx-padding: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(39, 45, 46, 0.12), 24, 0.16, 0, 10);
+}
+
+.section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2f2a24;
+}
+
+.form-grid .form-label {
+    -fx-font-weight: 600;
+    -fx-text-fill: #3a352e;
+}
+
+.solid-field, .form-grid TextField, .form-grid ComboBox, .form-grid Spinner {
+    -fx-background-color: rgba(250, 249, 246, 0.9);
+    -fx-background-radius: 12px;
+    -fx-padding: 8px;
+    -fx-border-color: rgba(90, 81, 70, 0.18);
+    -fx-border-radius: 12px;
+}
+
+.detail-area {
+    -fx-background-color: rgba(252, 252, 250, 0.95);
+    -fx-background-radius: 16px;
+    -fx-border-color: rgba(79, 70, 55, 0.15);
+    -fx-border-radius: 16px;
+    -fx-padding: 14px;
+}
+
+.content-scroll {
+    -fx-background-color: transparent;
+}
+
+.roster-table {
+    -fx-background-color: transparent;
+}
+
+.equip-summary {
+    -fx-font-family: "JetBrains Mono", "SFMono-Regular", monospace;
+    -fx-text-fill: #433b30;
+}
