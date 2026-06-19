@@ -1,10 +1,8 @@
 import com.DMHelper.basic.database.Global_Data;
-import com.DMHelper.basic.menus.Character_Manager_UI;
-import com.DMHelper.basic.menus.Combat_System_UI;
-import com.DMHelper.basic.menus.Create_Character_UI;
-import com.DMHelper.basic.menus.Main_Menu;
-import com.DMHelper.basic.menus.Ui_Theme;
-import com.DMHelper.basic.menus.View_Characters_UI;
+import com.DMHelper.fx.CharacterCreateWindow;
+import com.DMHelper.fx.CharacterManagerWindow;
+import com.DMHelper.fx.CharacterRosterWindow;
+import com.DMHelper.fx.CombatConsoleWindow;
 import com.DMHelper.fx.FxThemes;
 import javafx.application.Application;
 import javafx.beans.property.IntegerProperty;
@@ -20,12 +18,14 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
 import java.net.URL;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 
+/**
+ * DMHelper JavaFX 主启动器
+ * <p>
+ * 所有子界面均已迁移为 JavaFX 原生实现，不再依赖 Swing。
+ */
 public final class FxLauncher extends Application {
     private static final AtomicBoolean launched = new AtomicBoolean(false);
     private static final String CSS_RESOURCE = "/com/DMHelper/basic/javafx/main-menu.css";
@@ -42,7 +42,7 @@ public final class FxLauncher extends Application {
     public void start(Stage primaryStage) {
         Main.ensure_core_bootstrapped();
 
-        primaryStage.setTitle("DMD Helper · JavaFX 控制台");
+        primaryStage.setTitle("DMHelper · JavaFX 控制台");
         Image icon = loadStageIcon();
         if (icon != null) {
             primaryStage.getIcons().add(icon);
@@ -90,7 +90,7 @@ public final class FxLauncher extends Application {
         Label badge = new Label("DM 工具箱");
         badge.getStyleClass().add("hero-badge");
 
-        Text title = new Text("DMD Helper");
+        Text title = new Text("DMHelper");
         title.getStyleClass().add("hero-title");
 
         Text subtitle = new Text("角色、成长、装备与战斗管理");
@@ -100,11 +100,7 @@ public final class FxLauncher extends Application {
         summary.textProperty().bind(characterCount.asString("当前已有 %s 个角色存档"));
         summary.getStyleClass().add("hero-summary");
 
-        Button openConsoleButton = new Button("打开主控台");
-        openConsoleButton.getStyleClass().add("primary-button");
-        openConsoleButton.setOnAction(e -> openLegacyWindow(Main_Menu::new));
-
-        hero.getChildren().addAll(badge, title, subtitle, summary, openConsoleButton);
+        hero.getChildren().addAll(badge, title, subtitle, summary);
         return hero;
     }
 
@@ -117,29 +113,29 @@ public final class FxLauncher extends Application {
 
         grid.getChildren().add(buildActionCard(
                 "创建角色",
-                "创建新角色，并继续进入原有的背景、成长与初始配置流程。",
-                () -> openLegacyWindow(Create_Character_UI::new)
+                "创建新角色，填写基础信息、六维属性，并完成背景与性格设定。",
+                () -> new CharacterCreateWindow(getActiveStage()).show()
         ));
         grid.getChildren().add(buildActionCard(
                 "角色一览",
-                "查看现有角色、打开详情，并使用原有的删除与浏览能力。",
-                () -> openLegacyWindow(View_Characters_UI::new)
+                "查看现有角色列表与详情，支持搜索、排序与导出角色卡 PDF。",
+                () -> new CharacterRosterWindow(getActiveStage()).show()
         ));
         grid.getChildren().add(buildActionCard(
                 "角色管理",
-                "进入原有的完整角色管理界面，包含升级、法术、背包、装备与休息。",
+                "全功能角色管理：装备与背包、施法与法术、短休/长休、升级与成长、导出角色卡 PDF。",
                 () -> {
                     if (ensureCharactersAvailable("角色管理")) {
-                        openLegacyWindow(Character_Manager_UI::new);
+                        new CharacterManagerWindow(getActiveStage()).show();
                     }
                 }
         ));
         grid.getChildren().add(buildActionCard(
                 "战斗系统",
-                "进入原有的完整战斗系统，继续使用你已有的目标、攻击与结算流程。",
+                "完整战斗系统：选择参战角色与敌人、先攻排序、攻击结算、道具使用、战后结算与导出战斗日志 PDF。",
                 () -> {
                     if (ensureCharactersAvailable("战斗系统")) {
-                        openLegacyWindow(Combat_System_UI::new);
+                        new CombatConsoleWindow(getActiveStage()).show();
                     }
                 }
         ));
@@ -182,13 +178,14 @@ public final class FxLauncher extends Application {
         return false;
     }
 
-    private void openLegacyWindow(Supplier<? extends JFrame> factory) {
-        SwingUtilities.invokeLater(() -> {
-            Ui_Theme.install_global_theme();
-            JFrame frame = factory.get();
-            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            frame.setVisible(true);
-        });
+    private Stage getActiveStage() {
+        // 获取当前 JavaFX 应用的主 Stage 或任意可见 Stage
+        for (javafx.stage.Window window : javafx.stage.Window.getWindows()) {
+            if (window instanceof Stage && ((Stage) window).isShowing()) {
+                return (Stage) window;
+            }
+        }
+        return new Stage();
     }
 
     private Image loadStageIcon() {

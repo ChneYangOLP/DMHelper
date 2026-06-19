@@ -1,8 +1,10 @@
 package com.DMHelper.basic.menus;
 
 import com.DMHelper.basic.Character_Sheet;
+import com.DMHelper.basic.Encounter_Log_PDF;
 import com.DMHelper.basic.combat.Attack_Option;
 import com.DMHelper.basic.combat.Combat_Engine;
+import com.DMHelper.basic.combat.Combat_Log_Entry;
 import com.DMHelper.basic.combat.Combat_Status_Effect;
 import com.DMHelper.basic.combat.Combat_Status_Type;
 import com.DMHelper.basic.combat.Combatant;
@@ -19,7 +21,11 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.io.File;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -2015,6 +2021,39 @@ public class Combat_System_UI extends JFrame {
         this.settlement_shown = true;
         SettlementDialog dialog = new SettlementDialog(this, this.combat_engine);
         dialog.setVisible(true);
+
+        int exportChoice = JOptionPane.showConfirmDialog(this,
+                "是否导出本次战斗日志为 PDF 文件？",
+                "导出战斗日志",
+                JOptionPane.YES_NO_OPTION);
+        if (exportChoice == JOptionPane.YES_OPTION) {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("导出战斗日志 PDF");
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            fileChooser.setSelectedFile(new File("combat_log_" + timestamp + ".pdf"));
+            fileChooser.setFileFilter(new FileNameExtensionFilter("PDF 文件", "pdf"));
+            int userChoice = fileChooser.showSaveDialog(this);
+            if (userChoice == JFileChooser.APPROVE_OPTION) {
+                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+                try {
+                    Encounter_Log_PDF.generate(
+                            combat_engine.get_combat_log(),
+                            combat_engine.get_initiative_order(),
+                            combat_engine.get_current_round(),
+                            combat_engine.get_total_damage_by_players(),
+                            combat_engine.get_total_damage_by_enemies(),
+                            combat_engine.get_total_healing(),
+                            combat_engine.did_players_win(),
+                            combat_engine.get_distributed_xp(),
+                            filePath
+                    );
+                    JOptionPane.showMessageDialog(this, "战斗日志 PDF 已成功导出至：" + filePath);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "导出失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+
         append_log("战后结算完成。剩余未分配掉落：" + this.combat_engine.get_pending_loot_keys().size() + " 件。");
         refresh_battle_ui();
     }

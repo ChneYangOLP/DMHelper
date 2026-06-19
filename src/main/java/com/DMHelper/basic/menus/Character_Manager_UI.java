@@ -1,6 +1,7 @@
 package com.DMHelper.basic.menus;
 
 import com.DMHelper.basic.Character_Sheet;
+import com.DMHelper.basic.Character_Card_PDF;
 import com.DMHelper.basic.combat.Combat_Engine;
 import com.DMHelper.basic.combat.Combatant;
 import com.DMHelper.basic.combat.Dice_Util;
@@ -22,9 +23,11 @@ import com.DMHelper.basic.spell.Spell_Definition;
 import com.DMHelper.basic.spell.Spell_Library;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -97,6 +100,11 @@ public class Character_Manager_UI extends JFrame {
         stats_panel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         stats_area = build_text_area();
         stats_panel.add(Ui_Theme.wrap_scroll(stats_area), BorderLayout.CENTER);
+        JPanel stats_btn_panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton export_pdf_btn_stats = new JButton("导出角色卡 PDF");
+        export_pdf_btn_stats.addActionListener(e -> handle_export_character_pdf());
+        stats_btn_panel.add(export_pdf_btn_stats);
+        stats_panel.add(stats_btn_panel, BorderLayout.SOUTH);
         tabbed_pane.addTab("基础与属性", stats_panel);
 
         JPanel equip_panel = new JPanel(new BorderLayout(10, 10));
@@ -247,7 +255,8 @@ public class Character_Manager_UI extends JFrame {
         Ui_Theme.style_secondary_button(manage_spell_selection_btn);
         Ui_Theme.style_secondary_button(manage_prepared_spell_btn);
         Ui_Theme.style_secondary_button(equip_btn);
-        Ui_Theme.apply_window(this);
+    Ui_Theme.style_secondary_button(export_pdf_btn_stats);
+    Ui_Theme.apply_window(this);
 
         refresh_ui();
     }
@@ -1169,6 +1178,27 @@ public class Character_Manager_UI extends JFrame {
             }
         }
         return parts.isEmpty() ? "未恢复法术位" : String.join("，", parts);
+    }
+
+    private void handle_export_character_pdf() {
+        if (current_char == null) {
+            JOptionPane.showMessageDialog(this, "请先选择一个角色。", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("导出角色卡 PDF");
+        fileChooser.setSelectedFile(new File(current_char.name + "_character_card.pdf"));
+        fileChooser.setFileFilter(new FileNameExtensionFilter("PDF 文件", "pdf"));
+        int userChoice = fileChooser.showSaveDialog(this);
+        if (userChoice == JFileChooser.APPROVE_OPTION) {
+            try {
+                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+                Character_Card_PDF.generate(current_char, filePath);
+                JOptionPane.showMessageDialog(this, "角色卡 PDF 已成功导出至：\n" + filePath);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "导出失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     private void handle_use_second_wind() {

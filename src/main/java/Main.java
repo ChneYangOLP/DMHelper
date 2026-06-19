@@ -8,6 +8,10 @@ import java.awt.Image;
 import java.awt.Taskbar;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Map;
+import com.DMHelper.api.ApiServer;
 
 public class Main {
     private static final String APP_ICON_RESOURCE = "/com/DMHelper/assets/app_icon.png";
@@ -17,8 +21,40 @@ public class Main {
     public static void main(String[] args) {
         configure_platform_settings();
         install_global_exception_handler();
+        
+        ensure_core_bootstrapped();
 
-        try_launch_javafx(args);
+        if (Arrays.asList(args).contains("--server")) {
+            System.out.println("[Main] Starting in Server Mode...");
+            ApiServer.start(8080);
+        } else if (Arrays.asList(args).contains("--javafx")) {
+            System.out.println("[Main] Starting Legacy JavaFX Mode...");
+            try_launch_javafx(args);
+        } else {
+            System.out.println("[Main] Starting Local API Server and Launching Electron Frontend...");
+            ApiServer.start(8080);
+            
+            try {
+                // Use a ProcessBuilder to launch npm in the frontend directory
+                File frontendDir = new File(System.getProperty("user.dir"), "frontend");
+                ProcessBuilder pb = new ProcessBuilder("npm", "run", "electron:dev");
+                // Fallback for macOS if npm is not in PATH
+                if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+                    pb = new ProcessBuilder("/bin/bash", "-c", "source ~/.bash_profile 2>/dev/null || source ~/.zshrc 2>/dev/null || true; npm run electron:dev");
+                }
+                
+                pb.directory(frontendDir);
+                pb.inheritIO();
+                
+                Map<String, String> env = pb.environment();
+                env.put("EXTERNAL_SERVER", "true");
+                
+                Process p = pb.start();
+                p.waitFor();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     static synchronized void ensure_core_bootstrapped() {

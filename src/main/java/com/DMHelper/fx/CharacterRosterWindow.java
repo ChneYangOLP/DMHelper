@@ -1,5 +1,6 @@
 package com.DMHelper.fx;
 
+import com.DMHelper.basic.Character_Card_PDF;
 import com.DMHelper.basic.Character_Sheet;
 import com.DMHelper.basic.database.Global_Data;
 import javafx.beans.binding.Bindings;
@@ -13,10 +14,12 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
+import java.io.File;
 import java.util.Comparator;
 
 public class CharacterRosterWindow extends Stage {
@@ -123,9 +126,47 @@ public class CharacterRosterWindow extends Stage {
             characters.sort(Comparator.comparing(c -> c.name));
         });
 
-        HBox footer = new HBox();
+        Button exportPdfButton = new Button("导出角色卡 PDF");
+        exportPdfButton.getStyleClass().add("primary-button");
+        exportPdfButton.setOnAction(e -> {
+            Character_Sheet selected = tableView.getSelectionModel().getSelectedItem();
+            if (selected == null) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("未选择角色");
+                alert.setHeaderText(null);
+                alert.setContentText("请先在列表中选择一个角色，再导出角色卡 PDF。");
+                alert.initOwner(CharacterRosterWindow.this);
+                alert.showAndWait();
+                return;
+            }
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("保存角色卡 PDF");
+            fileChooser.setInitialFileName(selected.name + "_character_card.pdf");
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("PDF 文件", "*.pdf"));
+            File file = fileChooser.showSaveDialog(CharacterRosterWindow.this);
+            if (file == null) return;
+            try {
+                Character_Card_PDF.generate(selected, file.getAbsolutePath());
+                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                successAlert.setTitle("导出成功");
+                successAlert.setHeaderText(null);
+                successAlert.setContentText("角色卡已导出至：" + file.getAbsolutePath());
+                successAlert.initOwner(CharacterRosterWindow.this);
+                successAlert.showAndWait();
+            } catch (Exception ex) {
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("导出失败");
+                errorAlert.setHeaderText(null);
+                errorAlert.setContentText("导出角色卡 PDF 时发生错误：\n" + ex.getMessage());
+                errorAlert.initOwner(CharacterRosterWindow.this);
+                errorAlert.showAndWait();
+            }
+        });
+
+        HBox footer = new HBox(12);
         footer.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
-        footer.getChildren().add(refreshButton);
+        footer.getChildren().addAll(exportPdfButton, refreshButton);
         root.setBottom(footer);
 
         Scene scene = new Scene(root, 1100, 680);

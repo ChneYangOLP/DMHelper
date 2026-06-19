@@ -25,12 +25,27 @@ public class Combat_Engine {
     private int distributed_xp;
     private String pending_system_log;
 
+    // ---- 新增：战斗日志、专注管理、回合与统计 ----
+    private final List<Combat_Log_Entry> combat_log;
+    private final Concentration_Manager concentration_manager;
+    private int current_round;
+    private int total_damage_dealt_by_players;
+    private int total_damage_dealt_by_enemies;
+    private int total_healing_done;
+
     public Combat_Engine(List<Character_Sheet> characters, List<Monster_Definition> monsters) {
         this.initiative_order = new ArrayList<>();
         this.player_combatants = new ArrayList<>();
         this.participating_characters = new ArrayList<>(characters);
         this.encounter_monsters = new ArrayList<>(monsters);
         this.pending_loot_keys = new ArrayList<>();
+        // 新增字段初始化
+        this.combat_log = new ArrayList<>();
+        this.concentration_manager = new Concentration_Manager();
+        this.current_round = 0;
+        this.total_damage_dealt_by_players = 0;
+        this.total_damage_dealt_by_enemies = 0;
+        this.total_healing_done = 0;
         int xpCounter = 0;
 
         for (Character_Sheet character : characters) {
@@ -54,6 +69,18 @@ public class Combat_Engine {
                 .comparingInt((Combatant combatant) -> combatant.initiative_total).reversed()
                 .thenComparingInt(combatant -> combatant.dexterity).reversed()
                 .thenComparing(combatant -> combatant.display_name));
+
+        // 记录战斗开始日志
+        StringBuilder startDesc = new StringBuilder("战斗开始！参战方：");
+        if (!characters.isEmpty()) {
+            startDesc.append("玩家方（").append(characters.size()).append("人）");
+        }
+        if (!monsters.isEmpty()) {
+            if (!characters.isEmpty()) startDesc.append(" vs ");
+            startDesc.append("敌方（").append(monsters.size()).append("只）");
+        }
+        add_log(Combat_Log_Entry.Log_Type.COMBAT_START, "系统", "",
+                startDesc.toString(), 0, "总遭遇 XP: " + this.total_encounter_xp);
     }
 
     private void roll_initiative(Combatant combatant) {
@@ -124,20 +151,53 @@ public class Combat_Engine {
         // 先扣资源，再结算攻击；这样战斗日志能准确反映真实消耗。
         consume_cost(attacker, attackOption, log);
 
+        // 如果消耗法术位且法术需要专注，自动开始专注
+        if (attackOption.spell_slot_cost_level > 0) {
+            concentration_manager.start_concentration(attacker, attackOption.name, attackOption.spell_slot_cost_level);
+            add_log(Combat_Log_Entry.Log_Type.CONCENTRATION_CHECK, attacker.display_name, "",
+                    attacker.display_name + " 开始专注【" + attackOption.name + "】（" + attackOption.spell_slot_cost_level + " 环）",
+                    attackOption.spell_slot_cost_level, "消耗法术位自动开始专注");
+        }
+
+        // 计算优势/劣势（从攻击者状态效果获取）
+        boolean hasAdvantage = Advantage_Disadvantage.has_advantage_from_status(attacker.status_effects);
+        boolean hasDisadvantage = Advantage_Disadvantage.has_disadvantage_from_status(attacker.status_effects);
+
         if (attackOption.healing_dice_count > 0) {
             int healing = Math.max(0, attackOption.roll_healing());
             int beforeHp = target.current_hp;
             target.current_hp = Math.min(target.max_hp, target.current_hp + healing);
-            log.append("恢复 ").append(target.current_hp - beforeHp).append(" 点生命值，目标当前 HP ")
+            int actualHealing = target.current_hp - beforeHp;
+            log.append("恢复 ").append(actualHealing).append(" 点生命值，目标当前 HP ")
                     .append(target.current_hp).append("/").append(target.max_hp).append("\n");
             apply_status_if_needed(attackOption, target, log, true);
+            // 累计治疗统计
+            this.total_healing_done += actualHealing;
+            add_log(Combat_Log_Entry.Log_Type.HEALING_DONE, attacker.display_name, target.display_name,
+                    attacker.display_name + " 使用 " + attackOption.name + " 恢复了 " + actualHealing + " 点生命值",
+                    actualHealing, "目标当前 HP: " + target.current_hp + "/" + target.max_hp);
         } else if (attackOption.resolution_type == Attack_Option.Resolution_Type.ATTACK_ROLL) {
             for (int i = 1; i <= attackOption.attack_count; i++) {
-                int d20 = Dice_Util.roll_d20();
+                // 使用优势/劣势系统掷骰
+                int d20 = Advantage_Disadvantage.resolve_d20(hasAdvantage, hasDisadvantage);
+                String rollLabel = Advantage_Disadvantage.resolve_d20_label(hasAdvantage, hasDisadvantage);
                 int totalAttack = d20 + attackOption.attack_bonus + attacker.get_effective_attack_modifier();
                 boolean critical = d20 == 20;
                 boolean hit = critical || totalAttack >= target.get_effective_armor_class();
-                log.append("第 ").append(i).append(" 次攻击：d20=").append(d20)
+
+                // 记录攻击掷骰日志
+                Combat_Log_Entry.Log_Type rollLogType = hasAdvantage && !hasDisadvantage
+                        ? Combat_Log_Entry.Log_Type.ADVANTAGE_ROLL
+                        : (hasDisadvantage && !hasAdvantage
+                                ? Combat_Log_Entry.Log_Type.DISADVANTAGE_ROLL
+                                : Combat_Log_Entry.Log_Type.ATTACK_ROLL);
+                add_log(rollLogType, attacker.display_name, target.display_name,
+                        "第 " + i + " 次攻击：" + rollLabel + " + "
+                                + (attackOption.attack_bonus + attacker.get_effective_attack_modifier())
+                                + " = " + totalAttack + (hit ? "，命中" : "，未命中"),
+                        totalAttack, hit ? "命中" : "未命中");
+
+                log.append("第 ").append(i).append(" 次攻击：").append(rollLabel)
                         .append(" + ").append(attackOption.attack_bonus + attacker.get_effective_attack_modifier())
                         .append(" = ").append(totalAttack)
                         .append(hit ? "，命中" : "，未命中")
@@ -149,9 +209,32 @@ public class Combat_Engine {
                             .append(critical ? "（重击）" : "")
                             .append("伤害，目标剩余 HP ").append(target.current_hp).append("/").append(target.max_hp).append("\n");
                     apply_status_if_needed(attackOption, target, log, false);
+
+                    // 累计伤害统计
+                    if (attacker.side == Combatant.Side.PLAYER) {
+                        this.total_damage_dealt_by_players += damage;
+                    } else {
+                        this.total_damage_dealt_by_enemies += damage;
+                    }
+                    add_log(Combat_Log_Entry.Log_Type.DAMAGE_DEALT, attacker.display_name, target.display_name,
+                            attacker.display_name + " 造成 " + damage + " 点" + attackOption.damage_type
+                                    + (critical ? "（重击）" : "") + "伤害",
+                            damage, "目标剩余 HP: " + target.current_hp + "/" + target.max_hp);
+
+                    // 受到伤害时检查专注
+                    if (damage > 0 && concentration_manager.has_concentration(target)) {
+                        concentration_manager.track_damage(target, damage);
+                        String concResult = concentration_manager.check_concentration(target, damage);
+                        log.append(concResult).append("\n");
+                        add_log(Combat_Log_Entry.Log_Type.CONCENTRATION_CHECK, target.display_name, "",
+                                concResult, damage, "受到伤害触发专注检定");
+                    }
                 }
                 if (!target.is_alive()) {
                     log.append(target.display_name).append(" 倒下了。\n");
+                    add_log(Combat_Log_Entry.Log_Type.DEATH, attacker.display_name, target.display_name,
+                            target.display_name + " 被 " + attacker.display_name + " 击倒", 0,
+                            "使用 " + attackOption.name);
                     break;
                 }
             }
@@ -168,11 +251,41 @@ public class Combat_Engine {
                     .append(success ? "，成功" : "，失败").append("\n");
             log.append("造成 ").append(appliedDamage).append(" 点").append(attackOption.damage_type)
                     .append("伤害，目标剩余 HP ").append(target.current_hp).append("/").append(target.max_hp).append("\n");
+
+            // 记录豁免日志
+            add_log(Combat_Log_Entry.Log_Type.SAVE_THROW, target.display_name, attacker.display_name,
+                    target.display_name + " 进行 " + attackOption.save_ability + " 豁免：d20=" + saveRoll
+                            + " + " + saveBonus + " = " + saveTotal + (success ? "，成功" : "，失败"),
+                    saveTotal, success ? "豁免成功" : "豁免失败");
+
+            if (appliedDamage > 0) {
+                if (attacker.side == Combatant.Side.PLAYER) {
+                    this.total_damage_dealt_by_players += appliedDamage;
+                } else {
+                    this.total_damage_dealt_by_enemies += appliedDamage;
+                }
+                add_log(Combat_Log_Entry.Log_Type.DAMAGE_DEALT, attacker.display_name, target.display_name,
+                        attacker.display_name + " 造成 " + appliedDamage + " 点" + attackOption.damage_type + "伤害",
+                        appliedDamage, "目标剩余 HP: " + target.current_hp + "/" + target.max_hp);
+
+                // 受到伤害时检查专注
+                if (concentration_manager.has_concentration(target)) {
+                    concentration_manager.track_damage(target, appliedDamage);
+                    String concResult = concentration_manager.check_concentration(target, appliedDamage);
+                    log.append(concResult).append("\n");
+                    add_log(Combat_Log_Entry.Log_Type.CONCENTRATION_CHECK, target.display_name, "",
+                            concResult, appliedDamage, "受到伤害触发专注检定");
+                }
+            }
+
             if (!success) {
                 apply_status_if_needed(attackOption, target, log, true);
             }
             if (!target.is_alive()) {
                 log.append(target.display_name).append(" 倒下了。\n");
+                add_log(Combat_Log_Entry.Log_Type.DEATH, attacker.display_name, target.display_name,
+                        target.display_name + " 被 " + attacker.display_name + " 击倒", 0,
+                        "使用 " + attackOption.name);
             }
         } else {
             int damage = Math.max(0, attackOption.roll_damage(false));
@@ -180,12 +293,34 @@ public class Combat_Engine {
                 target.current_hp = Math.max(0, target.current_hp - damage);
                 log.append("自动命中，造成 ").append(damage).append(" 点").append(attackOption.damage_type)
                         .append("伤害，目标剩余 HP ").append(target.current_hp).append("/").append(target.max_hp).append("\n");
+
+                // 累计伤害统计
+                if (attacker.side == Combatant.Side.PLAYER) {
+                    this.total_damage_dealt_by_players += damage;
+                } else {
+                    this.total_damage_dealt_by_enemies += damage;
+                }
+                add_log(Combat_Log_Entry.Log_Type.DAMAGE_DEALT, attacker.display_name, target.display_name,
+                        attacker.display_name + " 造成 " + damage + " 点" + attackOption.damage_type + "伤害（自动命中）",
+                        damage, "目标剩余 HP: " + target.current_hp + "/" + target.max_hp);
+
+                // 受到伤害时检查专注
+                if (concentration_manager.has_concentration(target)) {
+                    concentration_manager.track_damage(target, damage);
+                    String concResult = concentration_manager.check_concentration(target, damage);
+                    log.append(concResult).append("\n");
+                    add_log(Combat_Log_Entry.Log_Type.CONCENTRATION_CHECK, target.display_name, "",
+                            concResult, damage, "受到伤害触发专注检定");
+                }
             } else {
                 log.append("效果直接生效。\n");
             }
             apply_status_if_needed(attackOption, target, log, true);
             if (!target.is_alive()) {
                 log.append(target.display_name).append(" 倒下了。\n");
+                add_log(Combat_Log_Entry.Log_Type.DEATH, attacker.display_name, target.display_name,
+                        target.display_name + " 被 " + attacker.display_name + " 击倒", 0,
+                        "使用 " + attackOption.name);
             }
         }
 
@@ -201,9 +336,16 @@ public class Combat_Engine {
             } else {
                 log.append("本次战斗掉落 ").append(this.pending_loot_keys.size()).append(" 件物品，等待分配。\n");
             }
+            add_log(Combat_Log_Entry.Log_Type.XP_DISTRIBUTED, "系统", "",
+                    "战斗胜利！每位参战角色获得 " + this.distributed_xp + " 经验值",
+                    this.distributed_xp, "总遭遇 XP: " + this.total_encounter_xp);
+            add_log(Combat_Log_Entry.Log_Type.COMBAT_END, "系统", "",
+                    "战斗结束 — 玩家胜利", 0, "总回合数: " + this.current_round);
         } else if (is_side_defeated(Combatant.Side.PLAYER)) {
             this.combat_finished = true;
             log.append("战斗失败，所有参战角色都倒下了。\n");
+            add_log(Combat_Log_Entry.Log_Type.COMBAT_END, "系统", "",
+                    "战斗结束 — 玩家失败", 0, "总回合数: " + this.current_round);
         }
 
         if (!this.combat_finished) {
@@ -220,6 +362,9 @@ public class Combat_Engine {
             return "当前没有可跳过的回合。";
         }
         String message = active.display_name + (active.is_turn_blocked() ? " 因状态影响无法行动，回合结束。" : " 结束了本回合。");
+        // 添加跳过回合日志
+        add_log(Combat_Log_Entry.Log_Type.TURN_SKIPPED, active.display_name, "",
+                message, 0, active.is_turn_blocked() ? "因状态效果无法行动" : "主动跳过");
         advance_turn();
         sync_player_states();
         return message;
@@ -234,6 +379,23 @@ public class Combat_Engine {
         Combatant first = this.initiative_order.remove(0);
         decrement_statuses(first);
         this.initiative_order.add(first);
+
+        // 递增回合数
+        this.current_round++;
+
+        // 添加回合开始日志
+        add_log(Combat_Log_Entry.Log_Type.ROUND_START, "系统", "",
+                "第 " + this.current_round + " 回合开始", this.current_round,
+                "剩余战斗者: " + this.initiative_order.size() + " 人");
+
+        // 回合结束时检查所有专注
+        String concLog = concentration_manager.check_all_concentrations();
+        if (concLog != null && !concLog.isEmpty() && !concLog.equals("本轮无需专注检定。")) {
+            add_log(Combat_Log_Entry.Log_Type.CONCENTRATION_CHECK, "系统", "",
+                    concLog, 0, "回合结束统一专注检定");
+        }
+        concentration_manager.clear_round_damage();
+
         cleanup_dead();
         Combatant next = get_active_combatant();
         if (next != null) {
@@ -329,16 +491,33 @@ public class Combat_Engine {
             return "外部效果未能生效。";
         }
         StringBuilder log = new StringBuilder();
-        log.append(sourceLabel == null || sourceLabel.trim().isEmpty() ? "外部效果" : sourceLabel)
-                .append(" -> ").append(target.display_name).append("\n");
+        String source = sourceLabel == null || sourceLabel.trim().isEmpty() ? "外部效果" : sourceLabel;
+        log.append(source).append(" -> ").append(target.display_name).append("\n");
         target.current_hp = Math.max(0, target.current_hp - damage);
         log.append("造成 ").append(damage).append(" 点").append(damageType == null || damageType.trim().isEmpty() ? "伤害" : damageType)
                 .append("伤害，目标剩余 HP ").append(target.current_hp).append("/").append(target.max_hp).append("\n");
         if (note != null && !note.trim().isEmpty()) {
             log.append("备注：").append(note.trim()).append("\n");
         }
+
+        // 添加外部伤害日志
+        add_log(Combat_Log_Entry.Log_Type.EXTERNAL_EFFECT, source, target.display_name,
+                source + " 造成 " + damage + " 点" + (damageType == null || damageType.trim().isEmpty() ? "伤害" : damageType) + "伤害",
+                damage, "目标剩余 HP: " + target.current_hp + "/" + target.max_hp);
+
+        // 外部伤害也要检查专注
+        if (damage > 0 && concentration_manager.has_concentration(target)) {
+            concentration_manager.track_damage(target, damage);
+            String concResult = concentration_manager.check_concentration(target, damage);
+            log.append(concResult).append("\n");
+            add_log(Combat_Log_Entry.Log_Type.CONCENTRATION_CHECK, target.display_name, "",
+                    concResult, damage, "外部伤害触发专注检定");
+        }
+
         if (!target.is_alive()) {
             log.append(target.display_name).append(" 倒下了。\n");
+            add_log(Combat_Log_Entry.Log_Type.DEATH, source, target.display_name,
+                    target.display_name + " 因外部效果倒下", 0, source + " 造成 " + damage + " 点伤害");
         }
         handle_post_external_resolution(log);
         sync_player_states();
@@ -350,8 +529,8 @@ public class Combat_Engine {
             return "外部治疗未能生效。";
         }
         StringBuilder log = new StringBuilder();
-        log.append(sourceLabel == null || sourceLabel.trim().isEmpty() ? "外部治疗" : sourceLabel)
-                .append(" -> ").append(target.display_name).append("\n");
+        String source = sourceLabel == null || sourceLabel.trim().isEmpty() ? "外部治疗" : sourceLabel;
+        log.append(source).append(" -> ").append(target.display_name).append("\n");
         int beforeHp = target.current_hp;
         target.current_hp = Math.min(target.max_hp, target.current_hp + amount);
         int healed = target.current_hp - beforeHp;
@@ -360,6 +539,14 @@ public class Combat_Engine {
         if (note != null && !note.trim().isEmpty()) {
             log.append("备注：").append(note.trim()).append("\n");
         }
+
+        // 累计治疗统计
+        this.total_healing_done += healed;
+        // 添加外部治疗日志
+        add_log(Combat_Log_Entry.Log_Type.HEALING_DONE, source, target.display_name,
+                source + " 恢复了 " + healed + " 点生命值",
+                healed, "目标当前 HP: " + target.current_hp + "/" + target.max_hp);
+
         sync_player_states();
         return log.toString().trim();
     }
@@ -511,5 +698,68 @@ public class Combat_Engine {
             return attacker.side == target.side && attacker != target;
         }
         return attacker.side != target.side;
+    }
+
+    // ------------------------------------------------------------------ //
+    //  新增：战斗日志、专注管理、统计查询方法
+    // ------------------------------------------------------------------ //
+
+    /**
+     * 返回完整战斗日志（只读副本）。
+     */
+    public List<Combat_Log_Entry> get_combat_log() {
+        return new ArrayList<>(this.combat_log);
+    }
+
+    /**
+     * 返回当前回合数。
+     */
+    public int get_current_round() {
+        return this.current_round;
+    }
+
+    /**
+     * 返回专注管理器实例。
+     */
+    public Concentration_Manager get_concentration_manager() {
+        return this.concentration_manager;
+    }
+
+    /**
+     * 返回玩家方累计造成的总伤害。
+     */
+    public int get_total_damage_by_players() {
+        return this.total_damage_dealt_by_players;
+    }
+
+    /**
+     * 返回敌方累计造成的总伤害。
+     */
+    public int get_total_damage_by_enemies() {
+        return this.total_damage_dealt_by_enemies;
+    }
+
+    /**
+     * 返回累计总治疗量。
+     */
+    public int get_total_healing() {
+        return this.total_healing_done;
+    }
+
+    /**
+     * 添加战斗日志条目的辅助方法。
+     *
+     * @param type        日志类型
+     * @param actor       行动者名称
+     * @param target      目标名称
+     * @param description 描述文本
+     * @param numericValue 数值（伤害、治疗、掷骰结果等）
+     * @param detail      额外详细信息
+     */
+    private void add_log(Combat_Log_Entry.Log_Type type, String actor, String target,
+                         String description, int numericValue, String detail) {
+        this.combat_log.add(new Combat_Log_Entry(
+                type, this.current_round, actor, target,
+                description, numericValue, detail, null));
     }
 }
