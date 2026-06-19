@@ -1,0 +1,16 @@
+/// <reference types="vite/client" />
+
+declare module '*.vue' {
+  import type { DefineComponent } from 'vue'
+  const component: DefineComponent<{}, {}, any>
+  export default component
+}
+
+interface Window {
+  electronAPI: {
+    minimizeWindow: () => void
+    maximizeWindow: () => void
+    closeWindow: () => void
+    isMaximized: () => Promise<boolean>
+  }
+}

@@ -1,0 +1,120 @@
+/* =============================================
+   D&D Visual Design System — Animations
+   ============================================= */
+
+/* Gold shimmer sweep - for metallic hover effects */
+@keyframes goldShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Breathing glow - for active/focused elements */
+@keyframes breathGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(201, 168, 76, 0.2), 0 0 16px rgba(201, 168, 76, 0.1); }
+  50% { box-shadow: 0 0 16px rgba(201, 168, 76, 0.4), 0 0 32px rgba(201, 168, 76, 0.2); }
+}
+
+/* HP drain animation */
+@keyframes hpPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
+}
+
+/* D20 dice spin */
+@keyframes d20Spin {
+  0% { transform: rotateY(0deg) rotateX(0deg); }
+  25% { transform: rotateY(180deg) rotateX(90deg); }
+  50% { transform: rotateY(360deg) rotateX(180deg); }
+  75% { transform: rotateY(540deg) rotateX(270deg); }
+  100% { transform: rotateY(720deg) rotateX(360deg); }
+}
+
+/* Fade slide in for list items */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Damage flash */
+@keyframes damageFlash {
+  0% { background-color: rgba(196, 50, 50, 0); }
+  20% { background-color: rgba(196, 50, 50, 0.3); }
+  100% { background-color: rgba(196, 50, 50, 0); }
+}
+
+/* Heal glow */
+@keyframes healGlow {
+  0% { background-color: rgba(74, 140, 92, 0); }
+  20% { background-color: rgba(74, 140, 92, 0.3); }
+  100% { background-color: rgba(74, 140, 92, 0); }
+}
+
+/* Gold particle float */
+@keyframes particleFloat {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0;
+  }
+  20% { opacity: 1; }
+  80% { opacity: 0.6; }
+  100% {
+    transform: translateY(-40px) translateX(20px) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Subtle float for icons */
+@keyframes subtleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Result pop */
+@keyframes resultPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Shake effect for natural 1 */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+/* Fade in overlay */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Scale in for modals */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Gold border rotation for nat20 */
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(201, 168, 76, 0.6);
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.3), 0 0 40px rgba(201, 168, 76, 0.15);
+  }
+  50% {
+    border-color: rgba(232, 200, 76, 0.9);
+    box-shadow: 0 0 30px rgba(232, 200, 76, 0.5), 0 0 60px rgba(201, 168, 76, 0.3);
+  }
+}

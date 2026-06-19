@@ -1,0 +1,27 @@
+{
+  "name": "dmhelper-frontend",
+  "version": "1.0.0",
+  "description": "D&D 5e DM Helper - Electron + Vue 3 Frontend",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "electron:dev": "vite build && electron .",
+    "electron:build": "vite build && electron-builder"
+  },
+  "dependencies": {
+    "vue": "^3.5.13",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.3",
+    "electron": "^35.0.1",
+    "electron-builder": "^26.0.12",
+    "typescript": "^5.7.3",
+    "vite": "^6.3.5",
+    "vite-plugin-electron": "^1.0.4",
+    "vite-plugin-electron-renderer": "^1.0.0",
+    "vue-tsc": "^2.2.8"
+  }
+}

@@ -1,0 +1,72 @@
+:root {
+  /* === Parchment / Background Tones === */
+  --parchment-darkest: #0f0c08;
+  --parchment-dark: #1a1410;
+  --parchment-mid: #2a2118;
+  --parchment-light: #3d3024;
+  --parchment-lighter: #4d3e2e;
+  --parchment-highlight: #5e4d3a;
+
+  /* === Dragon Blood Reds === */
+  --dragon-blood: #8b1a1a;
+  --dragon-blood-bright: #b22222;
+  --dragon-blood-glow: #c43232;
+  --dragon-blood-dim: #5a1212;
+
+  /* === Antique Gold === */
+  --antique-gold: #c9a84c;
+  --antique-gold-bright: #e8c84c;
+  --antique-gold-dim: #8a7535;
+  --antique-gold-shadow: rgba(201, 168, 76, 0.15);
+  --antique-gold-glow: rgba(201, 168, 76, 0.4);
+
+  /* === Text Colors === */
+  --text-primary: #e8dcc8;
+  --text-secondary: #b8a890;
+  --text-dim: #7a6e5e;
+  --text-gold: #c9a84c;
+  --text-danger: #c43232;
+  --text-success: #4a8c5c;
+
+  /* === Functional === */
+  --hp-full: #4a8c5c;
+  --hp-mid: #b8862d;
+  --hp-low: #c43232;
+  --hp-critical: #8b1a1a;
+
+  /* === Fonts === */
+  --font-display: 'Cinzel Decorative', 'Cinzel', 'Georgia', serif;
+  --font-heading: 'Cinzel', 'Georgia', serif;
+  --font-body: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(201, 168, 76, 0.05);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5), 0 5px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(201, 168, 76, 0.08);
+  --shadow-gold: 0 0 15px rgba(201, 168, 76, 0.2), 0 0 30px rgba(201, 168, 76, 0.1);
+  --shadow-dragon: 0 0 15px rgba(196, 50, 50, 0.3), 0 0 30px rgba(139, 26, 26, 0.2);
+
+  /* === Glass Effect === */
+  --glass-bg: rgba(26, 20, 16, 0.75);
+  --glass-border: rgba(201, 168, 76, 0.15);
+  --glass-blur: blur(12px) saturate(150%);
+
+  /* === Spacing === */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* === Border Radius === */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* === Transitions === */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}

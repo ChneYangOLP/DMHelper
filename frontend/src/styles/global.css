@@ -1,0 +1,319 @@
+/* =============================================
+   D&D Visual Design System — Global Styles
+   ============================================= */
+
+@import './variables.css';
+@import './animations.css';
+
+/* === CSS Reset === */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* === Root Elements === */
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  line-height: 1.6;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(42, 33, 24, 0.6) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(61, 48, 36, 0.3) 0%, transparent 50%),
+    linear-gradient(180deg, var(--parchment-dark) 0%, var(--parchment-darkest) 100%);
+  background-attachment: fixed;
+}
+
+#app {
+  height: 100%;
+}
+
+/* === Selection === */
+::selection {
+  background: rgba(201, 168, 76, 0.3);
+  color: var(--antique-gold-bright);
+}
+
+::-moz-selection {
+  background: rgba(201, 168, 76, 0.3);
+  color: var(--antique-gold-bright);
+}
+
+/* === Custom Scrollbar === */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--parchment-dark);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--antique-gold-dim);
+  border-radius: 4px;
+  border: 1px solid var(--parchment-dark);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--antique-gold);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--parchment-dark);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--antique-gold-dim) var(--parchment-dark);
+}
+
+/* === Typography === */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  color: var(--text-gold);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+h2 {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  color: var(--text-gold);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+h3 {
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  color: var(--text-primary);
+}
+
+h4 {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+h5 {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+h6 {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+p {
+  margin-bottom: var(--space-sm);
+}
+
+a {
+  color: var(--antique-gold);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--antique-gold-bright);
+}
+
+/* === Buttons === */
+button {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--antique-gold-dim);
+  border-radius: var(--radius-sm);
+  background: var(--parchment-mid);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    transform var(--transition-fast);
+  outline: none;
+  position: relative;
+  overflow: hidden;
+}
+
+button:hover {
+  background:
+    linear-gradient(
+      90deg,
+      var(--parchment-mid) 0%,
+      var(--parchment-light) 25%,
+      var(--parchment-highlight) 50%,
+      var(--parchment-light) 75%,
+      var(--parchment-mid) 100%
+    );
+  background-size: 200% auto;
+  animation: goldShimmer 2s linear infinite;
+  border-color: var(--antique-gold);
+  box-shadow: var(--shadow-sm);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:focus-visible {
+  box-shadow: 0 0 0 2px var(--antique-gold-dim);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* === Inputs === */
+input,
+select,
+textarea {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--parchment-dark);
+  color: var(--text-primary);
+  outline: none;
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--antique-gold-dim);
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-dim);
+}
+
+/* Number input remove spinners */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* === Card === */
+.card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-md);
+  transition:
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(201, 168, 76, 0.25);
+}
+
+/* === Badge === */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 2px var(--space-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border-radius: 999px;
+  background: var(--parchment-light);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* === Utility Classes === */
+.text-gold {
+  color: var(--text-gold);
+}
+
+.text-danger {
+  color: var(--text-danger);
+}
+
+.text-success {
+  color: var(--text-success);
+}
+
+.text-dim {
+  color: var(--text-dim);
+}
+
+/* === Gold Divider === */
+.gold-divider {
+  height: 1px;
+  border: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--antique-gold-dim) 20%,
+    var(--antique-gold) 50%,
+    var(--antique-gold-dim) 80%,
+    transparent 100%
+  );
+  opacity: 0.5;
+  margin: var(--space-md) 0;
+}
+
+/* === Focus Ring Utility === */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--antique-gold-dim);
+  outline-offset: 2px;
+}
+
+/* === Visually Hidden (a11y) === */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
