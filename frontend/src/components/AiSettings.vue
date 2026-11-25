@@ -99,14 +99,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <main class="ai-page">
-    <header><p class="eyebrow">THE ADVENTURE ARCHIVE</p><h1>AI 配置</h1><p class="intro">连接你的模型服务，整理已经经历的冒险。</p></header>
+  <section class="workspace-page">
+    <header class="workspace-heading"><h1>AI 配置</h1></header>
     <div v-if="error" class="banner error" role="alert">{{ error }}</div>
     <div v-if="notice" class="banner success" role="status">{{ notice }}</div>
     <p v-if="loading" class="muted">正在读取 AI 配置…</p>
     <div v-else class="settings-layout">
       <form class="settings-card" @submit.prevent="save">
-        <div class="card-heading"><div><p class="eyebrow">MODEL CONNECTION</p><h2>模型连接</h2></div><span :class="['badge', { ready: saved?.model }]">{{ dirty ? '有未保存修改' : saved?.model ? '已保存配置' : '尚未配置' }}</span></div>
+        <div class="card-heading"><div><h2>模型连接</h2></div><span :class="['badge', { ready: saved?.model }]">{{ dirty ? '有未保存修改' : saved?.model ? '已保存配置' : '尚未配置' }}</span></div>
         <fieldset :disabled="!bridge || !saved || saving || testing">
           <label>模型服务<select :value="provider" aria-label="模型服务" @change="changeProvider"><option v-for="(option, key) in aiProviders" :key="key" :value="key">{{ option.label }}</option><option value="custom">自定义 / 本机模型</option></select></label>
           <label v-if="preset">选择模型<select :value="customModel ? 'CUSTOM' : form.model" aria-label="选择模型" @change="changeModel"><option v-for="option in preset.models" :key="option.id" :value="option.id">{{ option.label }}</option><option value="CUSTOM">其他模型（手动输入 ID）</option></select></label>
@@ -127,14 +127,14 @@ onUnmounted(() => {
           <button v-if="testing" type="button" :disabled="cancelling" @click="cancel">{{ cancelling ? '正在取消…' : '取消测试' }}</button>
           <button v-else type="button" :disabled="!bridge || !saved || saving || !form.baseUrl.trim() || !form.model.trim()" @click="test">测试连接</button>
           <span v-if="testing" class="muted" role="status">正在等待模型回复…</span>
-          <button class="primary" :disabled="!bridge || !saved || saving || testing">{{ saving ? '保存中…' : '保存配置' }}</button>
+          <button class="btn-primary" :disabled="!bridge || !saved || saving || testing">{{ saving ? '保存中…' : '保存配置' }}</button>
         </footer>
         <p class="hint test-hint">测试使用当前表单，不会自动保存；会发送一句“仅回复 OK”的请求，可能产生少量 API 费用。</p>
       </form>
 
       <aside class="aside">
-        <section :class="['test-card', { connected: result }]" aria-live="polite">
-          <p class="eyebrow">CONNECTION CHECK</p><h2>{{ testing ? '正在连接' : result ? '连接成功' : '等待测试连接' }}</h2>
+        <section class="test-card" aria-live="polite">
+<h2>{{ testing ? '正在连接' : result ? '连接成功' : '等待测试连接' }}</h2>
           <template v-if="result"><p class="latency">{{ (result.latencyMs / 1000).toFixed(2) }} <span>秒</span></p><p class="hint">服务已返回有效文本</p><blockquote>{{ result.reply }}</blockquote><p v-if="dirty" class="hint">测试通过，记得保存当前配置。</p></template>
           <p v-else class="muted">{{ testing ? '请求正在发送到你填写的服务地址，可随时取消。' : '填写连接信息后，测试 API 地址、模型名称和密钥能否一起工作。' }}</p>
         </section>
@@ -142,9 +142,63 @@ onUnmounted(() => {
         <button v-if="!saved && bridge" :disabled="loading" @click="load">重新读取配置</button>
       </aside>
     </div>
-  </main>
+  </section>
 </template>
 
 <style scoped>
-.ai-page{box-sizing:border-box;min-height:100%;padding:30px clamp(20px,5vw,72px) 50px;color:var(--text-primary);background:radial-gradient(ellipse at 75% 15%,#51604b20,transparent 60%)}header{margin-bottom:25px}.eyebrow{font-size:10px;letter-spacing:.2em;color:#bd9c58;margin:0 0 7px}h1{font:700 38px var(--font-heading);margin:0;color:#eddfbc}.intro{color:#aaa596;font-size:13px;margin:12px 0 0}.settings-layout{display:grid;grid-template-columns:minmax(0,700px) minmax(240px,340px);gap:22px;align-items:start}.settings-card,.test-card,.usage-card{background:linear-gradient(140deg,#252b23ed,#151a17f2);border:1px solid #5b553b;border-radius:12px;padding:25px}.card-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}h2{font-size:19px;color:#e1d2ad;margin:0}.badge{font-size:10px;white-space:nowrap;padding:5px 8px;border:1px solid #7b705044;background:#87713d18;border-radius:15px;color:#c1b28e}.badge.ready{color:#a9c5a2;border-color:#5c795755}fieldset{border:0;margin:0;padding:0;min-width:0}label{display:block;margin-top:20px;color:#c9c4af;font-size:12px}input,select{box-sizing:border-box;width:100%;padding:11px 12px;margin-top:7px;background:#111915;border:1px solid #4d5140;border-radius:6px;color:#e5dec9;font:inherit;outline:none}input:focus,select:focus{border-color:#c3a15c}input[readonly]{color:#a6aa97;background:#1d241d}input:disabled,select:disabled,fieldset:disabled{opacity:.6}.hint{font-size:11px;line-height:1.8;color:#989f8b;margin:7px 0 0}.key-heading{display:flex;justify-content:space-between;align-items:center;margin-top:20px}.key-heading label{margin:0}.key-state{font-size:10px;color:#9d9e8b}.key-state.configured{color:#a6c6a2}.key-input{display:flex;gap:7px;align-items:stretch;margin-top:7px}.key-input input{margin:0;min-width:0}.key-input button{flex:0 0 auto}.check{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:11px}.check input{width:auto;margin:0;accent-color:#be9d53}.timeout-label{max-width:170px}.endpoint{display:flex;flex-direction:column;gap:7px;padding:12px;margin-top:22px;border-radius:6px;background:#0d1513;border:1px solid #4b523244;font-size:10px;color:#999d87}.endpoint code{font-size:11px;color:#c7bb94;overflow-wrap:anywhere}footer{display:flex;align-items:center;gap:10px;margin-top:22px}footer .primary{margin-left:auto}button{padding:10px 15px;font:inherit;font-size:12px;cursor:pointer;color:#d5c9a8;background:#292e25;border:1px solid #645b3f;border-radius:6px}button:hover{border-color:#c4a55f}button:disabled{opacity:.45;cursor:default}.primary{color:#201b12;background:linear-gradient(135deg,#dfc477,#ae8743);font-weight:700;border-color:#b18b48}.test-hint{margin-top:12px}.aside{display:flex;flex-direction:column;gap:16px}.test-card{min-height:190px;box-sizing:border-box}.test-card.connected{border-color:#6e8f60}.muted{color:#a0a793;font-size:12px;line-height:1.9}.test-card .muted{margin-top:20px}.latency{color:#c3d5a5;font-size:36px;margin:18px 0 0}.latency span{font-size:12px;color:#a0ac8e}blockquote{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;margin:16px 0 0;border-left:2px solid #9aaf71;background:#101912;color:#d2dbbe;font-size:13px}.usage-card{background:#1d2119aa;border-color:#4d4c32}.usage-card h2{font-size:15px}.usage-card p{color:#9ea38e;font-size:12px;line-height:1.9;margin:13px 0 0}.banner{padding:12px 16px;margin:0 0 18px;border:1px solid;border-radius:7px;font-size:12px}.error,.storage-error{color:#efb1a0}.error{background:#6a332355;border-color:#8e4c38}.success{color:#c3dab2;background:#344b2d66;border-color:#677f4b}.storage-error{font-size:11px;line-height:1.8}@media(max-width:900px){.settings-layout{grid-template-columns:minmax(0,1fr)}.aside{display:grid;grid-template-columns:1fr 1fr}.test-card{min-height:0}}@media(max-width:600px){h1{font-size:30px}.settings-card,.test-card,.usage-card{padding:18px}.aside{display:flex}.card-heading{align-items:flex-start;flex-direction:column}.badge{align-self:flex-start}footer{flex-wrap:wrap}footer .muted{order:3;width:100%;margin:0}}
+.settings-layout { display: grid; grid-template-columns: minmax(0,700px) minmax(240px,340px); gap: 22px; align-items: start; }
+.settings-card, .test-card, .usage-card { background: var(--surface-panel); border-radius: 12px; padding: 25px; }
+.card-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+h2 { font-size: 19px; margin: 0; }
+.badge { font-size: 10px; white-space: nowrap; padding: 5px 8px; border-radius: 15px; }
+.badge.ready { color: var(--text-success); }
+fieldset { margin: 0; padding: 0; min-width: 0; }
+label { display: block; margin-top: 20px; color: var(--text-secondary); font-size: 12px; }
+input, select { box-sizing: border-box; width: 100%; padding: 11px 12px; margin-top: 7px; border-radius: 6px; }
+input[readonly] { color: var(--text-secondary); background: var(--surface-inset); }
+input:disabled, select:disabled, fieldset:disabled { opacity: .6; }
+.hint { font-size: 11px; line-height: 1.8; color: var(--text-dim); margin: 7px 0 0; }
+.key-heading { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+.key-heading label { margin: 0; }
+.key-state { font-size: 10px; color: var(--text-dim); }
+.key-state.configured { color: var(--text-success); }
+.key-input { display: flex; gap: 7px; align-items: stretch; margin-top: 7px; }
+.key-input input { margin: 0; min-width: 0; }
+.key-input button { flex: 0 0 auto; }
+.check { display: flex; align-items: center; gap: 7px; margin-top: 10px; font-size: 11px; }
+.check input { width: auto; margin: 0; }
+.timeout-label { max-width: 170px; }
+.endpoint { display: flex; flex-direction: column; gap: 7px; padding: 12px; margin-top: 22px; border-radius: 6px; background: var(--surface-card); font-size: 10px; color: var(--text-dim); }
+.endpoint code { font-size: 11px; color: var(--antique-gold); overflow-wrap: anywhere; }
+footer { display: flex; align-items: center; gap: 10px; margin-top: 22px; }
+footer .btn-primary { margin-left: auto; }
+button { padding: 10px 15px; font-size: .8125rem; cursor: pointer; border-radius: 6px; }
+.test-hint { margin-top: 12px; }
+.aside { display: flex; flex-direction: column; gap: 16px; }
+.test-card { min-height: 190px; box-sizing: border-box; }
+.muted { color: var(--text-secondary); font-size: 12px; line-height: 1.9; }
+.test-card .muted { margin-top: 20px; }
+.latency { color: var(--text-success); font-size: 36px; margin: 18px 0 0; }
+.latency span { font-size: 12px; color: var(--text-secondary); }
+blockquote { white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; margin: 16px 0 0; background: var(--surface-card); color: var(--text-primary); font-size: 13px; border-radius: var(--radius-sm); }
+.usage-card h2 { font-size: 15px; }
+.usage-card p { color: var(--text-secondary); font-size: 12px; line-height: 1.9; margin: 13px 0 0; margin-bottom: 12px; }
+.banner { padding: 12px 16px; margin: 0 0 18px; border-radius: 7px; font-size: 12px; }
+.error, .storage-error { color: var(--text-danger); }
+.error { background: var(--surface-danger); }
+.success { color: var(--text-success); background: var(--surface-success); }
+.storage-error { font-size: 11px; line-height: 1.8; }
+@media (max-width:900px) {
+  .settings-layout { grid-template-columns: minmax(0,1fr); }
+  .aside { display: grid; grid-template-columns: 1fr 1fr; }
+  .test-card { min-height: 0; }
+}
+@media (max-width:600px) {
+  .settings-card, .test-card, .usage-card { padding: 18px; background: var(--surface-panel); }
+  .aside { display: flex; }
+  .card-heading { align-items: flex-start; flex-direction: column; }
+  .badge { align-self: flex-start; }
+  footer { flex-wrap: wrap; }
+  footer .muted { order: 3; width: 100%; margin: 0; }
+}
 </style>

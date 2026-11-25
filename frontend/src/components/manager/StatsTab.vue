@@ -127,35 +127,34 @@ const savingThrowBonus = (statKey: string) => {
 .stats-tab { display: flex; flex-direction: column; height: 100%; }
 .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
 .column { display: flex; flex-direction: column; gap: var(--space-md); }
-
-.info-card { background: rgba(0,0,0,0.2); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--glass-border); }
-.info-card h3 { color: var(--antique-gold); font-family: var(--font-heading); margin-bottom: var(--space-sm); border-bottom: 1px solid var(--glass-border); padding-bottom: 4px; }
-.info-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); }
+.info-card { background: var(--surface-card); padding: var(--space-md); border-radius: var(--radius-md); }
+.info-card h3 { color: var(--antique-gold); font-family: var(--font-heading); margin-bottom: var(--space-sm); padding-bottom: 4px; }
+.info-row { display: flex; justify-content: space-between; padding: 4px 0; }
 .info-row .label { color: var(--text-secondary); }
 .info-row .val { color: var(--text-primary); font-weight: bold; }
-
 .combat-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); text-align: center; padding: var(--space-sm) 0; }
-.hp-box { border-color: rgba(76, 175, 80, 0.5); }
-.ac-box { border-color: rgba(33, 150, 243, 0.5); }
+.stat-box { background: var(--surface-inset); border-radius: var(--radius-sm); text-align: center; padding: var(--space-sm) 0; }
 .stat-label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; }
 .stat-val { font-size: 1.4rem; font-family: var(--font-display); font-weight: bold; color: var(--text-primary); }
-
 .ability-scores { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-.score-box { background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); text-align: center; padding: 8px 0; }
+.score-box { background: var(--surface-inset); border-radius: var(--radius-sm); text-align: center; padding: 8px 0; }
 .score-name { font-size: 0.8rem; color: var(--text-secondary); }
 .score-val { font-size: 1.4rem; font-family: var(--font-display); font-weight: bold; color: var(--text-primary); margin: 4px 0; }
-.score-mod { font-size: 0.9rem; color: var(--antique-gold); background: rgba(0,0,0,0.3); border-radius: 12px; margin: 0 10px; }
-
+.score-mod { font-size: 0.9rem; color: var(--antique-gold); background: var(--surface-inset); border-radius: 12px; margin: 0 10px; }
 .saving-throws { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.st-item { display: flex; justify-content: space-between; padding: 4px 8px; background: rgba(255,255,255,0.03); border-radius: 4px; }
+.st-item { display: flex; justify-content: space-between; padding: 4px 8px; background: var(--surface-inset); border-radius: 4px; }
 .st-item .val { font-family: var(--font-display); color: var(--antique-gold); }
-
 .editable-card label { display: block; margin-top: 8px; color: var(--text-secondary); font-size: 0.9rem; }
-.glass-textarea { width: 100%; background: rgba(0,0,0,0.15); border: 1px solid var(--glass-border); color: var(--text-primary); padding: 8px; border-radius: 4px; margin-top: 4px; font-family: var(--font-body); resize: vertical; }
-.glass-textarea:focus { border-color: var(--antique-gold); outline: none; }
+.glass-textarea { width: 100%; background: var(--surface-inset); padding: 8px; margin-top: 4px; resize: vertical; }
 .hint-text { font-size: 0.8rem; color: var(--text-dim); margin-top: 8px; font-style: italic; }
-
 .list-card ul { margin: 0; padding-left: 20px; color: var(--text-secondary); line-height: 1.6; }
 .list-card strong { color: var(--text-primary); }
+@media (max-width: 820px) {
+  .panel-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 520px) {
+  .combat-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .ability-scores { grid-template-columns: repeat(3, 1fr); }
+}
 </style>

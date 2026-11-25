@@ -56,8 +56,8 @@ onMounted(() => {
   <div class="manager-container" v-if="character">
     <div class="top-bar">
       <div class="title-area">
-        <button class="back-btn" @click="router.push('/roster')">← 返回酒馆</button>
-        <h2>角色档案室: {{ character.name }}</h2>
+        <button class="back-btn" @click="router.push('/roster')">← 角色一览</button>
+        <h2>角色档案 · {{ character.name }}</h2>
       </div>
       <div class="actions">
         <button class="btn-secondary" @click="saveCharacter">保存更改</button>
@@ -65,13 +65,13 @@ onMounted(() => {
     </div>
 
     <div class="tabs">
-      <button :class="['tab-btn', { active: activeTab === 'stats' }]" @click="activeTab = 'stats'">基础与属性</button>
-      <button :class="['tab-btn', { active: activeTab === 'equipment' }]" @click="activeTab = 'equipment'">装备与物品</button>
-      <button :class="['tab-btn', { active: activeTab === 'spells' }]" @click="activeTab = 'spells'">施法与法术</button>
-      <button :class="['tab-btn', { active: activeTab === 'progression' }]" @click="activeTab = 'progression'">成长与升级</button>
+      <button :class="['tab-btn', { active: activeTab === 'stats' }]" :aria-pressed="activeTab === 'stats'" @click="activeTab = 'stats'">基础与属性</button>
+      <button :class="['tab-btn', { active: activeTab === 'equipment' }]" :aria-pressed="activeTab === 'equipment'" @click="activeTab = 'equipment'">装备与物品</button>
+      <button :class="['tab-btn', { active: activeTab === 'spells' }]" :aria-pressed="activeTab === 'spells'" @click="activeTab = 'spells'">施法与法术</button>
+      <button :class="['tab-btn', { active: activeTab === 'progression' }]" :aria-pressed="activeTab === 'progression'" @click="activeTab = 'progression'">成长与升级</button>
     </div>
 
-    <div class="tab-content glass-panel">
+    <div class="tab-content card">
       <StatsTab v-if="activeTab === 'stats'" :character="character" />
       <EquipmentTab v-if="activeTab === 'equipment'" :character="character" @refresh="fetchCharacter" />
       <SpellcastingTab v-if="activeTab === 'spells'" :character="character" @refresh="fetchCharacter" />
@@ -82,20 +82,15 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.manager-container { padding: var(--space-md); max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; height: 100vh; }
-.top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--glass-border); }
-.title-area { display: flex; align-items: center; gap: var(--space-md); }
-.back-btn { background: transparent; border: none; color: var(--antique-gold); cursor: pointer; font-family: var(--font-heading); font-size: 1rem; }
-h2 { color: var(--text-primary); font-family: var(--font-heading); margin: 0; }
+.manager-container { padding: var(--space-lg) var(--page-gutter) 72px; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100%; }
+.top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); padding-bottom: var(--space-sm); flex-wrap: wrap; gap: var(--space-sm); }
+.title-area { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
+.back-btn { color: var(--text-secondary); cursor: pointer; font-family: var(--font-heading); font-size: 1rem; --control-bg: transparent; }
+h2 { color: var(--antique-gold); font-family: var(--font-heading); margin: 0; }
 .actions { display: flex; gap: var(--space-sm); }
-.btn-secondary { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 6px 12px; border-radius: var(--radius-sm); cursor: pointer; }
-.btn-secondary:hover { color: var(--text-primary); border-color: var(--text-primary); }
-
-.tabs { display: flex; gap: 4px; margin-bottom: -1px; z-index: 1; position: relative; }
-.tab-btn { background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-bottom: none; color: var(--text-dim); padding: 10px 20px; border-radius: 8px 8px 0 0; cursor: pointer; font-family: var(--font-heading); font-size: 1.1rem; transition: all 0.2s; }
-.tab-btn:hover { color: var(--text-primary); background: rgba(0,0,0,0.6); }
-.tab-btn.active { background: rgba(20,20,20,0.8); color: var(--antique-gold); border-color: var(--antique-gold); text-shadow: 0 0 8px rgba(201, 168, 76, 0.4); }
-
-.tab-content { flex: 1; padding: var(--space-lg); overflow-y: auto; border-top-left-radius: 0; border: 1px solid var(--antique-gold); }
+.tabs { display: flex; gap: 4px; margin-bottom: var(--space-sm); z-index: 1; position: relative; flex-wrap: wrap; }
+.tab-btn { color: var(--text-secondary); padding: 10px 20px; border-radius: var(--radius-sm); cursor: pointer; font-size: .875rem; --control-bg: var(--surface-card); --control-hover: var(--surface-hover); }
+.tab-btn.active { color: var(--antique-gold); --control-bg: var(--surface-selected); }
+.tab-content { flex: 1; padding: var(--space-lg); overflow-y: auto; }
 .loading { display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--antique-gold); font-size: 1.5rem; font-family: var(--font-heading); }
 </style>

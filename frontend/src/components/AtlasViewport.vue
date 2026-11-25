@@ -106,5 +106,25 @@ onUnmounted(() => observer?.disconnect())
 </template>
 
 <style scoped>
-.map-shell{height:100%;min-height:480px;display:flex;flex-direction:column;background:#0e1416;border:1px solid #665333;border-radius:12px;overflow:hidden}.map-tools{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;background:#1a211f;color:#b9b7a6;font-size:12px;flex-wrap:wrap}.map-tools>div{display:flex;align-items:center;gap:6px}.map-tools button{color:#e6d4a1;background:#2b3029;border:1px solid #59583e;border-radius:5px;padding:5px 9px;cursor:pointer}.map-tools output{width:42px;text-align:center;font-variant-numeric:tabular-nums}.viewport{position:relative;flex:1;min-height:430px;overflow:hidden;touch-action:none;cursor:grab;background:radial-gradient(ellipse at center,#27332d,#111917 85%)}.viewport.placing{cursor:crosshair}.viewport.dragging{cursor:grabbing}.plane{position:absolute;top:0;left:0;transform-origin:0 0}.plane img{display:block;width:100%;height:100%;user-select:none;pointer-events:none;box-shadow:0 12px 65px #0008}.pin{position:absolute;display:flex;align-items:center;flex-direction:column;transform:translate(-50%,-15px);padding:0;background:none;border:0;cursor:pointer;color:#e2d5b8;z-index:1}.pin-dot{display:grid;place-items:center;width:28px;height:28px;background:#302e28;border:2px solid #aaa18b;border-radius:50%;box-shadow:0 2px 8px #000b;font-size:13px}.pin.visited .pin-dot{border-color:#91bba0;background:#264a3e}.pin.planned .pin-dot{border-color:#e0bc64;background:#70582d}.pin.selected{z-index:3}.pin.selected .pin-dot{outline:3px solid #f6dc91;outline-offset:3px}.pin.current .pin-dot{color:#ffe7a0}.pin-label{margin-top:5px;padding:3px 7px;white-space:nowrap;border-radius:4px;background:#111b19eb;color:#fff0ca;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 6px #0006}.canvas-message{position:absolute;inset:45% 0 auto;text-align:center;color:#dec998}.compass{position:absolute;right:18px;bottom:16px;color:#c0b48c99;text-align:center;pointer-events:none;font:18px Georgia}
+.map-shell { height: 100%; min-height: 480px; display: flex; flex-direction: column; background: var(--surface-overlay); border-radius: 12px; overflow: hidden; }
+.map-tools { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface-card); color: var(--text-secondary); font-size: 12px; flex-wrap: wrap; }
+.map-tools>div { display: flex; align-items: center; gap: 6px; }
+.map-tools button { border-radius: 5px; padding: 5px 9px; cursor: pointer; }
+.map-tools output { width: 42px; text-align: center; font-variant-numeric: tabular-nums; }
+.viewport { position: relative; flex: 1; min-height: 430px; overflow: hidden; touch-action: none; cursor: grab; background: var(--surface-inset); }
+.viewport.placing { cursor: crosshair; }
+.viewport.dragging { cursor: grabbing; }
+.plane { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.plane img { display: block; width: 100%; height: 100%; user-select: none; pointer-events: none; }
+.pin { position: absolute; display: flex; align-items: center; flex-direction: column; transform: translate(-50%,-15px); padding: 0; cursor: pointer; color: var(--text-primary); z-index: 1; --control-bg: transparent; --control-hover: transparent; }
+.pin-dot { display: grid; place-items: center; width: 28px; height: 28px; background: var(--surface-card); border-radius: 50%; font-size: 13px; box-shadow: var(--overlay-shadow); }
+.pin.visited .pin-dot { background: var(--surface-success); color: var(--text-success); }
+.pin.planned .pin-dot { background: var(--surface-selected); color: var(--antique-gold); }
+.pin.selected { z-index: 3; }
+.pin.selected .pin-dot { outline-offset: 2px; outline: 2px solid var(--antique-gold); }
+.pin.current .pin-dot { color: var(--antique-gold); }
+.pin-label { margin-top: 5px; padding: 3px 7px; white-space: nowrap; border-radius: 4px; background: var(--surface-overlay); color: var(--text-primary); font-size: 12px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.canvas-message { position: absolute; inset: 45% 0 auto; text-align: center; color: var(--antique-gold); }
+.compass { position: absolute; right: 18px; bottom: 16px; color: var(--text-secondary); text-align: center; pointer-events: none; font: 18px Georgia; }
+.pin:not(.selected):hover .pin-dot { background: var(--surface-hover); }
 </style>

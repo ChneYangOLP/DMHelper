@@ -6,7 +6,7 @@ import AiAssistant from './components/AiAssistant.vue'
 <template>
   <div class="app-shell">
     <TitleBar />
-    <nav class="app-nav">
+    <nav class="app-nav" aria-label="主导航">
       <router-link to="/roster" class="nav-item">角色一览</router-link>
       <router-link to="/combat" class="nav-item">战斗追踪器</router-link>
       <router-link to="/sessions" class="nav-item">跑团场次</router-link>
@@ -15,11 +15,7 @@ import AiAssistant from './components/AiAssistant.vue'
       <router-link to="/ai-settings" class="nav-item">AI 配置</router-link>
     </nav>
     <main class="app-content">
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+      <router-view />
     </main>
     <AiAssistant />
   </div>
@@ -31,50 +27,38 @@ import AiAssistant from './components/AiAssistant.vue'
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 20% 50%, rgba(61, 48, 36, 0.4) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(139, 26, 26, 0.06) 0%, transparent 40%),
-    radial-gradient(ellipse at 50% 100%, rgba(42, 33, 24, 0.8) 0%, transparent 60%),
-    linear-gradient(180deg, var(--parchment-dark) 0%, var(--parchment-darkest) 100%);
 }
 
 .app-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-lg);
-  background: rgba(15, 12, 8, 0.6);
-  border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--page-gutter);
+  background: var(--surface-panel);
 }
 
 .nav-item {
   color: var(--text-secondary);
   text-decoration: none;
-  font-family: var(--font-heading);
-  padding: var(--space-xs) var(--space-sm);
+  font-size: .875rem;
+  font-weight: 600;
+  padding: var(--space-sm) 12px;
   border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast);
 }
 
-.nav-item:hover, .nav-item.router-link-active {
-  color: var(--antique-gold-bright);
-  background: rgba(201, 168, 76, 0.1);
+.nav-item:hover {
+  color: var(--text-secondary);
+  background: var(--surface-hover);
+}
+
+.nav-item.router-link-active {
+  color: var(--antique-gold);
+  background: var(--surface-selected);
 }
 
 .app-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity var(--transition-base), transform var(--transition-base);
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
 }
 </style>

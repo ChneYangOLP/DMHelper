@@ -1,6 +1,6 @@
 export interface Cell { x:number; y:number }
 export type Terrain = 'WALL'|'DIFFICULT'|'HALF_COVER'|'THREE_QUARTERS_COVER'
-export type MapMode = 'move'|'attack'|'place'|'obstacle'
+export type MapMode = 'inspect'|'move'|'attack'|'place'|'obstacle'
 export interface GridState {
   width:number; height:number; feetPerCell:number
   obstacles:Cell[]; terrain:Array<Cell & {type:Terrain}>; moves:Array<Cell & {costFt:number}>

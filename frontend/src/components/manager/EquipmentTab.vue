@@ -247,7 +247,7 @@ const buyItem = async (item: any) => {
 
     <!-- Shop Modal -->
     <div v-if="showShop" class="modal-overlay" @click.self="showShop = false">
-      <div class="modal-content glass-panel">
+      <div class="modal-content">
         <div class="flex-between mb-4">
           <h3>搜寻物品</h3>
           <button class="close-btn" @click="showShop = false">×</button>
@@ -278,50 +278,42 @@ const buyItem = async (item: any) => {
 .panel-grid { display: flex; gap: var(--space-lg); height: 100%; }
 .column { display: flex; flex-direction: column; gap: var(--space-md); flex: 1; }
 .flex-2 { flex: 2; }
-
-.info-card { background: rgba(0,0,0,0.2); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--glass-border); }
-h3 { color: var(--antique-gold); font-family: var(--font-heading); margin-bottom: var(--space-sm); border-bottom: 1px solid var(--glass-border); padding-bottom: 4px; }
-
+.info-card { background: var(--surface-card); padding: var(--space-md); border-radius: var(--radius-md); }
+h3 { color: var(--antique-gold); font-family: var(--font-heading); margin-bottom: var(--space-sm); padding-bottom: 4px; }
 .slot-group { margin-bottom: 12px; }
 .slot-group label { display: block; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 4px; }
-.glass-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: var(--text-primary); padding: 8px; border-radius: 4px; }
-.glass-input:focus { border-color: var(--antique-gold); outline: none; }
+.glass-input { width: 100%; color: var(--text-primary); padding: 8px; border-radius: 4px; background: var(--surface-inset); }
 .glass-input.slim { padding: 4px 8px; }
-
 .wallet-card .coins { display: flex; gap: 16px; margin-top: 12px; }
-.coin { font-family: var(--font-display); background: rgba(0,0,0,0.3); padding: 8px 16px; border-radius: 8px; border: 1px solid; flex: 1; text-align: center; }
+.coin { font-family: var(--font-display); background: var(--surface-inset); padding: 8px 16px; border-radius: 8px; flex: 1; text-align: center; }
 .coin span { font-size: 1.4rem; font-weight: bold; }
-.gp { border-color: #FFD700; color: #FFD700; }
-.sp { border-color: #C0C0C0; color: #C0C0C0; }
-.cp { border-color: #cd7f32; color: #cd7f32; }
+.gp { color: var(--antique-gold); }
+.sp { color: var(--text-primary); }
+.cp { color: var(--text-success); }
 .total-value { text-align: right; margin-top: 8px; color: var(--text-dim); font-size: 0.9rem; }
-
 .backpack-card { flex: 1; display: flex; flex-direction: column; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .filter-bar { margin-bottom: 12px; }
-.inventory-list { flex: 1; border: 1px solid var(--glass-border); border-radius: 4px; background: rgba(0,0,0,0.1); overflow-y: auto; max-height: 250px; }
-.inv-item { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s; }
-.inv-item:hover { background: rgba(255,255,255,0.05); }
-.inv-item.active { background: rgba(201, 168, 76, 0.2); border-left: 3px solid var(--antique-gold); }
+.inventory-list { flex: 1; border-radius: 4px; overflow-y: auto; max-height: 250px; display: grid; gap: 4px; align-content: start; }
+.inv-item { display: flex; justify-content: space-between; padding: 8px 12px; cursor: pointer; transition: background 0.2s; background: var(--surface-inset); border-radius: var(--radius-sm); }
+.inv-item:hover { background: var(--surface-hover); }
+.inv-item.active { background: var(--surface-selected); }
 .item-name { font-weight: bold; color: var(--text-primary); }
 .item-qty { color: var(--antique-gold); font-size: 0.9rem; margin-left: 8px; }
 .item-cat { color: var(--text-dim); font-size: 0.85rem; }
 .empty-state { padding: 20px; text-align: center; color: var(--text-dim); font-style: italic; }
-
-.item-detail-panel { margin-top: 16px; padding: 16px; border: 1px dashed var(--glass-border); border-radius: 8px; background: rgba(0,0,0,0.2); }
+.item-detail-panel { margin-top: 16px; padding: 16px; border-radius: 8px; background: var(--surface-card); }
 .item-detail-panel.empty { text-align: center; color: var(--text-dim); }
-.item-detail-panel h4 { color: var(--antique-gold-bright); margin-bottom: 12px; font-size: 1.1rem; }
+.item-detail-panel h4 { color: var(--antique-gold); margin-bottom: 12px; font-size: 1.1rem; }
 .detail-row { margin-bottom: 6px; font-size: 0.95rem; }
 .action-buttons { display: flex; gap: 8px; }
-
-.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 100; }
-.modal-content { background: #1a1a1a; padding: 24px; border-radius: 8px; width: 600px; max-width: 90vw; border: 1px solid var(--antique-gold); }
-.close-btn { background: none; border: none; color: var(--text-dim); font-size: 1.5rem; cursor: pointer; }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--scrim); display: flex; justify-content: center; align-items: center; z-index: 100; }
+.modal-content { background: var(--surface-overlay); padding: 24px; border-radius: 8px; width: 600px; max-width: 90vw; }
+.close-btn { color: var(--text-dim); font-size: 1.5rem; cursor: pointer; --control-bg: transparent; }
 .close-btn:hover { color: var(--text-primary); }
-.shop-results { max-height: 400px; overflow-y: auto; border: 1px solid var(--glass-border); border-radius: 4px; padding: 8px; }
-.shop-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.shop-item .price { color: #FFD700; font-family: var(--font-display); width: 80px; text-align: right; }
-
+.shop-results { max-height: 400px; overflow-y: auto; border-radius: 4px; padding: 8px; display: grid; gap: 4px; }
+.shop-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface-card); border-radius: var(--radius-sm); flex-wrap: wrap; }
+.shop-item .price { color: var(--antique-gold); font-family: var(--font-display); width: 80px; text-align: right; }
 .w-full { width: 100%; }
 .mt-4 { margin-top: 16px; }
 .mb-4 { margin-bottom: 16px; }
@@ -333,10 +325,4 @@ h3 { color: var(--antique-gold); font-family: var(--font-heading); margin-bottom
 .fw-bold { font-weight: bold; }
 .text-center { text-align: center; }
 .slim { padding: 4px 12px; }
-
-.btn-primary { background: linear-gradient(180deg, var(--parchment-mid), var(--parchment-dark)); border: 1px solid var(--antique-gold); color: var(--antique-gold-bright); padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: all var(--transition-fast); }
-.btn-primary:hover:not(:disabled) { background: var(--parchment-light); box-shadow: var(--shadow-gold); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary { background: transparent; border: 1px solid var(--text-dim); color: var(--text-secondary); padding: 8px 16px; border-radius: 4px; cursor: pointer; }
-.btn-secondary:hover:not(:disabled) { color: var(--text-primary); border-color: var(--text-primary); }
 </style>

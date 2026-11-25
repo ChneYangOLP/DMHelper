@@ -193,7 +193,7 @@ onUnmounted(() => { disposed = true; window.removeEventListener('dmhelper:advent
   </button>
   <Transition name="recap-panel">
     <section v-show="aiPanel.open" id="adventure-recap-panel" class="recap-panel" role="dialog" aria-label="冒险回顾面板" aria-modal="false" @keydown.esc.stop="close">
-      <header class="panel-heading"><div><p class="eyebrow">ADVENTURE CHRONICLE</p><h2>冒险回顾</h2><p class="subtitle">整理已经发生的故事，留住旅途的来龙去脉。</p></div><div class="header-actions"><router-link to="/ai-settings" @click="close">模型配置</router-link><button ref="closeControl" type="button" class="close-button" aria-label="收起回顾面板" @click="close">×</button></div></header>
+      <header class="panel-heading"><h2>冒险回顾</h2><div class="header-actions"><router-link to="/ai-settings" @click="close">模型配置</router-link><button ref="closeControl" type="button" class="close-button" aria-label="收起回顾面板" @click="close">×</button></div></header>
       <div class="panel-scroll">
         <p v-if="error" class="banner error" role="alert">{{ error }}</p>
         <p v-if="notice" class="banner success" role="status">{{ notice }}</p>
@@ -219,7 +219,7 @@ onUnmounted(() => { disposed = true; window.removeEventListener('dmhelper:advent
           </fieldset>
           <p v-if="(preview.omitted || preview.shortened) && loaded" class="limit-note">记录较多，本次资料有省略或截短，可展开“资料范围”查看。</p>
           <p class="privacy-note">生成时会把所选文字资料发送给已配置的模型，可能产生 API 费用。生成本身不会更改角色或任务。</p>
-          <div class="request-actions"><button type="button" :disabled="loading || generating || savingSummary || readingSummary" @click="load">更新资料</button><button v-if="generating" type="button" :disabled="cancelling" @click="cancel">{{ cancelling ? '正在取消…' : '取消总结' }}</button><button v-else class="primary" :disabled="!ready" type="submit">总结{{ assistantModes[mode].label }}</button></div>
+          <div class="request-actions"><button type="button" :disabled="loading || generating || savingSummary || readingSummary" @click="load">更新资料</button><button v-if="generating" type="button" :disabled="cancelling" @click="cancel">{{ cancelling ? '正在取消…' : '取消总结' }}</button><button v-else class="btn-primary" :disabled="!ready" type="submit">总结{{ assistantModes[mode].label }}</button></div>
         </form>
         <article class="result-section" aria-live="polite" :aria-busy="generating">
           <p v-if="generating" class="generating" role="status">正在整理已记录的冒险…<small>可以收起面板或切换页面，完成后再回来查看。</small></p>
@@ -230,7 +230,7 @@ onUnmounted(() => { disposed = true; window.removeEventListener('dmhelper:advent
             <p v-if="result.truncated" class="banner">总结达到长度上限，可能尚未完成，可缩小资料范围后重试。</p>
             <div class="answer-text"><template v-for="(part, index) in referenceParts" :key="index"><router-link v-if="part.to" :to="part.to" title="查看原始记录">{{ part.text }}</router-link><span v-else>{{ part.text }}</span></template></div>
             <button class="save-recap" type="button" :disabled="generating || readingSummary || savingSummary" @click="editSummary">{{ result.savedId ? '修改已保存的总结' : '编辑并保存总结' }}</button>
-            <form v-if="editorOpen" class="recap-editor" @submit.prevent="saveSummary"><label>总结标题<input v-model="editTitle" required maxlength="120"></label><label>总结内容<textarea v-model="editContent" rows="8" required maxlength="200000"></textarea></label><p class="hint">{{ result.adventureSessionId ? `关联场次：${sessions.find(item => item.id === result?.adventureSessionId)?.title ?? '#' + result.adventureSessionId}` : '保存为未指定场次的回顾' }}。保存会保留本次资料快照，后续修改只更新标题与正文。</p><div class="request-actions"><button type="button" :disabled="savingSummary" @click="editorOpen = false">取消编辑</button><button class="primary" :disabled="savingSummary || !editTitle.trim() || !editContent.trim()">{{ savingSummary ? '保存中…' : result.savedId ? '保存修改' : '保存到本机' }}</button></div></form>
+            <form v-if="editorOpen" class="recap-editor" @submit.prevent="saveSummary"><label>总结标题<input v-model="editTitle" required maxlength="120"></label><label>总结内容<textarea v-model="editContent" rows="8" required maxlength="200000"></textarea></label><p class="hint">{{ result.adventureSessionId ? `关联场次：${sessions.find(item => item.id === result?.adventureSessionId)?.title ?? '#' + result.adventureSessionId}` : '保存为未指定场次的回顾' }}。保存会保留本次资料快照，后续修改只更新标题与正文。</p><div class="request-actions"><button type="button" :disabled="savingSummary" @click="editorOpen = false">取消编辑</button><button class="btn-primary" :disabled="savingSummary || !editTitle.trim() || !editContent.trim()">{{ savingSummary ? '保存中…' : result.savedId ? '保存修改' : '保存到本机' }}</button></div></form>
             <details class="source-details"><summary>查看这次总结使用的资料</summary><pre>{{ result.contextDisplay }}</pre></details>
           </template>
           <p v-else-if="!generating" class="empty-note">总结会显示在这里。选择“编辑并保存总结”后，重启应用仍可从历史记录中查看。</p>
@@ -242,6 +242,70 @@ onUnmounted(() => { disposed = true; window.removeEventListener('dmhelper:advent
 </template>
 
 <style scoped>
-.scope-shortcuts{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:9px 0 14px}.scope-shortcuts button{font-size:10px;padding:5px 9px}.scope-shortcuts a{font-size:10px}.save-recap{margin-top:15px}.recap-editor{padding:12px;margin-top:12px;background:#0c1710;border:1px solid #5d6944;border-radius:7px}.recap-editor input{display:block;width:100%;margin-top:6px;padding:9px;background:#152119;color:#dcdcc5;border:1px solid #5a6547;border-radius:5px;font:inherit}.recap-editor textarea{max-height:320px}.history-section{border-top:1px solid #59633e;margin-top:20px;padding-top:15px}.history-section>button{margin-top:12px}.answer-text a{color:#d6ba75;text-decoration:underline;text-underline-offset:3px}
-.recap-launcher{position:fixed;right:24px;bottom:22px;z-index:120;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:58px;height:58px;border:1px solid #b39a57;border-radius:50%;background:linear-gradient(145deg,#354333,#18251c);color:#e3cc8a;box-shadow:0 5px 22px #0008;cursor:pointer}.recap-launcher:hover{border-color:#efd890;background:linear-gradient(145deg,#48553c,#233024)}.recap-launcher span{font-size:10px;letter-spacing:.1em}.working-dot{position:absolute;right:0;top:0;width:10px;height:10px;border:2px solid #17241b;border-radius:50%;background:#d2bd72}.recap-panel{position:fixed;right:24px;bottom:92px;z-index:121;width:470px;max-width:calc(100vw - 32px);max-height:min(780px,calc(100dvh - 180px));display:flex;flex-direction:column;overflow:hidden;border:1px solid #7d714b;border-radius:14px;background:#18221bec;box-shadow:0 16px 65px #0009;color:#e5dec9;backdrop-filter:blur(12px)}.panel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:19px 19px 15px;border-bottom:1px solid #73805b44;background:#263024}.eyebrow{font-size:9px;letter-spacing:.18em;color:#b6a36b;margin:0 0 6px}h2{font-size:22px;color:#ecdfb9;margin:0}.subtitle{font-size:11px;color:#a5ae98;line-height:1.7;margin:8px 0 0}.header-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}.header-actions a{white-space:nowrap;font-size:10px}.close-button{padding:0;width:26px;height:26px;font-size:22px;border:0;background:transparent;color:#b9c2aa}.panel-scroll{overflow-y:auto;overscroll-behavior:contain;padding:17px 19px 20px;min-height:0}fieldset{border:0;padding:0;margin:0;min-width:0}fieldset:disabled{opacity:.65}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.mode-option{background:#101b15;border-color:#49563b;padding:10px;font-size:12px}.mode-option.selected{color:#e2cd8e;border-color:#baa05c;background:#6f63302b}.mode-description{font-size:11px;color:#9fa991;line-height:1.8;margin:9px 0 0}label{display:block;margin-top:14px;color:#c9ccb5;font-size:11px}select,textarea{box-sizing:border-box;width:100%;padding:9px 10px;margin-top:7px;background:#101a14;border:1px solid #4a593f;border-radius:6px;color:#dedfcb;font:inherit;outline:none}textarea{resize:vertical;line-height:1.8;max-height:150px}select:focus,textarea:focus{border-color:#b6a064}.scope-controls{margin-top:13px;padding:11px;border:1px solid #52613b66;background:#10201644;border-radius:6px}summary{cursor:pointer;font-size:11px;color:#c0b386;line-height:1.7}details details{margin-top:10px}.party-picker{display:flex;gap:8px;flex-wrap:wrap;max-height:120px;overflow:auto;margin-top:7px}.character-choice{display:flex;gap:7px;align-items:center;margin:0;padding:6px 9px;background:#101a13;border:1px solid #46553c;border-radius:5px}.character-choice input{accent-color:#c1a55d}.hint,.privacy-note,.limit-note{font-size:10px;line-height:1.8;color:#9ca68e;margin:9px 0}.privacy-note{margin:13px 0}.limit-note{color:#d4bb7d}.request-actions{display:flex;justify-content:space-between;gap:9px}button{padding:8px 11px;cursor:pointer;color:#d5c9a8;background:#293327;border:1px solid #645f40;border-radius:6px;font:inherit;font-size:11px}button:hover{border-color:#c4a55f}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #cfb86f;outline-offset:3px}button:disabled{opacity:.45;cursor:default}.primary{color:#201d12;background:linear-gradient(135deg,#dfc477,#ae8743);font-weight:700;border-color:#b18b48}a{color:#cdbb80;text-decoration:none}.result-section{margin-top:20px;border-top:1px solid #71815744;padding-top:17px}.result-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}h3{font-size:17px;color:#dfd4b0;margin:0}.result-meta{font-size:10px;color:#8e9b82;margin:9px 0}.question-note{font-size:11px;line-height:1.8;white-space:pre-wrap;color:#b4ba9f;border-left:2px solid #8f8150;padding-left:10px;margin:12px 0}.answer-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.95;color:#d8dcc8;font-size:13px;user-select:text}.source-details{margin-top:18px}.empty-note{font-size:11px;color:#939f87;line-height:1.9;margin:0}.generating{color:#c9ce9c;font-size:12px;line-height:1.8;padding:12px;background:#46533244;border-radius:6px;margin-bottom:14px}.generating small{display:block;color:#a0a78e;font-size:10px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:10px/1.9 var(--font-body);color:#a7ae99;max-height:260px;overflow:auto;background:#0c1610;padding:10px;border-radius:5px;margin-top:10px}.banner{padding:10px 12px;margin:0 0 13px;border:1px solid #7b704d;border-radius:6px;font-size:11px;line-height:1.8;background:#453b2355;color:#d8c59c}.error{color:#efb1a0;background:#6a332355;border-color:#8e4c38}.success{color:#c3dab2;background:#344b2d66;border-color:#677f4b}.recap-panel-enter-active,.recap-panel-leave-active{transition:opacity .15s,transform .15s}.recap-panel-enter-from,.recap-panel-leave-to{opacity:0;transform:translateY(10px)}@media(max-width:600px){.recap-launcher{right:16px;bottom:16px;width:54px;height:54px}.recap-panel{right:12px;bottom:82px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 160px)}.panel-heading{padding:15px}.panel-scroll{padding:15px}.subtitle{max-width:235px}.header-actions{gap:5px}}@media(prefers-reduced-motion:reduce){.recap-panel-enter-active,.recap-panel-leave-active{transition:none}}
+.scope-shortcuts { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin: 9px 0 14px; }
+.scope-shortcuts button { font-size: 10px; padding: 5px 9px; }
+.scope-shortcuts a { font-size: 10px; }
+.save-recap { margin-top: 15px; }
+.recap-editor { padding: 12px; margin-top: 12px; background: var(--surface-panel); border-radius: 7px; }
+.recap-editor input { display: block; width: 100%; margin-top: 6px; padding: 9px; border-radius: 5px; font: inherit; }
+.recap-editor textarea { max-height: 320px; }
+.history-section { margin-top: 20px; padding-top: 15px; }
+.history-section>button { margin-top: 12px; }
+.answer-text a { color: var(--antique-gold); text-decoration: underline; text-underline-offset: 3px; }
+.recap-launcher { position: fixed; right: 24px; bottom: 22px; z-index: 120; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 58px; height: 58px; border-radius: 50%; color: var(--text-primary); cursor: pointer; --control-bg: var(--button-bg); --control-hover: var(--button-hover); box-shadow: var(--overlay-shadow); }
+.recap-launcher span { font-size: 10px; letter-spacing: .1em; }
+.working-dot { position: absolute; right: 0; top: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--antique-gold); }
+.recap-panel { position: fixed; right: 24px; bottom: 92px; z-index: 121; width: 470px; max-width: calc(100vw - 32px); max-height: min(780px,calc(100dvh - 180px)); display: flex; flex-direction: column; overflow: hidden; border-radius: 14px; background: var(--surface-overlay); color: var(--text-primary); box-shadow: var(--overlay-shadow); }
+.panel-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 19px 19px 15px; background: var(--surface-panel); }
+h2 { font-size: 22px; margin: 0; }
+.header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.header-actions a { white-space: nowrap; font-size: 10px; }
+.close-button { padding: 0; width: 26px; height: 26px; font-size: 22px; color: var(--text-secondary); --control-bg: transparent; --control-hover: var(--surface-hover); }
+.panel-scroll { overflow-y: auto; overscroll-behavior: contain; padding: 17px 19px 20px; min-height: 0; }
+fieldset { padding: 0; margin: 0; min-width: 0; }
+fieldset:disabled { opacity: .65; }
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.mode-option { padding: 10px; font-size: 12px; --control-bg: var(--surface-card); --control-hover: var(--surface-hover); }
+.mode-option.selected { color: var(--antique-gold); --control-bg: var(--surface-selected); }
+.mode-description { font-size: 11px; color: var(--text-dim); line-height: 1.8; margin: 9px 0 0; }
+label { display: block; margin-top: 14px; color: var(--text-secondary); font-size: 11px; }
+select, textarea { box-sizing: border-box; width: 100%; padding: 9px 10px; margin-top: 7px; border-radius: 6px; font: inherit; }
+textarea { resize: vertical; line-height: 1.8; max-height: 150px; }
+.scope-controls { margin-top: 13px; padding: 11px; background: var(--surface-card); border-radius: 6px; }
+summary { cursor: pointer; font-size: 11px; color: var(--antique-gold); line-height: 1.7; }
+details details { margin-top: 10px; }
+.party-picker { display: flex; gap: 8px; flex-wrap: wrap; max-height: 120px; overflow: auto; margin-top: 7px; }
+.character-choice { display: flex; gap: 7px; align-items: center; margin: 0; padding: 6px 9px; background: var(--surface-card); border-radius: 5px; }
+.hint, .privacy-note, .limit-note { font-size: 10px; line-height: 1.8; color: var(--text-dim); margin: 9px 0; }
+.privacy-note { margin: 13px 0; }
+.limit-note { color: var(--antique-gold); }
+.request-actions { display: flex; justify-content: space-between; gap: 9px; }
+button { padding: 8px 11px; cursor: pointer; border-radius: 6px; font-size: .75rem; }
+a { color: var(--antique-gold); text-decoration: none; }
+.result-section { margin-top: 20px; padding-top: 17px; }
+.result-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+h3 { font-size: 17px; margin: 0; }
+.result-meta { font-size: 10px; color: var(--text-dim); margin: 9px 0; }
+.question-note { font-size: 11px; line-height: 1.8; white-space: pre-wrap; color: var(--text-secondary); padding-left: 10px; margin: 12px 0; }
+.answer-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.95; color: var(--text-primary); font-size: 13px; user-select: text; }
+.source-details { margin-top: 18px; }
+.empty-note { font-size: 11px; color: var(--text-dim); line-height: 1.9; margin: 0; }
+.generating { color: var(--text-secondary); font-size: 12px; line-height: 1.8; padding: 12px; background: var(--surface-card); border-radius: 6px; margin-bottom: 14px; }
+.generating small { display: block; color: var(--text-dim); font-size: 10px; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 10px/1.9 var(--font-body); color: var(--text-secondary); max-height: 260px; overflow: auto; background: var(--surface-card); padding: 10px; border-radius: 5px; margin-top: 10px; }
+.banner { padding: 10px 12px; margin: 0 0 13px; border-radius: 6px; font-size: 11px; line-height: 1.8; background: var(--surface-card); color: var(--text-secondary); }
+.error { color: var(--text-danger); background: var(--surface-danger); }
+.success { color: var(--text-success); background: var(--surface-success); }
+.recap-panel-enter-active, .recap-panel-leave-active { transition: opacity .15s,transform .15s; }
+.recap-panel-enter-from, .recap-panel-leave-to { opacity: 0; transform: translateY(10px); }
+@media (max-width:600px) {
+  .recap-launcher { right: 16px; bottom: 16px; width: 54px; height: 54px; --control-bg: var(--button-bg); --control-hover: var(--button-hover); color: var(--text-primary); box-shadow: var(--overlay-shadow); }
+  .recap-panel { right: 12px; bottom: 82px; max-width: calc(100vw - 24px); max-height: calc(100dvh - 160px); box-shadow: var(--overlay-shadow); background: var(--surface-overlay); color: var(--text-primary); }
+  .panel-heading { padding: 15px; background: var(--surface-panel); }
+  .panel-scroll { padding: 15px; }
+  .header-actions { gap: 5px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .recap-panel-enter-active, .recap-panel-leave-active { transition: none; }
+}
 </style>

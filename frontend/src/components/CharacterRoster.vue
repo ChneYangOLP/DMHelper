@@ -21,46 +21,35 @@ onMounted(loadCharacters)
 </script>
 
 <template>
-  <div class="roster-container">
-    <h2>角色一览 (Character Roster)</h2>
+  <section class="workspace-page">
+    <header class="workspace-heading"><h1>角色一览</h1></header>
     <div v-if="loadError" class="load-error">
       <span>加载失败：{{ loadError }}</span>
       <button class="btn-secondary" @click="loadCharacters">重试</button>
     </div>
     <div class="card-grid">
-      <div v-for="char in characters" :key="char.database_id" class="card char-card" @click="$router.push(`/manage/${char.database_id}`)">
+      <router-link v-for="char in characters" :key="char.database_id" class="char-card" :to="`/manage/${char.database_id}`">
         <div class="char-header">
-          <div class="char-avatar">🧙</div>
+          <div class="char-avatar" aria-hidden="true">{{ Array.from(char.name)[0] }}</div>
           <div class="char-info">
             <h3>{{ char.name }}</h3>
             <div class="text-dim">Lv.{{ char.job.current_level }} {{ char.race.race_name }} {{ char.job.class_name }}</div>
           </div>
         </div>
-        <div class="gold-divider"></div>
         <div class="char-stats">
           <span>HP: {{ char.current_hp }}/{{ char.hp }}</span>
           <span>AC: {{ char.ac }}</span>
         </div>
-      </div>
-      <div class="card char-card add-card" @click="$router.push('/create')">
-        <div class="add-icon">+</div>
+      </router-link>
+      <router-link class="char-card add-card" to="/create">
+        <span class="add-icon" aria-hidden="true">+</span>
         <div>创建新角色</div>
-      </div>
+      </router-link>
     </div>
-  </div>
+  </section>
 </template>
 
 <style scoped>
-.roster-container {
-  padding: var(--space-lg);
-}
-
-h2 {
-  color: var(--antique-gold);
-  margin-bottom: var(--space-lg);
-  font-family: var(--font-display);
-}
-
 .load-error {
   display: flex;
   justify-content: space-between;
@@ -68,28 +57,28 @@ h2 {
   gap: var(--space-md);
   margin-bottom: var(--space-md);
   padding: var(--space-sm) var(--space-md);
-  color: var(--danger, #ff8a80);
-  border: 1px solid rgba(255, 138, 128, 0.35);
+  color: var(--text-danger);
   border-radius: var(--radius-sm);
-  background: rgba(120, 20, 20, 0.18);
+  background: var(--surface-danger);
 }
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-md);
 }
 
 .char-card {
   padding: var(--space-md);
-  cursor: pointer;
-  transition: all var(--transition-base);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  transition: background-color var(--transition-fast);
 }
 
 .char-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-gold);
-  border-color: rgba(201, 168, 76, 0.4);
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .char-header {
@@ -100,11 +89,12 @@ h2 {
 }
 
 .char-avatar {
-  width: 48px;
+  flex: 0 0 48px;
   height: 48px;
-  border-radius: 50%;
-  background: var(--parchment-mid);
-  border: 1px solid var(--antique-gold);
+  border-radius: var(--radius-sm);
+  background: var(--surface-inset);
+  color: var(--antique-gold);
+  font-family: var(--font-heading);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -117,10 +107,6 @@ h2 {
   color: var(--text-primary);
 }
 
-.gold-divider {
-  margin: var(--space-sm) 0;
-}
-
 .char-stats {
   display: flex;
   justify-content: space-between;
@@ -130,20 +116,15 @@ h2 {
 
 .add-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-md);
-  color: var(--text-dim);
-  border-style: dashed;
-}
-
-.add-card:hover {
-  color: var(--antique-gold);
+  gap: var(--space-sm);
+  min-height: 100px;
+  color: var(--text-secondary);
 }
 
 .add-icon {
-  font-size: 3rem;
-  font-weight: 300;
+  font-size: 1.5rem;
+  color: var(--antique-gold);
 }
 </style>

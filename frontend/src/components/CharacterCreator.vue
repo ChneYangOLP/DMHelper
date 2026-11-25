@@ -104,8 +104,8 @@ const finish = async () => {
 <template>
   <div class="creator-container">
     <button class="back-btn" @click="router.push('/roster')">← 返回</button>
-    <h2>创建新角色 (Character Creator)</h2>
-    
+    <h1>创建新角色</h1>
+
     <div class="stepper">
       <div :class="['step', { active: step >= 1 }]">1. 基础信息</div>
       <div :class="['step', { active: step >= 2 }]">2. 种族职业</div>
@@ -114,7 +114,7 @@ const finish = async () => {
       <div :class="['step', { active: step >= 5 }]">5. 确认</div>
     </div>
 
-    <div class="card glass-panel form-panel">
+    <div class="card form-panel">
       <!-- Step 1 -->
       <div v-if="step === 1" class="step-content fade-in">
         <h3>冒险者身份</h3>
@@ -260,7 +260,6 @@ const finish = async () => {
           <p><strong>姓名：</strong> {{ form.name || '未命名' }}</p>
           <p><strong>身份：</strong> {{ form.age }}岁 {{ form.gender }} {{ form.race }} {{ form.job }}</p>
           <p v-if="form.skills.length > 0"><strong>熟练技能：</strong> {{ form.skills.join('、') }}</p>
-          <div class="gold-divider"></div>
           <p class="text-dim" v-if="!form.name">【警告】姓名不能为空，请返回第一步填写！</p>
           <p class="text-dim" v-if="form.skills.length < currentClassSkills.count">【警告】请在第三步选满 {{ currentClassSkills.count }} 项技能！</p>
           <p v-else class="text-success">角色已准备就绪，点击完成将其写入档案库。</p>
@@ -279,37 +278,25 @@ const finish = async () => {
 </template>
 
 <style scoped>
-.creator-container { padding: var(--space-lg); max-width: 800px; margin: 0 auto; }
-.back-btn { background: transparent; border: none; color: var(--antique-gold); cursor: pointer; margin-bottom: var(--space-md); font-family: var(--font-heading); }
-.stepper { display: flex; justify-content: space-between; margin-bottom: var(--space-lg); border-bottom: 1px solid var(--glass-border); padding-bottom: var(--space-md); font-size: 0.9rem; }
-.step { color: var(--text-dim); transition: color var(--transition-fast); }
-.step.active { color: var(--antique-gold); text-shadow: 0 0 8px rgba(201, 168, 76, 0.4); }
-
+.creator-container { padding: var(--space-lg) var(--page-gutter) 72px; max-width: 800px; margin: 0 auto; }
+.back-btn { color: var(--text-secondary); cursor: pointer; margin-bottom: var(--space-md); font-family: var(--font-heading); --control-bg: transparent; }
+.stepper { display: flex; margin: var(--space-md) 0 var(--space-lg); font-size: .9rem; flex-wrap: wrap; gap: var(--space-sm); }
+.step { color: var(--text-dim); transition: color var(--transition-fast); padding: 4px 10px; border-radius: var(--radius-sm); background: var(--surface-card); }
+.step.active { color: var(--antique-gold); background: var(--surface-selected); }
 .form-panel { padding: var(--space-xl); min-height: 400px; display: flex; flex-direction: column; }
 .step-content { flex: 1; }
 h3 { color: var(--text-primary); margin-bottom: var(--space-md); font-family: var(--font-heading); }
 label { display: block; color: var(--text-secondary); margin-bottom: var(--space-xs); font-size: 0.9rem; }
-.glass-input { width: 100%; padding: var(--space-sm); margin-bottom: var(--space-md); background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: var(--radius-sm); font-family: var(--font-body); }
-.glass-input:focus { border-color: var(--antique-gold); outline: none; box-shadow: 0 0 8px rgba(201, 168, 76, 0.2); }
-
-.sub-panel { background: rgba(0,0,0,0.1); padding: var(--space-md); margin-bottom: var(--space-md); border-radius: var(--radius-sm); border: 1px solid var(--glass-border); }
-
+.glass-input { width: 100%; padding: var(--space-sm); margin-bottom: var(--space-md); color: var(--text-primary); border-radius: var(--radius-sm); font-family: var(--font-body); }
+.sub-panel { background: var(--surface-inset); padding: var(--space-md); margin-bottom: var(--space-md); border-radius: var(--radius-sm); }
 .skill-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.skill-tag { padding: 4px 12px; border: 1px solid var(--text-dim); border-radius: 16px; font-size: 0.85rem; cursor: pointer; color: var(--text-dim); transition: all var(--transition-fast); user-select: none; }
-.skill-tag:hover:not(.disabled) { border-color: var(--text-primary); color: var(--text-primary); }
-.skill-tag.active { background: rgba(201, 168, 76, 0.2); border-color: var(--antique-gold); color: var(--antique-gold); text-shadow: 0 0 4px rgba(201, 168, 76, 0.5); }
+.skill-tag { padding: 4px 12px; border-radius: 16px; font-size: 0.85rem; cursor: pointer; color: var(--text-dim); transition: background-color var(--transition-fast); user-select: none; background: var(--surface-card); }
+.skill-tag:hover:not(.disabled) { background: var(--surface-hover); }
+.skill-tag.active { background: var(--surface-selected); color: var(--antique-gold); }
 .skill-tag.disabled { opacity: 0.3; cursor: not-allowed; }
-
 .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
 .stat-box { text-align: center; }
 .stat-input { text-align: center; font-size: 1.2rem; font-family: var(--font-display); }
-
-.summary { background: rgba(0,0,0,0.2); padding: var(--space-md); border-radius: var(--radius-sm); border: 1px solid var(--glass-border); line-height: 1.8; }
-.actions { display: flex; justify-content: flex-end; gap: var(--space-md); margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px solid var(--glass-border); }
-
-.btn-primary { background: linear-gradient(180deg, var(--parchment-mid), var(--parchment-dark)); border: 1px solid var(--antique-gold); color: var(--antique-gold-bright); padding: var(--space-sm) var(--space-lg); border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast); }
-.btn-primary:hover:not(:disabled) { background: var(--parchment-light); box-shadow: var(--shadow-gold); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary { background: transparent; border: 1px solid var(--text-dim); color: var(--text-secondary); padding: var(--space-sm) var(--space-lg); border-radius: var(--radius-sm); cursor: pointer; }
-.btn-secondary:hover:not(:disabled) { color: var(--text-primary); border-color: var(--text-primary); }
+.summary { background: var(--surface-card); padding: var(--space-md); border-radius: var(--radius-sm); line-height: 1.8; }
+.actions { display: flex; justify-content: flex-end; gap: var(--space-md); margin-top: var(--space-lg); padding-top: var(--space-md); flex-wrap: wrap; }
 </style>
