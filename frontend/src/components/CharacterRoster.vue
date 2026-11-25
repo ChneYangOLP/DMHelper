@@ -22,7 +22,7 @@ onMounted(loadCharacters)
 
 <template>
   <section class="workspace-page">
-    <header class="workspace-heading"><h1>角色一览</h1></header>
+    <header class="workspace-heading"><h1>欢迎来到冒险者酒馆，抓紧招募你的角色吧！</h1></header>
     <div v-if="loadError" class="load-error">
       <span>加载失败：{{ loadError }}</span>
       <button class="btn-secondary" @click="loadCharacters">重试</button>

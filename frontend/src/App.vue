@@ -1,14 +1,27 @@
 <script setup lang="ts">
+import { nextTick, ref } from 'vue'
 import TitleBar from './components/TitleBar.vue'
 import AiAssistant from './components/AiAssistant.vue'
+import StartupSplash from './components/StartupSplash.vue'
+
+const showingStartup = ref(true)
+const navigation = ref<HTMLElement | null>(null)
+
+async function finishStartup(skipped: boolean) {
+  showingStartup.value = false
+  if (skipped) {
+    await nextTick()
+    navigation.value?.querySelector<HTMLElement>('.router-link-active')?.focus()
+  }
+}
 </script>
 
 <template>
-  <div class="app-shell">
+  <div class="app-shell" :inert="showingStartup">
     <TitleBar />
-    <nav class="app-nav" aria-label="主导航">
-      <router-link to="/roster" class="nav-item">角色一览</router-link>
-      <router-link to="/combat" class="nav-item">战斗追踪器</router-link>
+    <nav ref="navigation" class="app-nav" aria-label="主导航">
+      <router-link to="/roster" class="nav-item">角色酒馆</router-link>
+      <router-link to="/combat" class="nav-item">战斗场地</router-link>
       <router-link to="/sessions" class="nav-item">跑团场次</router-link>
       <router-link to="/journal" class="nav-item">冒险日志</router-link>
       <router-link to="/atlas" class="nav-item">冒险地图</router-link>
@@ -19,6 +32,7 @@ import AiAssistant from './components/AiAssistant.vue'
     </main>
     <AiAssistant />
   </div>
+  <StartupSplash v-if="showingStartup" @complete="finishStartup" />
 </template>
 
 <style scoped>

@@ -189,7 +189,7 @@ onMounted(()=>{restoreCombat();loadArtwork().then(images=>{artwork.value=images}
 
 <template>
  <section class="workspace-page">
-  <header class="workspace-heading"><h1>战斗控制台</h1><div v-if="state" class="save-controls"><button class="btn-secondary" :disabled="busy||loading" @click="restoreCombat">重新载入</button><button class="btn-secondary" :disabled="busy||loading" @click="newEncounter">新建遭遇</button></div></header>
+  <header class="workspace-heading"><h1>拔剑吧，诸位。黎明之前，我们寸步不退！</h1><div v-if="state" class="save-controls"><button class="btn-secondary" :disabled="busy||loading" @click="restoreCombat">重新载入</button><button class="btn-secondary" :disabled="busy||loading" @click="newEncounter">新建遭遇</button></div></header>
   <p v-if="state&&!loading" class="save-status" role="status">{{restored?'已恢复上次遭遇 · ':''}}每次操作自动保存至本机<span v-if="savedTime"> · 最近保存：{{savedTime}}</span></p>
   <div v-if="error" class="error-banner">{{error}}</div><div v-if="loading" class="loading-card">正在读取角色与怪物图鉴…</div>
   <section v-else-if="recoveryFailed" class="panel recovery-panel"><h2>战斗存档尚未载入</h2><p>原存档会保留，暂时不能开始新的遭遇。请重试，或清除存档后重新开始。</p><button class="btn-secondary" :disabled="busy" @click="restoreCombat">重新载入</button><button class="btn-secondary" :disabled="busy" @click="newEncounter">清除存档并新建</button></section>

@@ -56,7 +56,7 @@ onMounted(() => {
   <div class="manager-container" v-if="character">
     <div class="top-bar">
       <div class="title-area">
-        <button class="back-btn" @click="router.push('/roster')">← 角色一览</button>
+        <button class="back-btn" @click="router.push('/roster')">← 角色酒馆</button>
         <h2>角色档案 · {{ character.name }}</h2>
       </div>
       <div class="actions">
