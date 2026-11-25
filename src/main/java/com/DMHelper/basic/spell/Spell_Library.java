@@ -1,9 +1,11 @@
 package com.DMHelper.basic.spell;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Spell_Library {
 
@@ -239,6 +241,42 @@ public class Spell_Library {
         addBard("animate_objects");
         addBard("hold_monster");
         addBard("scrying");
+
+        addBard("eyebite", "摄心目光 (Eyebite)", 6, "死灵", "持续以魔法目光令目标沉睡、恐慌或患病。");
+        addBard("find_the_path", "寻路术 (Find the Path)", 6, "预言", "感知通往一个熟悉目的地的最直接路线。");
+        addBard("guards_and_wards", "守卫与结界 (Guards and Wards)", 6, "防护", "以多重魔法机关和迷雾保护一片建筑区域。");
+        addBard("heroes_feast", "英雄宴 (Heroes' Feast)", 6, "咒法", "创造盛宴，为同伴提供治疗并强化对恐惧与毒素的抵抗。");
+        addBard("mass_suggestion", "群体暗示术 (Mass Suggestion)", 6, "惑控", "向多个目标植入一项能长期影响行动的建议。");
+        addBard("ottos_irresistible_dance", "奥图迷舞 (Otto's Irresistible Dance)", 6, "惑控", "迫使目标不由自主地舞蹈并失去正常行动能力。");
+        addBard("programmed_illusion", "预置幻影 (Programmed Illusion)", 6, "幻术", "设置一个在特定条件下自动出现的复杂幻象。");
+        addBard("true_seeing", "真知术 (True Seeing)", 6, "预言", "赋予目标看破幻象、变形与隐形事物的能力。");
+
+        addBard("etherealness", "以太化 (Etherealness)", 7, "变化", "进入以太位面，在现实世界的障碍间穿行。");
+        addBard("forcecage", "力场监牢 (Forcecage)", 7, "塑能", "创造难以逃脱且无法被普通手段破坏的力场牢笼。");
+        addBard("mirage_arcane", "海市蜃楼 (Mirage Arcane)", 7, "幻术", "将广阔区域塑造成具备触感的幻象地形。");
+        addBard("mordenkainens_magnificent_mansion", "魔邓肯豪宅术 (Mordenkainen's Magnificent Mansion)", 7, "咒法", "在异空间中创造安全而舒适的宏伟居所。");
+        addBard("mordenkainens_sword", "魔邓肯之剑 (Mordenkainen's Sword)", 7, "塑能", "召唤一柄可持续追击敌人的力场之剑。");
+        addBard("project_image", "投影术 (Project Image)", 7, "幻术", "制造一个可远程观察、交谈和施法的自身幻影。");
+        addBard("regenerate", "再生术 (Regenerate)", 7, "变化", "持续恢复目标生命，并使断肢逐渐再生。");
+        addBard("resurrection", "复生术 (Resurrection)", 7, "死灵", "令死亡已久但灵魂愿意回归的生物复活。");
+        addBard("symbol", "徽记术 (Symbol)", 7, "防护", "设置在触发后产生强力魔法效果的隐秘符文。");
+        addBard("teleport");
+
+        addBard("dominate_monster", "支配怪物 (Dominate Monster)", 8, "惑控", "控制任意类型生物的行动并与其建立心灵联系。");
+        addBard("feeblemind", "弱智术 (Feeblemind)", 8, "惑控", "重创目标心智，大幅削弱智力、魅力与施法能力。");
+        addBard("glibness", "巧舌如簧 (Glibness)", 8, "变化", "让魅力检定极其稳定，并能骗过识破谎言的魔法。");
+        addBard("mind_blank", "心灵屏障 (Mind Blank)", 8, "防护", "保护目标免受心灵伤害、预言探知和精神控制。");
+        addBard("power_word_stun");
+
+        addBard("foresight", "预警术 (Foresight)", 9, "预言", "让目标提前洞察危险，在攻防与豁免中占据巨大优势。");
+        addBard("power_word_heal", "强效治疗言 (Power Word Heal)", 9, "塑能", "以一句魔法真言让目标恢复至最佳状态并解除多种异常。");
+        addBard("true_polymorph", "完全变形术 (True Polymorph)", 9, "变化", "将生物或物体转化为另一种形态，效果可变为永久。");
+
+        validateSpellList("法师", WIZARD_SPELL_KEYS);
+        validateSpellList("术士", SORCERER_SPELL_KEYS);
+        validateSpellList("邪术士", WARLOCK_SPELL_KEYS);
+        validateSpellList("圣武士", PALADIN_SPELL_KEYS);
+        validateSpellList("吟游诗人", BARD_SPELL_KEYS);
     }
 
     private static void addWizard(String key, String name, int level, String school, String desc) {
@@ -333,5 +371,22 @@ public class Spell_Library {
             }
         }
         return filtered;
+    }
+
+    private static void validateSpellList(String className, List<String> keys) {
+        Set<String> uniqueKeys = new HashSet<>();
+        for (String key : keys) {
+            if (!uniqueKeys.add(key)) {
+                throw new IllegalStateException(className + "法术表包含重复键：" + key);
+            }
+            Spell_Definition spell = SPELLS.get(key);
+            if (spell == null) {
+                throw new IllegalStateException(className + "法术表引用了未定义法术：" + key);
+            }
+            if (!key.equals(spell.key) || spell.display_name == null || spell.display_name.isBlank()
+                    || spell.level < 0 || spell.level > 9) {
+                throw new IllegalStateException(className + "法术数据无效：" + key);
+            }
+        }
     }
 }

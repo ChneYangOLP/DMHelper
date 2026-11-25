@@ -24,18 +24,18 @@ import java.sql.Statement;
  */
 public class Character_DAO {
 
-    public static void save_character(Character_Sheet character) {
+    public static boolean save_character(Character_Sheet character) {
         String sql = "INSERT INTO saved_characters "
                 + "(name, age, gender, background_story, personality_traits, ideals, bonds, flaws, race_name, class_name, current_level, experience_points, hp, current_hp, available_hit_dice, ac, "
                 + "gold_pieces, silver_pieces, copper_pieces, "
                 + "str, dex, con, intel, wis, cha, armor_name, armor_type, armor_base_ac, has_shield, "
                 + "inventory_items, inventory_item_counts, equipped_armor_key, equipped_main_hand_key, equipped_off_hand_key, equipped_cloak_key, equipped_accessory_key, "
                 + "skill_proficiencies, feat_names, advancement_notes, class_state, used_asi_choices) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         Connection conn = DB_Helper.get_connection();
         if (conn == null) {
-            return;
+            return false;
         }
 
         try (Connection ignored = conn;
@@ -50,9 +50,15 @@ public class Character_DAO {
                 }
             }
 
+            if (character.database_id <= 0) {
+                throw new SQLException("数据库未返回新角色 ID");
+            }
+
             System.out.println("[系统提示] 角色 [" + character.name + "] 已永久保存至数据库！");
+            return true;
         } catch (SQLException e) {
             System.out.println("[系统提示] 保存角色失败: " + e.getMessage());
+            return false;
         }
     }
 
@@ -122,8 +128,8 @@ public class Character_DAO {
                         ),
                         rs.getInt("has_shield") == 1
                 );
-                int savedCurrentHp = rs.getInt("current_hp");
-                loadedChar.set_current_hp(savedCurrentHp <= 0 ? loadedChar.hp : savedCurrentHp);
+                Number savedCurrentHp = (Number) rs.getObject("current_hp");
+                loadedChar.set_current_hp(savedCurrentHp == null ? loadedChar.hp : savedCurrentHp.intValue());
                 int savedAvailableHitDice = rs.getInt("available_hit_dice");
                 loadedChar.set_available_hit_dice(savedAvailableHitDice < 0 ? loadedChar.max_hit_dice : savedAvailableHitDice);
 
@@ -136,12 +142,24 @@ public class Character_DAO {
         }
     }
 
-    public static void update_character(Character_Sheet character) {
+    public static boolean update_character(Character_Sheet character) {
         if (character.database_id <= 0) {
-            save_character(character);
-            return;
+            return save_character(character);
         }
 
+        Connection conn = DB_Helper.get_connection();
+        if (conn == null) return false;
+        try (Connection ignored = conn) {
+            update_character(conn, character);
+            return true;
+        } catch (SQLException e) {
+            System.out.println("[系统提示] 更新角色数据失败: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Update inside the caller's transaction without closing its connection. */
+    public static void update_character(Connection conn, Character_Sheet character) throws SQLException {
         String sql = "UPDATE saved_characters SET "
                 + "name = ?, age = ?, gender = ?, background_story = ?, personality_traits = ?, ideals = ?, bonds = ?, flaws = ?, race_name = ?, class_name = ?, current_level = ?, experience_points = ?, "
                 + "hp = ?, current_hp = ?, available_hit_dice = ?, ac = ?, gold_pieces = ?, silver_pieces = ?, copper_pieces = ?, str = ?, dex = ?, con = ?, intel = ?, wis = ?, cha = ?, armor_name = ?, armor_type = ?, "
@@ -149,19 +167,9 @@ public class Character_DAO {
                 + "equipped_off_hand_key = ?, equipped_cloak_key = ?, equipped_accessory_key = ?, skill_proficiencies = ?, feat_names = ?, advancement_notes = ?, "
                 + "class_state = ?, used_asi_choices = ? WHERE id = ?";
 
-        Connection conn = DB_Helper.get_connection();
-        if (conn == null) {
-            return;
-        }
-
-        try (Connection ignored = conn;
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             bind_character_for_update(pstmt, character);
-            pstmt.executeUpdate();
-            System.out.println("[系统提示] 角色 [" + character.name + "] 的最新状态已同步至数据库！");
-        } catch (SQLException e) {
-            System.out.println("[系统提示] 更新角色数据失败: " + e.getMessage());
+            if (pstmt.executeUpdate() != 1) throw new SQLException("未找到要更新的角色记录");
         }
     }
 
@@ -247,24 +255,31 @@ public class Character_DAO {
     }
 
     private static Character_Class build_job(String class_name) {
-        if ("战士 (Fighter)".equals(class_name)) {
+        String safe_name = class_name == null ? "" : class_name.trim();
+        if (safe_name.contains("战士") || contains_class_marker(safe_name, "Fighter")) {
             return new Fighter_Class();
         }
-        if ("法师 (Wizard)".equals(class_name)) {
+        if (safe_name.contains("法师") || contains_class_marker(safe_name, "Wizard")) {
             return new Wizard_Class();
         }
-        if ("术士 (Sorcerer)".equals(class_name)) {
+        if ((safe_name.contains("术士") && !safe_name.contains("邪术士"))
+                || contains_class_marker(safe_name, "Sorcerer")) {
             return new Sorcerer_Class();
         }
-        if ("邪术士 (Warlock)".equals(class_name)) {
+        if (safe_name.contains("邪术士") || contains_class_marker(safe_name, "Warlock")) {
             return new Warlock_Class();
         }
-        if ("圣武士 (Paladin)".equals(class_name)) {
+        if (safe_name.contains("圣武士") || contains_class_marker(safe_name, "Paladin")) {
             return new Paladin_Class();
         }
-        if ("吟游诗人 (Bard)".equals(class_name)) {
+        if (safe_name.contains("吟游诗人") || contains_class_marker(safe_name, "Bard")) {
             return new Bard_Class();
         }
         return new Fighter_Class();
+    }
+
+    private static boolean contains_class_marker(String saved_name, String english_name) {
+        return saved_name.toLowerCase(java.util.Locale.ROOT)
+                .contains(english_name.toLowerCase(java.util.Locale.ROOT));
     }
 }

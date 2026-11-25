@@ -45,7 +45,14 @@ public class CharacterController {
     }
     
     public static void getAllCharacters(Context ctx) {
-        ctx.json(Global_Data.character_pool);
+        com.google.gson.JsonArray characters = new com.google.gson.JsonArray();
+        for (Character_Sheet character : Global_Data.character_pool) {
+            characters.add(ApiServer.GSON.fromJson(
+                    serializeCharacterForFrontend(character),
+                    com.google.gson.JsonObject.class
+            ));
+        }
+        ctx.contentType("application/json").result(ApiServer.GSON.toJson(characters));
     }
     
     public static void getCharacterById(Context ctx) {
@@ -98,16 +105,49 @@ public class CharacterController {
     }
 
     public static void equipItem(Context ctx) {
-        int id = Integer.parseInt(ctx.pathParam("id"));
-        Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
-        if (character != null) {
+        try {
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
+            if (character == null) {
+                ctx.status(404).result("Character not found");
+                return;
+            }
+
             EquipRequest req = ApiServer.GSON.fromJson(ctx.body(), EquipRequest.class);
+            if (req == null || req.slot == null) {
+                ctx.status(400).result("Equipment slot is required");
+                return;
+            }
             com.DMHelper.basic.equipment.Equipment_Slot slot = com.DMHelper.basic.equipment.Equipment_Slot.valueOf(req.slot);
-            character.equip_item(slot, req.itemKey);
+            if (slot == com.DMHelper.basic.equipment.Equipment_Slot.BACKPACK) {
+                ctx.status(400).result("Backpack is not an equipment slot");
+                return;
+            }
+
+            String itemKey = req.itemKey == null ? "" : req.itemKey.trim();
+            if (!itemKey.isEmpty()) {
+                com.DMHelper.basic.equipment.Equipment_Item item = com.DMHelper.basic.equipment.Equipment_Library.get_item(itemKey);
+                if (item == null) {
+                    ctx.status(404).result("Item not found");
+                    return;
+                }
+                if (item.slot != slot) {
+                    ctx.status(400).result("Item does not fit the selected slot");
+                    return;
+                }
+                if (character.get_item_count(itemKey) <= 0) {
+                    ctx.status(400).result("Item is not in inventory");
+                    return;
+                }
+            }
+
+            character.equip_item(slot, itemKey);
             Character_DAO.update_character(character);
             ctx.status(200).result(serializeCharacterForFrontend(character));
-        } else {
-            ctx.status(404).result("Character not found");
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid character ID");
+        } catch (IllegalArgumentException e) {
+            ctx.status(400).result("Invalid equipment slot");
         }
     }
 
@@ -118,56 +158,62 @@ public class CharacterController {
     }
 
     public static void manageInventory(Context ctx) {
-        int id = Integer.parseInt(ctx.pathParam("id"));
-        Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
-        if (character != null) {
+        try {
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
+            if (character == null) {
+                ctx.status(404).result("Character not found");
+                return;
+            }
+
             InventoryRequest req = ApiServer.GSON.fromJson(ctx.body(), InventoryRequest.class);
+            if (req == null || req.action == null || req.itemKey == null || req.itemKey.trim().isEmpty()) {
+                ctx.status(400).result("Action and itemKey are required");
+                return;
+            }
+            if (!java.util.Set.of("ADD", "USE", "SELL", "BUY").contains(req.action)) {
+                ctx.status(400).result("Unsupported inventory action");
+                return;
+            }
+            if (!"USE".equals(req.action) && req.quantity <= 0) {
+                ctx.status(400).result("Quantity must be greater than zero");
+                return;
+            }
+
             com.DMHelper.basic.equipment.Equipment_Item item = com.DMHelper.basic.equipment.Equipment_Library.get_item(req.itemKey);
-            if (item == null && !req.itemKey.isEmpty()) {
+            if (item == null) {
                 item = character.get_owned_items_for_slot(com.DMHelper.basic.equipment.Equipment_Slot.BACKPACK)
                     .stream().filter(i -> i.key.equals(req.itemKey)).findFirst().orElse(null);
             }
 
+            if (item == null) {
+                ctx.status(404).result("Item not found");
+                return;
+            }
             if ("ADD".equals(req.action)) {
-                for (int i = 0; i < req.quantity; i++) character.add_item_to_inventory(req.itemKey);
-                character.record_advancement("获得物品：" + (item != null ? item.display_name : req.itemKey) + " x" + req.quantity);
-            } else if ("SELL".equals(req.action) && item != null) {
-                int totalGain = item.get_sale_value_cp() * req.quantity;
-                for (int i = 0; i < req.quantity; i++) {
-                    if (!character.remove_item_from_inventory(req.itemKey)) break;
-                }
-                character.add_currency_cp(totalGain);
-                character.record_advancement("出售物品：" + item.display_name + " x" + req.quantity + "，获得 " + com.DMHelper.basic.equipment.Equipment_Item.format_cp_value(totalGain));
-            } else if ("BUY".equals(req.action) && item != null) {
-                int totalCost = item.value_in_cp * req.quantity;
-                if (character.spend_currency_cp(totalCost)) {
-                    for (int i = 0; i < req.quantity; i++) character.add_item_to_inventory(req.itemKey);
-                    character.record_advancement("购买物品：" + item.display_name + " x" + req.quantity + "，花费 " + com.DMHelper.basic.equipment.Equipment_Item.format_cp_value(totalCost));
-                } else {
-                    ctx.status(400).result("Not enough currency");
-                    return;
-                }
-            } else if ("USE".equals(req.action) && item != null) {
-                if (item.is_healing_item()) {
-                    int healAmount = item.get_flat_healing_amount();
-                    if (healAmount <= 0 && item.get_healing_dice_count() > 0) {
-                        healAmount = com.DMHelper.basic.combat.Dice_Util.roll_dice(item.get_healing_dice_count(), item.get_healing_die_size()) + item.get_healing_bonus();
-                    }
-                    character.set_current_hp(character.current_hp + healAmount);
-                    character.remove_item_from_inventory(item.key);
-                    character.record_advancement("使用物品：" + item.display_name + "，恢复生命值 " + healAmount);
-                }
+                CharacterActionService.addItem(character, item, req.quantity);
+            } else if ("SELL".equals(req.action)) {
+                CharacterActionService.sellItem(character, item, req.quantity);
+            } else if ("BUY".equals(req.action)) {
+                CharacterActionService.buyItem(character, item, req.quantity);
+            } else if ("USE".equals(req.action)) {
+                CharacterActionService.useItem(character, item);
             }
 
             Character_DAO.update_character(character);
             ctx.status(200).result(serializeCharacterForFrontend(character));
-        } else {
-            ctx.status(404).result("Character not found");
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid character ID");
+        } catch (ArithmeticException e) {
+            ctx.status(400).result("Quantity is too large");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            ctx.status(400).result(e.getMessage());
         }
     }
 
     public static class RestRequest {
         public String restType; // "SHORT" or "LONG" or "SECOND_WIND"
+        public int spentHitDice;
     }
 
     private static String serializeCharacterForFrontend(Character_Sheet character) {
@@ -181,6 +227,7 @@ public class CharacterController {
                 if (item != null) {
                     com.google.gson.JsonObject itemObj = ApiServer.GSON.toJsonTree(item).getAsJsonObject();
                     itemObj.addProperty("count", character.inventory_item_counts.getOrDefault(key, 1));
+                    itemObj.addProperty("auto_usable", item.is_healing_item() || item.is_coin_item());
                     inventoryArr.add(itemObj);
                 }
             }
@@ -193,31 +240,39 @@ public class CharacterController {
         json.addProperty("currency_gp", character.gold_pieces);
         json.addProperty("currency_sp", character.silver_pieces);
         json.addProperty("currency_cp", character.copper_pieces);
+        json.add("pending_advancement_choices", ApiServer.GSON.toJsonTree(character.job.get_pending_choices()));
+        appendFighterAdvancementOptions(json, character);
+        json.add("advancement_options", AdvancementOptionsBuilder.build(character));
         
         // Derived stats that frontend needs
         json.addProperty("max_hp", character.hp);
         int pb = character.get_proficiency_bonus();
         json.addProperty("proficiency_bonus", pb);
+        json.addProperty("initiative_modifier", character.get_initiative_modifier());
         
         // Spell stats — compute based on class spellcasting ability
         String className = character.job.class_name;
         int spellAbilityMod = 0;
         String spellAbility = "—";
         if (className.contains("法师") || className.contains("Wizard")) {
-            spellAbilityMod = (character.stats.intel - 10) / 2;
+            spellAbilityMod = character.stats.get_mod(character.stats.intel);
             spellAbility = "智力 (INT)";
         } else if (className.contains("术士") || className.contains("Sorcerer") || 
                    className.contains("吟游诗人") || className.contains("Bard") ||
                    className.contains("邪术士") || className.contains("Warlock")) {
-            spellAbilityMod = (character.stats.cha - 10) / 2;
+            spellAbilityMod = character.stats.get_mod(character.stats.cha);
             spellAbility = "魅力 (CHA)";
         } else if (className.contains("圣武士") || className.contains("Paladin")) {
-            spellAbilityMod = (character.stats.cha - 10) / 2;
+            spellAbilityMod = character.stats.get_mod(character.stats.cha);
             spellAbility = "魅力 (CHA)";
         }
         json.addProperty("spell_attack_bonus", spellAbilityMod + pb);
         json.addProperty("spell_save_dc", 8 + spellAbilityMod + pb);
         json.addProperty("spellcasting_ability_name", spellAbility);
+        json.addProperty("max_cantrips", SpellManagementService.getCantripLimit(character));
+        json.addProperty("max_known_spells", SpellManagementService.getKnownSpellLimit(character));
+        json.addProperty("max_prepared_spells", SpellManagementService.getPreparedSpellLimit(character));
+        json.addProperty("max_spell_level", SpellManagementService.getMaxSpellLevel(character));
         
         // Spell display name map: key -> display_name
         com.google.gson.JsonObject spellMap = new com.google.gson.JsonObject();
@@ -231,6 +286,11 @@ public class CharacterController {
             java.lang.reflect.Field spellField = character.job.getClass().getField("known_spell_keys");
             java.util.List<String> spells = (java.util.List<String>) spellField.get(character.job);
             if (spells != null) allSpellKeys.addAll(spells);
+        } catch (Exception ignored) {}
+        try {
+            java.lang.reflect.Field spellbookField = character.job.getClass().getField("spellbook_spell_keys");
+            java.util.List<String> spellbook = (java.util.List<String>) spellbookField.get(character.job);
+            if (spellbook != null) allSpellKeys.addAll(spellbook);
         } catch (Exception ignored) {}
         try {
             java.lang.reflect.Field prepField = character.job.getClass().getField("prepared_spell_keys");
@@ -253,31 +313,91 @@ public class CharacterController {
         return ApiServer.GSON.toJson(json);
     }
 
+    private static void appendFighterAdvancementOptions(com.google.gson.JsonObject json, Character_Sheet character) {
+        if (!(character.job instanceof Fighter_Class fighter)) {
+            return;
+        }
+
+        com.google.gson.JsonObject options = new com.google.gson.JsonObject();
+        options.addProperty("needs_fighting_style",
+                fighter.fighting_style_name == null || fighter.fighting_style_name.trim().isEmpty());
+        options.addProperty("needs_subclass",
+                fighter.current_level >= 3
+                        && fighter.fighter_subclass == com.DMHelper.basic.playerclass.Fighter.Fighter_Subclass.NONE);
+        options.addProperty("needs_extra_fighting_style",
+                fighter.current_level >= 10
+                        && fighter.fighter_subclass == com.DMHelper.basic.playerclass.Fighter.Fighter_Subclass.CHAMPION
+                        && (fighter.extra_fighting_style_name == null || fighter.extra_fighting_style_name.trim().isEmpty()));
+        options.addProperty("pending_maneuver_count",
+                fighter.fighter_subclass == com.DMHelper.basic.playerclass.Fighter.Fighter_Subclass.BATTLE_MASTER
+                        ? Math.max(0, fighter.get_expected_maneuver_count() - fighter.maneuver_names.size())
+                        : 0);
+        options.addProperty("pending_asi_count", fighter.pending_asi_count);
+
+        com.google.gson.JsonArray styles = new com.google.gson.JsonArray();
+        for (String key : fighter.get_available_fighting_styles(false)) {
+            styles.add(optionJson(key, fighter.get_fighting_style_label(key), fighter.get_fighting_style_description(key)));
+        }
+        options.add("fighting_styles", styles);
+
+        com.google.gson.JsonArray extraStyles = new com.google.gson.JsonArray();
+        for (String key : fighter.get_available_fighting_styles(true)) {
+            extraStyles.add(optionJson(key, fighter.get_fighting_style_label(key), fighter.get_fighting_style_description(key)));
+        }
+        options.add("extra_fighting_styles", extraStyles);
+
+        com.google.gson.JsonArray subclasses = new com.google.gson.JsonArray();
+        subclasses.add(optionJson("CHAMPION", "冠军勇士 (Champion)", "稳定强化武器重击、运动能力与生存能力。"));
+        subclasses.add(optionJson("BATTLE_MASTER", "战斗大师 (Battle Master)", "使用卓越骰和战技控制战场。"));
+        options.add("subclasses", subclasses);
+
+        com.google.gson.JsonArray maneuvers = new com.google.gson.JsonArray();
+        for (String key : fighter.get_available_maneuvers()) {
+            maneuvers.add(optionJson(key, fighter.get_maneuver_label(key), fighter.get_maneuver_description(key)));
+        }
+        options.add("maneuvers", maneuvers);
+
+        com.google.gson.JsonArray feats = new com.google.gson.JsonArray();
+        for (String key : com.DMHelper.basic.feat.Feat_Library.get_available_feat_keys(character)) {
+            feats.add(optionJson(
+                    key,
+                    com.DMHelper.basic.feat.Feat_Library.get_label(key),
+                    com.DMHelper.basic.feat.Feat_Library.get_summary_line(key)
+            ));
+        }
+        options.add("feats", feats);
+        json.add("fighter_advancement", options);
+    }
+
+    private static com.google.gson.JsonObject optionJson(String key, String label, String description) {
+        com.google.gson.JsonObject option = new com.google.gson.JsonObject();
+        option.addProperty("key", key);
+        option.addProperty("label", label);
+        option.addProperty("description", description);
+        return option;
+    }
+
     public static void rest(Context ctx) {
-        int id = Integer.parseInt(ctx.pathParam("id"));
-        Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
-        if (character != null) {
-            RestRequest req = ApiServer.GSON.fromJson(ctx.body(), RestRequest.class);
-            if ("LONG".equals(req.restType)) {
-                character.set_current_hp(character.hp);
-                character.job.restore_long_rest_resources();
-                character.record_advancement("完成了一次长休，恢复所有生命值与能力。");
-            } else if ("SHORT".equals(req.restType)) {
-                character.job.restore_short_rest_resources();
-                character.record_advancement("完成了一次短休。");
-            } else if ("SECOND_WIND".equals(req.restType) && character.job instanceof com.DMHelper.basic.playerclass.Fighter.Fighter_Class) {
-                com.DMHelper.basic.playerclass.Fighter.Fighter_Class fighter = (com.DMHelper.basic.playerclass.Fighter.Fighter_Class) character.job;
-                if (fighter.current_second_wind_uses > 0) {
-                    fighter.current_second_wind_uses--;
-                    int heal = com.DMHelper.basic.combat.Dice_Util.roll_dice(1, 10) + fighter.current_level;
-                    character.set_current_hp(character.current_hp + heal);
-                    character.record_advancement("使用复苏之风，恢复了 " + heal + " 点生命值。");
-                }
+        try {
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
+            if (character == null) {
+                ctx.status(404).result("Character not found");
+                return;
             }
+
+            RestRequest req = ApiServer.GSON.fromJson(ctx.body(), RestRequest.class);
+            if (req == null || req.restType == null) {
+                ctx.status(400).result("Rest type is required");
+                return;
+            }
+            CharacterActionService.rest(character, req.restType, req.spentHitDice);
             Character_DAO.update_character(character);
             ctx.status(200).result(serializeCharacterForFrontend(character));
-        } else {
-            ctx.status(404).result("Character not found");
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid character ID");
+        } catch (IllegalArgumentException e) {
+            ctx.status(400).result(e.getMessage());
         }
     }
 
@@ -287,16 +407,28 @@ public class CharacterController {
     }
 
     public static void addXp(Context ctx) {
-        int id = Integer.parseInt(ctx.pathParam("id"));
-        Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
-        if (character != null) {
+        try {
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
+            if (character == null) {
+                ctx.status(404).result("Character not found");
+                return;
+            }
+
             XpRequest req = ApiServer.GSON.fromJson(ctx.body(), XpRequest.class);
-            character.experience_points += req.amount;
-            character.record_advancement("获得经验值 " + req.amount + (req.reason != null && !req.reason.isEmpty() ? " (" + req.reason + ")" : ""));
+            if (req == null) {
+                ctx.status(400).result("XP amount is required");
+                return;
+            }
+            CharacterActionService.addXp(character, req.amount, req.reason);
             Character_DAO.update_character(character);
             ctx.status(200).result(serializeCharacterForFrontend(character));
-        } else {
-            ctx.status(404).result("Character not found");
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid character ID");
+        } catch (ArithmeticException e) {
+            ctx.status(400).result("XP amount is too large");
+        } catch (IllegalArgumentException e) {
+            ctx.status(400).result(e.getMessage());
         }
     }
 
@@ -305,40 +437,22 @@ public class CharacterController {
         public String spellKey;
     }
 
-    private static void modifySpellList(Character_Sheet character, String fieldName, String spellKey, boolean add) {
-        try {
-            java.lang.reflect.Field field = character.job.getClass().getField(fieldName);
-            java.util.List<String> keys = (java.util.List<String>) field.get(character.job);
-            if (keys == null && add) {
-                keys = new java.util.ArrayList<>();
-                field.set(character.job, keys);
-            }
-            if (keys != null) {
-                if (add && !keys.contains(spellKey)) keys.add(spellKey);
-                else if (!add) keys.remove(spellKey);
-            }
-        } catch (Exception e) {}
-    }
-
     public static void manageSpells(Context ctx) {
-        int id = Integer.parseInt(ctx.pathParam("id"));
-        Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
-        if (character != null) {
-            SpellManageRequest req = ApiServer.GSON.fromJson(ctx.body(), SpellManageRequest.class);
-            if (character.job != null) {
-                if ("ADD_CANTRIP".equals(req.action)) modifySpellList(character, "known_cantrip_keys", req.spellKey, true);
-                else if ("REMOVE_CANTRIP".equals(req.action)) modifySpellList(character, "known_cantrip_keys", req.spellKey, false);
-                else if ("ADD_SPELL".equals(req.action)) modifySpellList(character, "known_spell_keys", req.spellKey, true);
-                else if ("REMOVE_SPELL".equals(req.action)) {
-                    modifySpellList(character, "known_spell_keys", req.spellKey, false);
-                    modifySpellList(character, "prepared_spell_keys", req.spellKey, false);
-                } else if ("PREPARE".equals(req.action)) modifySpellList(character, "prepared_spell_keys", req.spellKey, true);
-                else if ("UNPREPARE".equals(req.action)) modifySpellList(character, "prepared_spell_keys", req.spellKey, false);
+        try {
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
+            if (character == null) {
+                ctx.status(404).result("Character not found");
+                return;
             }
+            SpellManageRequest req = ApiServer.GSON.fromJson(ctx.body(), SpellManageRequest.class);
+            SpellManagementService.applyAction(character, req == null ? null : req.action, req == null ? null : req.spellKey);
             Character_DAO.update_character(character);
             ctx.status(200).result(serializeCharacterForFrontend(character));
-        } else {
-            ctx.status(404).result("Character not found");
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid character ID");
+        } catch (IllegalArgumentException e) {
+            ctx.status(400).result(e.getMessage());
         }
     }
 
@@ -350,13 +464,53 @@ public class CharacterController {
                 character.job.level_up(character.job.current_level + 1);
                 character.recalculate_derived_stats();
                 character.record_advancement("升级到了 " + character.job.current_level + " 级！");
-                Character_DAO.update_character(character);
+                if (!Character_DAO.update_character(character)) {
+                    ctx.status(500).result("Failed to persist level-up");
+                    return;
+                }
                 ctx.status(200).result(serializeCharacterForFrontend(character));
             } else {
                 ctx.status(400).result("Not enough XP to level up");
             }
         } else {
             ctx.status(404).result("Character not found");
+        }
+    }
+
+    public static class AdvancementChoiceRequest {
+        public String type;
+        public String value;
+        public java.util.List<String> values;
+    }
+
+    public static void applyAdvancementChoice(Context ctx) {
+        try {
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            Character_Sheet character = Global_Data.character_pool.stream()
+                    .filter(item -> item.database_id == id)
+                    .findFirst()
+                    .orElse(null);
+            if (character == null) {
+                ctx.status(404).result("Character not found");
+                return;
+            }
+
+            AdvancementChoiceRequest request = ApiServer.GSON.fromJson(ctx.body(), AdvancementChoiceRequest.class);
+            ClassAdvancementService.apply(
+                    character,
+                    request == null ? null : request.type,
+                    request == null ? null : request.value,
+                    request == null ? null : request.values
+            );
+            if (!Character_DAO.update_character(character)) {
+                ctx.status(500).result("Failed to persist advancement choice");
+                return;
+            }
+            ctx.status(200).result(serializeCharacterForFrontend(character));
+        } catch (NumberFormatException error) {
+            ctx.status(400).result("Invalid character ID");
+        } catch (IllegalArgumentException error) {
+            ctx.status(400).result(error.getMessage());
         }
     }
 
@@ -408,8 +562,11 @@ public class CharacterController {
             // Ensure derived stats are correct
             newCharacter.recalculate_derived_stats();
 
+            if (!Character_DAO.save_character(newCharacter)) {
+                ctx.status(500).result("Failed to persist character");
+                return;
+            }
             Global_Data.character_pool.add(newCharacter);
-            Character_DAO.save_character(newCharacter);
 
             ctx.result(ApiServer.GSON.toJson(newCharacter)).contentType("application/json");
         } catch (Exception e) {

@@ -1,0 +1,110 @@
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { AdventureLocation, MapMarker } from '../atlasTypes'
+
+const props = defineProps<{
+  image: string
+  markers: MapMarker[]
+  locations: AdventureLocation[]
+  selectedId: number | null
+  placing: boolean
+}>()
+const emit = defineEmits<{ select: [id: number]; place: [point: { x: number; y: number }] }>()
+const viewport = ref<HTMLDivElement>()
+const natural = ref({ width: 1, height: 1 })
+const size = ref({ width: 1, height: 1 })
+const loaded = ref(false)
+const imageError = ref(false)
+const zoom = ref(1)
+const offset = ref({ x: 0, y: 0 })
+const dragging = ref(false)
+let gesture: { id: number; x: number; y: number; offsetX: number; offsetY: number } | null = null
+let observer: ResizeObserver | undefined
+const fit = computed(() => Math.min(size.value.width / natural.value.width, size.value.height / natural.value.height) * .9)
+const dimensions = computed(() => ({ width: natural.value.width * fit.value * zoom.value, height: natural.value.height * fit.value * zoom.value }))
+const planeStyle = computed(() => ({ width: `${dimensions.value.width}px`, height: `${dimensions.value.height}px`, transform: `translate(${offset.value.x}px,${offset.value.y}px)` }))
+const pins = computed(() => props.markers.flatMap(marker => {
+  const location = props.locations.find(location => location.id === marker.location_id)
+  return location ? [{ ...marker, location }] : []
+}))
+function reset() {
+  zoom.value = 1
+  offset.value = { x: (size.value.width - dimensions.value.width) / 2, y: (size.value.height - dimensions.value.height) / 2 }
+}
+function imageLoaded(event: Event) {
+  const image = event.target as HTMLImageElement
+  natural.value = { width: image.naturalWidth, height: image.naturalHeight }
+  loaded.value = true
+  reset()
+}
+function zoomAt(factor: number, x = size.value.width / 2, y = size.value.height / 2) {
+  const next = Math.min(5, Math.max(.5, zoom.value * factor))
+  const ratio = next / zoom.value
+  offset.value = { x: x - (x - offset.value.x) * ratio, y: y - (y - offset.value.y) * ratio }
+  zoom.value = next
+}
+function wheel(event: WheelEvent) {
+  const rect = viewport.value!.getBoundingClientRect()
+  zoomAt(event.deltaY < 0 ? 1.12 : 1 / 1.12, event.clientX - rect.left, event.clientY - rect.top)
+}
+function pointerDown(event: PointerEvent) {
+  if (event.button !== 0 || (event.target as Element).closest('button') || !loaded.value) return
+  gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, offsetX: offset.value.x, offsetY: offset.value.y }
+  viewport.value!.setPointerCapture(event.pointerId)
+}
+function pointerMove(event: PointerEvent) {
+  if (!gesture || gesture.id !== event.pointerId) return
+  const dx = event.clientX - gesture.x, dy = event.clientY - gesture.y
+  if (Math.hypot(dx, dy) > 4) dragging.value = true
+  if (dragging.value) offset.value = { x: gesture.offsetX + dx, y: gesture.offsetY + dy }
+}
+function pointerUp(event: PointerEvent) {
+  if (!gesture || gesture.id !== event.pointerId) return
+  if (!dragging.value && props.placing && event.type === 'pointerup') {
+    const rect = viewport.value!.getBoundingClientRect()
+    const x = (event.clientX - rect.left - offset.value.x) / dimensions.value.width
+    const y = (event.clientY - rect.top - offset.value.y) / dimensions.value.height
+    if (x >= 0 && x <= 1 && y >= 0 && y <= 1) emit('place', { x, y })
+  }
+  gesture = null
+  dragging.value = false
+  if (viewport.value?.hasPointerCapture(event.pointerId)) viewport.value.releasePointerCapture(event.pointerId)
+}
+watch(() => props.image, () => { loaded.value = false; imageError.value = false })
+onMounted(() => {
+  observer = new ResizeObserver(entries => {
+    const rect = entries[0]?.contentRect
+    if (rect) { size.value = { width: rect.width, height: rect.height }; reset() }
+  })
+  observer.observe(viewport.value!)
+})
+onUnmounted(() => observer?.disconnect())
+</script>
+
+<template>
+  <div class="map-shell">
+    <div class="map-tools">
+      <span>{{ placing ? '点击地图放置标记 · 拖动仍可浏览' : '拖动浏览 · 滚轮缩放 · 点击标记查看地点' }}</span>
+      <div><button aria-label="缩小地图" @click="zoomAt(1 / 1.25)">−</button><output>{{ Math.round(zoom * 100) }}%</output><button aria-label="放大地图" @click="zoomAt(1.25)">＋</button><button @click="reset">适应窗口</button></div>
+    </div>
+    <div ref="viewport" :class="['viewport', { placing, dragging }]" aria-label="冒险地图画布"
+      @wheel.prevent="wheel" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="gesture = null; dragging = false">
+      <div class="plane" :style="planeStyle">
+        <img :src="image" alt="冒险地图" draggable="false" @load="imageLoaded" @error="imageError = true">
+        <button v-for="pin in pins" v-show="loaded" :key="pin.location_id"
+          :class="['pin', pin.location.status.toLowerCase(), { selected: pin.location_id === selectedId, current: pin.location.is_current }]"
+          :style="{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }"
+          :aria-label="`查看地点：${pin.location.name}`" :aria-pressed="pin.location_id === selectedId" @click.stop="emit('select', pin.location_id)">
+          <span class="pin-dot">{{ pin.location.is_current ? '★' : '◆' }}</span><span class="pin-label">{{ pin.location.name }}</span>
+        </button>
+      </div>
+      <p v-if="imageError" class="canvas-message">地图图片无法读取，请重新导入。</p>
+      <p v-else-if="!loaded" class="canvas-message">正在展开地图…</p>
+      <div class="compass" aria-hidden="true">N<br>↑</div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.map-shell{height:100%;min-height:480px;display:flex;flex-direction:column;background:#0e1416;border:1px solid #665333;border-radius:12px;overflow:hidden}.map-tools{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;background:#1a211f;color:#b9b7a6;font-size:12px;flex-wrap:wrap}.map-tools>div{display:flex;align-items:center;gap:6px}.map-tools button{color:#e6d4a1;background:#2b3029;border:1px solid #59583e;border-radius:5px;padding:5px 9px;cursor:pointer}.map-tools output{width:42px;text-align:center;font-variant-numeric:tabular-nums}.viewport{position:relative;flex:1;min-height:430px;overflow:hidden;touch-action:none;cursor:grab;background:radial-gradient(ellipse at center,#27332d,#111917 85%)}.viewport.placing{cursor:crosshair}.viewport.dragging{cursor:grabbing}.plane{position:absolute;top:0;left:0;transform-origin:0 0}.plane img{display:block;width:100%;height:100%;user-select:none;pointer-events:none;box-shadow:0 12px 65px #0008}.pin{position:absolute;display:flex;align-items:center;flex-direction:column;transform:translate(-50%,-15px);padding:0;background:none;border:0;cursor:pointer;color:#e2d5b8;z-index:1}.pin-dot{display:grid;place-items:center;width:28px;height:28px;background:#302e28;border:2px solid #aaa18b;border-radius:50%;box-shadow:0 2px 8px #000b;font-size:13px}.pin.visited .pin-dot{border-color:#91bba0;background:#264a3e}.pin.planned .pin-dot{border-color:#e0bc64;background:#70582d}.pin.selected{z-index:3}.pin.selected .pin-dot{outline:3px solid #f6dc91;outline-offset:3px}.pin.current .pin-dot{color:#ffe7a0}.pin-label{margin-top:5px;padding:3px 7px;white-space:nowrap;border-radius:4px;background:#111b19eb;color:#fff0ca;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 6px #0006}.canvas-message{position:absolute;inset:45% 0 auto;text-align:center;color:#dec998}.compass{position:absolute;right:18px;bottom:16px;color:#c0b48c99;text-align:center;pointer-events:none;font:18px Georgia}
+</style>

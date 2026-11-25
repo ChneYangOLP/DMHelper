@@ -6,8 +6,12 @@ declare module '*.vue' {
   export default component
 }
 
+declare module '*.css'
+
 interface Window {
   electronAPI: {
+    apiToken: string
+    ai: import('./src/aiTypes').AiSettingsBridge
     minimizeWindow: () => void
     maximizeWindow: () => void
     closeWindow: () => void

@@ -1,427 +1,257 @@
 # DMHelper
 
-`DMHelper` 是一个基于 Java 17 + JavaFX 22 的本地桌面 D&D 5e 辅助工具，定位是单机版 DM 控制台与角色管理器。
-项目当前已经覆盖角色创建、升级选择、法术管理、装备与背包、战斗结算（含全面规则自动化）、怪物图鉴、自定义物品、PDF 导出和 SQLite 持久化。
+面向地下城主（DM）的本地 D&D 5e 桌面辅助工具，用于管理角色、运行格子战斗、记录冒险和浏览地图。
 
-## 项目定位
-
-- 面向本地使用，不依赖服务端
-- 以 2014 版 D&D 5e 核心规则为主要实现方向
-- 目标是"可管理、可记录、可游玩、可导出"
+当前桌面端采用 **Electron + Vue 3 + TypeScript**，通过本机 **Java / Javalin** 服务调用规则引擎，使用 **SQLite** 保存游戏数据。规则以 2014 版 D&D 5e 为主要实现方向，尚未覆盖全部规则，具体裁定仍由 DM 决定。
 
 ## 当前功能
 
-### 角色系统
+| 模块 | 已实现内容 |
+| --- | --- |
+| 角色管理 | 创建角色、种族与职业选择、升级、属性与专长、法术、装备与背包、休息与资源管理 |
+| 战斗追踪 | 先攻、回合、攻击与伤害、动作与附赠动作、状态、专注、经验与掉落结算 |
+| 格子战场 | 部署、移动、距离、地形、掩体、视线与范围预览，支持战场背景和单位图标 |
+| 战斗存档 | 操作后自动保存，刷新、离开页面或重启应用后恢复当前遭遇 |
+| 跑团场次 | 开始与结束场次，查看本场日志、战斗归档和已保存总结 |
+| 冒险日志 | 记录事件、任务、NPC，支持搜索、筛选、标签、置顶与地点关联 |
+| 地点与地图 | 地点管理、多张地图、地点标记、缩放平移及关联日志查看 |
+| AI 配置 | GPT、Gemini、DeepSeek 预设，自定义接口与模型、密钥保存和连接测试 |
+| 悬浮冒险回顾 | 各页面共用的小悬浮入口，可按场次总结，编辑保存、查看历史并跳转引用来源 |
 
-- 创建角色：姓名、年龄、性别、六维、背景故事、性格、理想、羁绊、缺陷
-- 核心种族：人类、矮人、精灵、半身人、龙裔、侏儒、半精灵、半兽人、提夫林
-- 子种族/血统选择：
-  - 矮人：丘陵矮人、山地矮人
-  - 精灵：高等精灵、木精灵、卓尔
-  - 半身人：轻足半身人、健壮半身人
-  - 侏儒：森林侏儒、岩侏儒
-  - 龙裔：10 种龙族血脉
-  - 半精灵：可选两项额外 +1 属性
-- 种族信息展示：属性加值、速度、体型、语言、黑暗视觉、种族特性摘要
+AI 只整理已记录的冒险，会要求区分记录事实与待确认信息并引用资料编号，不设计剧情、遭遇或 NPC 对白，也不会自动更改角色、任务、地点或战斗。
 
-### 职业与成长
+## 从源码启动
 
-- 已实现职业：
-  - 战士 `Fighter`
-  - 法师 `Wizard`
-  - 术士 `Sorcerer`
-  - 邪术士 `Warlock`
-  - 圣武士 `Paladin`
-  - 吟游诗人 `Bard`
-- 已实现的主要成长内容：
-  - 子职业选择
-  - 属性值提升 / 专长
-  - 技能熟练选择
-  - 法术与戏法学习
-  - 准备法术管理
-  - 战斗大师战技选择
-  - 术士超魔
-  - 邪术士邪术祈请与契约恩赐
-  - 吟游诗人吟游激励与魔法秘辛
-- 当前已覆盖的子职业示例：
-  - 战士：冠军勇士、战斗大师
-  - 法师：8 大学派
-  - 术士：龙脉术士、狂野魔法
-  - 邪术士：邪魔恩主、妖精恩主、旧日支配者
-  - 圣武士：奉献誓言、远古誓言、复仇誓言
-  - 吟游诗人：学识学院、勇气学院
+### 环境准备
 
-### 装备与背包
+- JDK 17 或更高版本，确保 `java` 可用；打包时还需要 JDK 中的 `jlink`。
+- Maven，确保 `mvn` 可用。Windows 下构建脚本调用 `mvn.cmd`。
+- Node.js 与 npm，版本需满足项目中 Vite 6 和 Electron 的运行要求。
+- 首次安装依赖、构建时需要网络；日常角色、战斗和地图管理在本机运行。
 
-- 默认职业装备初始化
-- 装备槽位：
-  - 护甲
-  - 主手
-  - 副手 / 盾牌
-  - 披风
-  - 护符
-- 背包支持堆叠、分类查看、双击使用、丢弃
-- 内置物品库包含：
-  - 常规武器与护甲
-  - 消耗品
-  - 更多法术卷轴
-- 支持自定义装备并写入 SQLite
+建议将 `JAVA_HOME` 指向使用的 JDK，并确保命令行中的 Java 与其一致。
 
-### 施法系统
+### 启动桌面端
 
-- 法师：
-  - 法术书
-  - 准备法术
-  - 奥术回能
-- 术士：
-  - 已知法术
-  - 术法点
-  - 超魔
-- 邪术士：
-  - 契约法术位
-  - 邪术祈请
-  - 契约恩赐
-- 圣武士：
-  - 准备法术
-  - 圣疗池
-  - 神圣感知
-- 吟游诗人：
-  - 吟游激励
-  - 休憩之歌
-  - 魔法秘辛
+在项目根目录打开终端：
 
-### 战斗系统
+```powershell
+cd frontend
+npm ci
+npm run electron:dev
+```
 
-- 参战角色选择
-- 怪物图鉴搜索与遭遇配置
-- 先攻排序
-- 目标与攻击方式选择
-- 攻击结算与日志记录
-- 敌人双击移除
-- 死亡角色不可加入战斗
-- 战斗中支持使用部分物品
-- 战后结算（经验分配 + 掉落物分配）
+启动脚本会构建 Java 后端、编译前端并打开 Electron。Electron 自动启动本地规则服务，退出应用时停止该服务。
 
-### 规则自动化
+本地 API 默认使用 `127.0.0.1:8080`，桌面端会自动传递访问令牌。启动前请确保端口未被其他程序占用。
 
-#### 战斗规则
+> `npm run electron:dev` 当前使用编译后的页面，不提供前端热更新。`npm run dev` 只启动 Vite 页面服务，不能替代完整桌面端；直接在浏览器打开页面也不具备 Electron 的 AI 配置能力。
 
-- **优势/劣势系统**：自动从状态效果判定优势/劣势，影响攻击掷骰
-  - `INSPIRED`（激励）→ 攻击优势
-  - `FRIGHTENED`（恐慌）→ 对恐惧来源攻击劣势
-  - `POISONED`（中毒）/ `PRONE`（倒地）/ `RESTRAINED`（束缚）→ 攻击劣势
-  - 优势与劣势互相抵消
-- **掩护系统**：半掩护（AC+2）、四分之三掩护（AC+5）、全掩护
-- **借机攻击**：战斗者移出敌方触及范围时自动触发借机攻击
-  - 麻痹/沉睡状态的战斗者不能触发
-  - 隐形战斗者不会触发
-- **施法专注管理**：施放法术时自动开始专注追踪
-  - 受击时自动进行专注检定（DC = max(10, 伤害/2)）
-  - 新法术自动打破旧专注
-  - 回合结束时统一检查所有活跃专注
+### 在 IDE 中启动
 
-#### 非战斗规则
+先在 `frontend` 安装 npm 依赖，再以**项目根目录为工作目录**运行 [Main.java](src/main/java/Main.java)。默认入口会启动本地 API 并打开 Electron。
 
-- **技能检定自动化**：支持技能检定、属性检定、豁免检定，自动计算加值
-  - 支持优势/劣势和自然 20/自然 1 判定
-- **负重系统**：计算装备/背包总重量，4 级负重等级
-  - 携带能力 = 力量 × 15
-  - 轻度负重（>5×力量）、重度负重（>10×力量）、超重（>15×力量）
-  - 重度/超重影响移动速度
+| 参数 | 行为 |
+| --- | --- |
+| 无参数 | 启动 API 和 Electron 桌面端 |
+| `--server` | 仅启动本地 API |
+| `--javafx` | 启动保留的旧版 JavaFX 界面 |
 
-### 战斗日志系统
+新版功能以 Electron 界面为准，旧版 JavaFX 不保证功能一致。
 
-- 完整事件记录（30 种日志类型）
-- 自动记录：攻击掷骰、伤害、治疗、豁免检定、状态附加/消失、专注检定、借机攻击、死亡等
-- 回合计数器
-- 伤害/治疗统计（按阵营分别累计）
-- 支持短格式、详细格式、PDF 导出格式
+## 使用说明
 
-### PDF 导出
+### 角色管理
 
-- **角色卡 PDF**：D&D 5e 风格角色卡
-  - 深色主题头部横幅（角色名/种族/职业/等级/XP/金币）
-  - 六维属性 3×2 网格（带调整值）
-  - 战斗数据（HP/AC/先攻/速度/熟练加值/生命骰）
-  - 豁免检定（熟练标记）
-  - 技能列表 3 列布局（单圆=熟练/双圆=专精）
-  - 装备信息 5 槽位
-  - 施法信息（自动检测施法职业）
-  - 背包物品列表
-  - 种族特性/职业特性
-  - 背景故事（性格/理想/羁绊/缺陷）
-  - 负重可视化
-- **遭遇日志 PDF**：完整战斗日志报告
-  - 标题页（参战者列表 + 战斗统计摘要）
-  - 时间线表格（颜色编码：攻击=红、治疗=绿、状态=蓝、系统=灰）
-  - 参战者最终状态摘要
-  - 经验值与战利品记录
+在「角色一览」中创建并管理角色，再将角色加入遭遇。
 
-#### 导出入口
+- 支持人类、矮人、精灵、半身人、龙裔、侏儒、半精灵、半兽人、提夫林及部分子种族选择。
+- 已实现职业包括战士、法师、术士、邪术士、圣武士和吟游诗人。
+- 按职业和等级提供相应的成长、法术与资源操作；装备和背包支持自定义物品。
 
-| 界面 | 触发方式 |
-|------|----------|
-| 角色一览 (JavaFX) | 选中角色 → 点击"导出角色卡 PDF" |
-| 角色管理 (JavaFX) | 选中角色 → 点击"导出角色卡 PDF" |
-| 角色管理 (Swing) | 成长与升级标签页 → 点击"导出角色卡 PDF" |
-| 战斗系统 (Swing) | 战斗胜利结算完成后 → 弹出确认框"是否导出战斗日志 PDF？" |
+职业、子职业、法术和专长的覆盖范围以界面实际提供的内容为准。
 
-### 数据持久化
+### 格子战斗
 
-- 角色数据保存在 SQLite
-- 自定义装备单独持久化
-- 启动时自动初始化表结构
-- 老版本项目根目录数据库会尝试迁移到正式存档目录
+1. 打开「战斗追踪器」，选择参战角色、怪物、关联场次和战斗地点。默认选择当前进行中的场次与当前位置。
+2. 在战场上部署单位，按需绘制墙壁、困难地形及掩体。
+3. 开始战斗后，按先攻顺序移动、选择行动和目标，再结束当前回合。
+4. 根据战斗结果处理经验、掉落及角色资源。
 
-## 界面入口
+战斗结束后可点击「归档到冒险日志」，先查看并编辑归档标题、场次、地点和正文，再确认保存。归档包含参战人员、战斗结果、回合、生命状态、经验及系统日志。已归档战斗按战斗编号防止重复写入，再次点击会显示原记录；可前往日志修改内容。归档不会重新结算经验或分配掉落。
 
-应用主界面（FxLauncher）包含 4 个核心入口，**全部已迁移为 JavaFX 原生实现**，不再依赖 Swing：
+归档保留的是确认时的战斗记录；如果之后继续分配掉落，可在已归档日志中补充说明。清除遭遇会移除未归档的战斗记录，已归档日志仍然保留。
 
-- `创建角色` → `CharacterCreateWindow`（JavaFX）
-- `角色一览` → `CharacterRosterWindow`（JavaFX，含导出角色卡 PDF）
-- `角色管理` → `CharacterManagerWindow`（JavaFX，全功能管理 + 导出角色卡 PDF）
-- `战斗系统` → `CombatConsoleWindow`（JavaFX，完整战斗 + 导出战斗日志 PDF）
+战场为 **16 × 12 格，每格 5 尺**，支持不同体型的单位占格、移动消耗、射程检查以及圆形、锥形、线形和立方体范围预览。范围效果包含友军，大型单位被覆盖多个格子时只结算一次。
 
-Swing 版界面（`Character_Manager_UI`、`Combat_System_UI`、`Create_Character_UI` 等）仍保留在代码库中作为参考，但主菜单不再直接调用。
+动作与附赠动作分别计数，支持分段移动、疾走、撤离和起身。借机攻击会自动消耗反应，部分受伤反应由 DM 在界面确认。
 
-启动入口文件：
+**撤销移动：** 可撤销最近一次符合条件的移动并返还移动消耗。执行动作、附赠动作、起身或触发相关反应后，不能再撤销此前移动。
 
-- [Main.java](src/main/java/Main.java)
-- [FxLauncher.java](src/main/java/FxLauncher.java)
+**图片导入：** 战场背景和单位图标支持 PNG、JPG、WebP，单张文件不超过 10 MB，导入时会缩放压缩。背景图片铺满棋盘，图片中的墙壁需要手动绘制。角色图标按角色存档保存，怪物图标按种类共用。
 
-### 使用 Maven 运行 JavaFX 版本
+### 战斗保存与恢复
 
-1. 安装 JDK 17+ 与 Maven 3.9+。
-2. 在仓库根目录执行一次编译（会自动下载 sqlite-jdbc、OpenJFX 与 PDFBox）：
+- 每次成功操作后，自动将当前遭遇保存到本机数据库。
+- 刷新页面、切换页面或重启应用后，再次进入战斗页面会恢复上次遭遇。
+- 恢复内容包括先攻与回合、参战单位、生命与资源、行动使用情况、状态与专注、位置与地形、战斗日志及待处理的结算。
+- 页面显示最近保存时间，可使用「重新载入」读取已保存状态。
+- 当前只保留**一个遭遇存档**。「新建遭遇」会要求确认并清除旧遭遇，角色已经保存的生命、资源、经验和物品仍会保留。
 
-   ```bash
-   mvn clean compile
-   ```
+存档异常或无法兼容时，页面会提示处理，不会直接覆盖原存档。战场背景和单位图标单独保存在本机浏览器存储中，备份方式见下文。
 
-3. 启动 JavaFX 主界面：
+### 冒险日志与地点
 
-   ```bash
-   mvn javafx:run
-   ```
+在「冒险日志」中记录事件、任务和 NPC，可添加标签、日期、角色、地点及场次关联，并跟踪任务状态。新建记录默认关联当前场次，也可选择历史场次或未关联。支持按场次筛选；旧版记录保留在「未关联场次」中，可编辑补充关联。
 
-   - 默认会根据当前操作系统选择 `javafx.platform`。如果需要覆盖，可显式指定，例如 `mvn -Djavafx.platform=win javafx:run`（Windows）、`mvn -Djavafx.platform=mac javafx:run`（Intel Mac）、`mvn -Djavafx.platform=linux javafx:run`（Linux）。
-   - 纯命令行运行也可以使用 `mvn -Dmain.class=Main exec:java` 等方式，但 `javafx:run` 会自动加上 `--add-modules javafx.controls,javafx.graphics`。
+在「冒险地图」中：
 
-4. 若想回到旧体验，可直接在 IDE 中运行 `Main_Menu.main`（Swing 版仍保留）。
+1. 创建地点，填写类型、描述和探索状态，并按需设为当前位置。
+2. 导入地图图片；可管理多张地图，进行缩放、平移和适应视图操作。
+3. 在地图上放置、移动或移除地点标记。
+4. 选择地点，查看关联任务、NPC 和事件。
 
-## 项目结构
+地图支持 PNG、JPG、WebP，单张文件不超过 10 MB。一个地点可出现在多张地图中，每张地图上保留一个对应标记。删除地图只移除该地图及标记，保留地点和日志。
+
+### 跑团场次
+
+1. 跑团开始时，在「跑团场次」填写名称和备注，点击「开始本场冒险」。同时只保留一个进行中的场次。
+2. 本场新建日志、开始战斗时，按需确认关联场次。
+3. 本次跑团结束后，点击「结束场次」保留结束时间。已结束的场次仍可编辑备注、补充日志及归档战斗。
+4. 从场次档案查看本场记录和已保存总结，或点击「总结这一场」打开悬浮回顾。
+
+旧日志和旧战斗存档不会根据日期自动分组，避免把不同场次的记录误关联到一起。
+
+### AI 连接配置
+
+在 Electron 桌面端打开「AI 配置」：
+
+1. 选择 GPT（OpenAI）、Gemini（Google）或 DeepSeek，界面会填入对应的 API 基础地址。
+2. 选择预设模型，或填写自己账户可用的模型 ID。
+3. 输入对应服务商的 API Key，按需调整超时时间。
+4. 使用连接测试检查当前填写的配置，再保存配置。
+
+自定义服务需兼容 **OpenAI Chat Completions** 接口。远程地址要求 HTTPS，本机服务可使用 HTTP。预设列表见 [aiProviders.ts](frontend/src/aiProviders.ts)，模型是否可用取决于服务商和账户权限。
+
+密钥由 Electron 主进程使用系统加密能力保存，读取配置时不会向页面返回原始密钥。编辑已保存配置时，密钥留空表示保留原密钥；清除密钥需使用界面中的对应选项。切换 API 来源可能要求重新输入密钥。
+
+保存配置本身不会请求模型。连接测试只发送简短的测试消息，不会附带角色或冒险日志，可能产生服务商的 API 费用。
+
+### 悬浮冒险回顾
+
+保存模型配置后，在任意页面点击右下角的「回顾」悬浮图标：
+
+1. 选择回顾场次与总结方式：冒险经历、故事脉络、任务与线索或地点回顾。可快速选择「当前场次」或「上一次跑团」。
+2. 可选填想重点回顾的人物、地点或事件；地点回顾需选择对应地点。
+3. 在「资料范围」中选择队伍、经历范围，并预览将发送的文字资料。默认纳入全部已记录经历，超出篇幅时会提示省略。
+4. 点击总结，可取消等待、复制结果，并查看该次总结使用的资料。引用编号可跳转到原始角色、地点或日志。
+5. 点击「编辑并保存总结」，修改标题与正文后保存。保存内容关联生成时选中的场次，并保留模型、回顾重点和原始资料快照；后续切换场次不会改变该次总结的归属。
+
+面板收起后仍保留结果；切换角色、战斗、日志或地图页面时，面板及正在生成的总结都会保留。也可从「冒险地图」的地点详情点击「回顾此地的人和事」，直接打开悬浮面板。
+
+| 总结方式 | 回答侧重点 |
+| --- | --- |
+| 冒险经历 | 已经经历的事件、重要转折与当前进展 |
+| 故事脉络 | 冒险中遇到的人物、故事线及记录明确支持的关联 |
+| 任务与线索 | 已完成、进行中和失败任务的结果、进度与待确认线索 |
+| 地点回顾 | 在某个地点发生过的事、遇到的人及任务进展 |
+
+资料包含选中角色的基础资料与背景、各种状态的任务、所选范围内的事件、NPC 记录和地点文字，不含地图图片、背包内部数据或密钥。选择特定场次时，只使用明确关联到该场次的日志；已归档战斗作为见闻一并进入回顾。选择「全部冒险」时跨场次整理，选择「未关联场次的旧记录」时只整理尚未分组的资料。
+
+事件按录入顺序整理，置顶与编辑不会将旧事件变成新事件。角色数值与任务状态来自当前存档，不能直接当作历史场次当时的状态。
+
+地点关联使用地点编号，旧日志只有地点文字时不会自动建立关联。长文本会截短，各类资料分配篇幅以保留任务结果和 NPC 信息；过多记录会省略，面板会显示提示。资料不足时应补充冒险日志或地点描述，再更新资料重新总结。
+
+这是基于现有资料和总结提示词的流程，无需自行训练模型。点击总结才会向已配置的模型服务发送回顾重点和预览中的文字资料，可能产生 API 费用。未保存结果在刷新或重启后清除；已保存结果存入 SQLite，可从面板的「已保存的总结」或对应场次档案重新打开、修改和复制，不需要再次请求模型。已保存的 AI 总结不会作为原始日志自动送入下一次回顾，避免把生成内容当作新的事实。接口参数参考 [OpenAI Chat Completions 文档](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)。
+
+## 数据位置与备份
+
+### 游戏数据库
+
+角色、自定义物品、冒险日志、跑团场次、战斗归档、已保存总结及其资料快照、地点、冒险地图图片和当前战斗存档保存在 `dnd_data.db` 中。
+
+| 系统 | 默认路径 |
+| --- | --- |
+| Windows | `%APPDATA%\DMHelper\dnd_data.db` |
+| macOS | `~/Library/Application Support/DMHelper/dnd_data.db` |
+| Linux | `~/.local/share/DMHelper/dnd_data.db` |
+
+直接运行 Java 后端时，可通过 JVM 参数 `-Ddmhelper.data.dir=<目录>` 指定数据库目录。首次创建数据库时，如工作目录中存在旧版 `dnd_data.db`，程序会尝试复制迁移。
+
+### 图片与 AI 设置
+
+| 数据 | 保存位置 |
+| --- | --- |
+| 冒险地图图片与地点标记 | SQLite 数据库 |
+| 战场背景、角色和怪物图标 | 当前 Electron 用户配置目录中的 IndexedDB |
+| AI 地址、模型及加密密钥 | Electron 用户配置目录中的 `ai-settings.json` |
+
+Electron 用户配置目录由 `app.getPath('userData')` 决定，开发版和安装版可能不同。
+
+**备份时先退出应用。** 复制数据库可备份游戏数据；如需同时保留战斗图片和 AI 设置，还需备份 Electron 用户配置目录。加密密钥与系统用户环境有关，迁移到其他电脑后应重新输入 API Key。
+
+## 开发与构建
+
+### 目录结构
 
 ```text
-src/
-├── main/
-│   ├── java/
-│   │   ├── Main.java
-│   │   ├── FxLauncher.java
-│   │   └── com/DMHelper/
-│   │       ├── assets/                  # 图标与桌面资源（类路径访问）
-│   │       ├── fx/                      # JavaFX 窗口层
-│   │       │   ├── CharacterCreateWindow.java
-│   │       │   ├── CharacterRosterWindow.java
-│   │       │   ├── CharacterManagerWindow.java
-│   │       │   ├── CombatConsoleWindow.java
-│   │       │   └── FxThemes.java
-│   │       └── basic/
-│   │           ├── Character_Sheet.java  # 角色核心模型
-│   │           ├── Stats.java            # 六维属性
-│   │           ├── Skill_Check.java      # 技能检定自动化
-│   │           ├── Encumbrance_System.java # 负重系统
-│   │           ├── PDF_Util.java         # PDF 生成工具类
-│   │           ├── Character_Card_PDF.java # 角色卡 PDF 导出
-│   │           ├── Encounter_Log_PDF.java  # 遭遇日志 PDF 导出
-│   │           ├── armor/               # 护甲系统
-│   │           ├── combat/              # 战斗系统
-│   │           │   ├── Combat_Engine.java          # 战斗结算引擎
-│   │           │   ├── Combatant.java             # 战斗者模型
-│   │           │   ├── Combat_Attack_Helper.java  # 攻击选项构建
-│   │           │   ├── Attack_Option.java         # 攻击选项模型
-│   │           │   ├── Dice_Util.java             # 骰子工具
-│   │           │   ├── Combat_Status_Type.java     # 状态效果类型（13种）
-│   │           │   ├── Combat_Status_Effect.java   # 状态效果实例
-│   │           │   ├── Combat_Log_Entry.java       # 战斗日志条目
-│   │           │   ├── Advantage_Disadvantage.java # 优势/劣势系统
-│   │           │   ├── Cover_Type.java             # 掩护类型
-│   │           │   ├── Concentration_Manager.java  # 施法专注管理
-│   │           │   ├── Opportunity_Attack.java     # 借机攻击系统
-│   │           │   ├── Monster_Definition.java     # 怪物定义
-│   │           │   ├── Monster_Library.java        # 怪物图鉴（70+种）
-│   │           │   └── Monster_Loot_Helper.java    # 怪物掉落系统
-│   │           ├── database/            # 数据持久化层
-│   │           ├── equipment/           # 装备系统
-│   │           ├── feat/                # 专长系统
-│   │           ├── menus/               # Swing UI（遗留）
-│   │           ├── playerclass/         # 职业系统
-│   │           ├── race/                # 种族系统
-│   │           └── spell/               # 法术系统
-│   └── resources/
-│       └── META-INF/                    # MANIFEST 等资源
-└── test/                                # 预留（当前为空）
+DMHelper/
+├─ pom.xml                        # Java 依赖、测试与后端打包
+├─ src/main/java/
+│  ├─ Main.java                   # 开发启动入口
+│  └─ com/DMHelper/
+│     ├─ api/                     # 本地 API 与控制器
+│     ├─ basic/                   # 角色、规则、战斗、日志、地图与数据库
+│     └─ fx/                      # 旧版 JavaFX 界面
+├─ src/test/                      # Java 测试
+└─ frontend/
+   ├─ electron/                  # 桌面进程、预加载桥接与 AI 配置
+   ├─ src/                       # Vue 页面、组件与 API 调用
+   ├─ tests/                     # AI 配置、资料整理与生成流程测试
+   ├─ scripts/                   # 后端及 Java 运行时构建脚本
+   └─ package.json               # 前端与桌面构建命令
 ```
 
-## 运行环境
+当前后端使用 Javalin，尚未引入 Spring Boot。
 
-- JDK 17 或以上（推荐与系统保持一致，例如 macOS 上的 Temurin/OpenJDK）。
-- Maven 3.9 及以上版本。
-- OpenJFX、sqlite-jdbc、Apache PDFBox 由 Maven 自动拉取，无需手工放置 JAR。
+### 验证与构建命令
 
-## 依赖
+在项目根目录运行 Java 测试或生成后端 JAR：
 
-| 依赖 | 版本 | 用途 |
-|------|------|------|
-| OpenJFX | 22.0.2 | JavaFX UI 框架 |
-| sqlite-jdbc | 3.51.3.0 | SQLite 数据库驱动 |
-| Apache PDFBox | 3.0.1 | PDF 生成与导出 |
-
-## 本地运行
-
-### 方式一：在 IDE 中运行
-
-1. 以 "Open Existing Maven Project" 方式导入根目录（IDE 会自动识别 `pom.xml` 并下载依赖）。
-2. 运行 `Main.main` 即可启动，或直接使用 IDE 的 Maven 面板执行 `javafx:run` 获得同样效果。
-
-### 方式二：命令行编译
-
-Maven 已经封装好了编译流程，直接执行：
-
-```bash
-mvn clean compile
+```powershell
+mvn test
+mvn package
 ```
 
-若只想做一次快速校验，可省略清理步骤：
+后端产物为 `target/dmhelper-backend.jar`，直接运行该 JAR 只启动 API，不打开桌面窗口。
 
-```bash
-mvn -q -DskipTests compile
+在 `frontend` 目录运行：
+
+```powershell
+npm run test:ai
+npm run build
 ```
 
-## macOS 打包
+`test:ai` 使用本地模拟服务验证 AI 配置、资料整理、提示词、生成与取消流程，不调用付费模型；`build` 执行 TypeScript 检查并构建前端。
 
-当前项目已经可以在 macOS 上直接打包为 `.app` 和 `.dmg`。
+### 打包桌面应用
 
-仓库内置了打包脚本：
+在 `frontend` 目录运行：
 
-```bash
-./scripts/package-macos-dmg.sh
+```powershell
+npm run electron:build
 ```
 
-产物位置：
+脚本依次构建后端 JAR、生成精简 Java 运行时、构建页面并打包 Electron，产物输出到 `frontend/release/`。后端构建脚本会跳过测试，发布前应单独执行上述验证命令。
 
-- `target/jpackage/dist/DMHelper.app`
-- `target/jpackage/dist/DMHelper-1.0.0.dmg`
+配置包含 Windows NSIS、macOS DMG 和 Linux AppImage 目标，建议在目标系统上构建并验证。打包应用携带 Java 运行时，使用者无需额外安装 JDK。
 
-说明：
+## 当前限制与后续方向
 
-- 脚本会自行编译源码、打包应用 jar，并调用 `jpackage` 生成安装包。
-- 依赖前提是本机已经安装 JDK 17+，并且本地 Maven 仓库里已有 OpenJFX、`sqlite-jdbc` 与 PDFBox 依赖。
-- 当前生成的是可本地安装分发的未公证包；如果要面向普通 macOS 用户直接分发，后续还需要 Apple Developer 签名与 notarization。
+- 格子战斗是二维规则辅助，尚未完整处理高度、飞行、挤压、预备动作及全部反应规则；视线和范围使用格子近似判定。
+- 部分武器射程仍使用固定值，例如背包投掷物为 20 尺，自定义远程武器为 60/120 尺。
+- 战斗由 DM 操作双方单位，尚无自动决策的敌方 AI。
+- 当前战斗存档是单槽位，尚无多遭遇存档列表或存档版本管理。
+- AI 使用已有文字记录，尚无多轮对话记忆、自动日志写回、地图图片理解或完整规则检索；回答需要 DM 核对。
 
-## 数据库存档位置
-
-数据库文件名固定为：
-
-- `dnd_data.db`
-
-实际存放位置按操作系统决定：
-
-- macOS
-  - `~/Library/Application Support/DMHelper/dnd_data.db`
-- Windows
-  - `%APPDATA%/DMHelper/dnd_data.db`
-- Linux
-  - `~/.local/share/DMHelper/dnd_data.db`
-
-兼容逻辑：
-
-- 如果旧版本把 `dnd_data.db` 放在项目根目录，程序首次启动时会尝试迁移
-
-数据库相关实现：
-
-- [DB_Helper.java](src/main/java/com/DMHelper/basic/database/DB_Helper.java)
-- [Init_DB.java](src/main/java/com/DMHelper/basic/database/Init_DB.java)
-
-## 主要源码入口
-
-- 应用启动：
-  - [Main.java](src/main/java/Main.java)
-- JavaFX 窗口：
-  - [CharacterCreateWindow.java](src/main/java/com/DMHelper/fx/CharacterCreateWindow.java)
-  - [CharacterRosterWindow.java](src/main/java/com/DMHelper/fx/CharacterRosterWindow.java)
-  - [CharacterManagerWindow.java](src/main/java/com/DMHelper/fx/CharacterManagerWindow.java)
-  - [CombatConsoleWindow.java](src/main/java/com/DMHelper/fx/CombatConsoleWindow.java)
-- Swing UI（遗留）：
-  - [Main_Menu.java](src/main/java/com/DMHelper/basic/menus/Main_Menu.java)
-  - [Create_Character_UI.java](src/main/java/com/DMHelper/basic/menus/Create_Character_UI.java)
-  - [Character_Manager_UI.java](src/main/java/com/DMHelper/basic/menus/Character_Manager_UI.java)
-  - [Combat_System_UI.java](src/main/java/com/DMHelper/basic/menus/Combat_System_UI.java)
-- 规则系统：
-  - [Combat_Engine.java](src/main/java/com/DMHelper/basic/combat/Combat_Engine.java)
-  - [Advantage_Disadvantage.java](src/main/java/com/DMHelper/basic/combat/Advantage_Disadvantage.java)
-  - [Concentration_Manager.java](src/main/java/com/DMHelper/basic/combat/Concentration_Manager.java)
-  - [Opportunity_Attack.java](src/main/java/com/DMHelper/basic/combat/Opportunity_Attack.java)
-  - [Skill_Check.java](src/main/java/com/DMHelper/basic/Skill_Check.java)
-  - [Encumbrance_System.java](src/main/java/com/DMHelper/basic/Encumbrance_System.java)
-- PDF 导出：
-  - [PDF_Util.java](src/main/java/com/DMHelper/basic/PDF_Util.java)
-  - [Character_Card_PDF.java](src/main/java/com/DMHelper/basic/Character_Card_PDF.java)
-  - [Encounter_Log_PDF.java](src/main/java/com/DMHelper/basic/Encounter_Log_PDF.java)
-
-## 规则实现说明
-
-这个项目已从"桌面辅助工具"升级为"带全面规则自动化的桌面辅助工具"：
-
-- ✅ 优势/劣势自动判定与掷骰
-- ✅ 掩护系统（半掩护/四分之三掩护/全掩护）
-- ✅ 借机攻击自动触发
-- ✅ 施法专注追踪与检定
-- ✅ 技能/属性/豁免检定自动化
-- ✅ 负重系统与速度惩罚
-- ✅ 完整战斗日志记录
-- ✅ 角色卡与遭遇日志 PDF 导出
-
-仍有继续细化空间的部分：
-
-- 某些种族武器熟练的自动应用
-- 部分高阶职业特性的完全自动化
-- 更多状态效果的交互（如恐慌的目标范围判定）
-- 夹击/侧袭等战术位置规则
-
-## 更新日志
-
-### 2026-04-27 — 全面 JavaFX 迁移
-
-- **重写**：CharacterCreateWindow — 完整两步创建流程（基础信息 → 背景性格），与 Swing 版功能一致
-- **重写**：CharacterManagerWindow — 全功能角色管理（1634行），四个标签页（基础与属性/装备与物品/施法与法术/成长与升级），完整道具使用系统
-- **重写**：CombatConsoleWindow — 完整战斗系统（2157行），配置面板+战斗面板，完整道具使用系统，战后结算+PDF导出
-- **重写**：FxLauncher — 所有入口改为指向 JavaFX 窗口，移除 Swing 依赖
-- **新增**：Swing 版 Character_Manager_UI 基础与属性标签页添加"导出角色卡 PDF"按钮
-- **变更**：Swing 版界面仅作为代码参考保留，主菜单不再直接调用
-
-### 2026-04-25 — 规则自动化与 PDF 导出
-
-- **新增**：优势/劣势系统（自动从状态效果判定）
-- **新增**：掩护系统（半掩护 AC+2、四分之三掩护 AC+5）
-- **新增**：借机攻击系统（移出触及范围自动触发）
-- **新增**：施法专注管理器（专注追踪、受击检定、新法术打破旧专注）
-- **新增**：技能检定自动化（技能/属性/豁免检定，支持优势/劣势）
-- **新增**：负重系统（4 级负重等级，速度惩罚）
-- **新增**：战斗日志系统（30 种日志类型，完整事件记录）
-- **新增**：角色卡 PDF 导出（D&D 5e 风格，含六维属性/战斗数据/技能/装备/法术/背景）
-- **新增**：遭遇日志 PDF 导出（标题页 + 时间线表格 + 统计摘要 + 参战者状态）
-- **新增**：角色一览界面导出角色卡 PDF 按钮
-- **新增**：角色管理界面导出角色卡 PDF 按钮
-- **新增**：战斗系统战斗结束后弹出导出战斗日志 PDF 确认框
-- **新增**：Apache PDFBox 3.0.1 依赖
-- **增强**：Combat_Engine 集成优势/劣势、专注管理、战斗日志、伤害统计
-- **修复**：javafx-maven-plugin 版本号修正（22.0.2 → 0.0.8）
-- **修复**：javafx-maven-plugin 配置语法修正（jvmArg → option）
-
-## 后续可继续补充的方向
-
-- 更多职业与子职业（游荡者、牧师、德鲁伊、武僧、野蛮人等）
-- 更多怪物、法术、专长、装备
-- 更完整的状态效果交互（恐慌目标范围、夹击/侧袭）
-- 导出角色卡支持更多自定义选项
-- 更细致的 UI 打磨与桌面打包流程
+新增功能应优先复用已有规则引擎与数据结构，并区分规则自动结算和需要 DM 判断的情形。

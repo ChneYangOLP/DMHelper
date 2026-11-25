@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import TitleBar from './components/TitleBar.vue'
+import AiAssistant from './components/AiAssistant.vue'
 </script>
 
 <template>
@@ -8,6 +9,10 @@ import TitleBar from './components/TitleBar.vue'
     <nav class="app-nav">
       <router-link to="/roster" class="nav-item">角色一览</router-link>
       <router-link to="/combat" class="nav-item">战斗追踪器</router-link>
+      <router-link to="/sessions" class="nav-item">跑团场次</router-link>
+      <router-link to="/journal" class="nav-item">冒险日志</router-link>
+      <router-link to="/atlas" class="nav-item">冒险地图</router-link>
+      <router-link to="/ai-settings" class="nav-item">AI 配置</router-link>
     </nav>
     <main class="app-content">
       <router-view v-slot="{ Component }">
@@ -16,6 +21,7 @@ import TitleBar from './components/TitleBar.vue'
         </transition>
       </router-view>
     </main>
+    <AiAssistant />
   </div>
 </template>
 
@@ -34,6 +40,7 @@ import TitleBar from './components/TitleBar.vue'
 
 .app-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-md);
   padding: var(--space-sm) var(--space-lg);
   background: rgba(15, 12, 8, 0.6);

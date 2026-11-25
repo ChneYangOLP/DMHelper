@@ -1,6 +1,5 @@
 package com.DMHelper.fx;
 
-import com.DMHelper.basic.Character_Card_PDF;
 import com.DMHelper.basic.Character_Sheet;
 import com.DMHelper.basic.combat.Combat_Engine;
 import com.DMHelper.basic.combat.Combatant;
@@ -33,12 +32,10 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -113,10 +110,7 @@ public class CharacterManagerWindow extends Stage {
         Button saveBtn = new Button("保存更改");
         saveBtn.setStyle("-fx-font-weight: bold;");
         saveBtn.setOnAction(e -> handleSave());
-        Button exportPdfBtn = new Button("导出角色卡 PDF");
-        exportPdfBtn.setStyle("-fx-font-weight: bold;");
-        exportPdfBtn.setOnAction(e -> handleExportCharacterPdf());
-        topBar.getChildren().addAll(label, charSelector, new Separator(), saveBtn, exportPdfBtn);
+        topBar.getChildren().addAll(label, charSelector, new Separator(), saveBtn);
         HBox.setHgrow(charSelector, Priority.ALWAYS);
         return topBar;
     }
@@ -126,9 +120,7 @@ public class CharacterManagerWindow extends Stage {
         statsArea = buildTextArea();
         ScrollPane scroll = new ScrollPane(statsArea);
         scroll.setFitToWidth(true); scroll.setFitToHeight(true);
-        Button exportPdfBtn2 = new Button("导出角色卡 PDF");
-        exportPdfBtn2.setOnAction(e -> handleExportCharacterPdf());
-        VBox vbox = new VBox(8, scroll, exportPdfBtn2);
+        VBox vbox = new VBox(8, scroll);
         vbox.setPadding(new Insets(8)); VBox.setVgrow(scroll, Priority.ALWAYS);
         tab.setContent(vbox);
         return tab;
@@ -1542,22 +1534,6 @@ public class CharacterManagerWindow extends Stage {
         if (current == null) { showAlert("没有选中的角色。"); return; }
         Character_DAO.update_character(current);
         showAlert("角色 [" + current.name + "] 已保存。");
-    }
-
-    private void handleExportCharacterPdf() {
-        if (current == null) { showAlert("没有选中的角色。"); return; }
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("导出角色卡 PDF");
-        fileChooser.setInitialFileName(current.name + "_角色卡.pdf");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF 文件", "*.pdf"));
-        File file = fileChooser.showSaveDialog(this);
-        if (file == null) return;
-        try {
-            Character_Card_PDF.generate(current, file.getAbsolutePath());
-            showAlert("角色卡已导出到：" + file.getAbsolutePath());
-        } catch (Exception ex) {
-            showAlert("导出失败：" + ex.getMessage());
-        }
     }
 
     // ==================== 角色选择器 ====================

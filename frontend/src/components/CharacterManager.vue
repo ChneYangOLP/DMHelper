@@ -23,6 +23,14 @@ const fetchCharacter = async () => {
   }
 }
 
+const handleCharacterRefresh = (updatedCharacter?: any) => {
+  if (updatedCharacter && typeof updatedCharacter === 'object') {
+    character.value = updatedCharacter
+    return
+  }
+  void fetchCharacter()
+}
+
 const saveCharacter = async () => {
   try {
     await CharacterAPI.update(parseInt(props.id), {
@@ -53,7 +61,6 @@ onMounted(() => {
       </div>
       <div class="actions">
         <button class="btn-secondary" @click="saveCharacter">保存更改</button>
-        <button class="btn-secondary">导出 PDF</button>
       </div>
     </div>
 
@@ -68,7 +75,7 @@ onMounted(() => {
       <StatsTab v-if="activeTab === 'stats'" :character="character" />
       <EquipmentTab v-if="activeTab === 'equipment'" :character="character" @refresh="fetchCharacter" />
       <SpellcastingTab v-if="activeTab === 'spells'" :character="character" @refresh="fetchCharacter" />
-      <ProgressionTab v-if="activeTab === 'progression'" :character="character" @refresh="fetchCharacter" />
+      <ProgressionTab v-if="activeTab === 'progression'" :character="character" @refresh="handleCharacterRefresh" />
     </div>
   </div>
   <div v-else class="loading">加载中...</div>

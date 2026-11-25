@@ -135,9 +135,10 @@ public class Feat_Library {
     }
 
     private static boolean can_cast_spell(Character_Sheet character) {
-        if ("WIZARD".equals(character.job.class_key) || "SORCERER".equals(character.job.class_key)) {
-            return true;
-        }
-        return "PALADIN".equals(character.job.class_key) && character.job.current_level >= 2;
+        return switch (character.job.class_key) {
+            case "WIZARD", "SORCERER", "WARLOCK", "BARD" -> true;
+            case "PALADIN" -> character.job.current_level >= 2;
+            default -> false;
+        };
     }
 }

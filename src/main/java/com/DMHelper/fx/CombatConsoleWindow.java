@@ -1,7 +1,6 @@
 package com.DMHelper.fx;
 
 import com.DMHelper.basic.Character_Sheet;
-import com.DMHelper.basic.Encounter_Log_PDF;
 import com.DMHelper.basic.combat.Attack_Option;
 import com.DMHelper.basic.combat.Combat_Engine;
 import com.DMHelper.basic.combat.Combat_Status_Effect;
@@ -24,15 +23,11 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
-import java.io.File;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Optional;
 
@@ -43,7 +38,7 @@ import java.util.Optional;
  * - 配置面板（Setup）：选择参战角色、搜索/添加敌人、开始战斗
  * - 战斗面板（Battle）：先攻顺序、战场状态、战斗日志、攻击/道具/回合管理
  * - 道具使用系统：治疗物品、各类卷轴、炸弹、药水、钱币、任务物品等
- * - 战后结算：经验进度、掉落物分配、PDF 导出
+ * - 战后结算：经验进度、掉落物分配
  */
 public class CombatConsoleWindow extends Stage {
 
@@ -1961,41 +1956,6 @@ public class CombatConsoleWindow extends Stage {
         SettlementDialog dialog = new SettlementDialog(this, this.combatEngine);
         dialog.showAndWait();
 
-        // 询问是否导出 PDF
-        Alert exportConfirm = new Alert(Alert.AlertType.CONFIRMATION);
-        exportConfirm.initOwner(this);
-        exportConfirm.setTitle("导出战斗日志");
-        exportConfirm.setHeaderText(null);
-        exportConfirm.setContentText("是否导出本次战斗日志为 PDF 文件？");
-        Optional<ButtonType> exportChoice = exportConfirm.showAndWait();
-
-        if (exportChoice.isPresent() && exportChoice.get() == ButtonType.YES) {
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("导出战斗日志 PDF");
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            fileChooser.setInitialFileName("combat_log_" + timestamp + ".pdf");
-            fileChooser.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("PDF 文件", "*.pdf"));
-            File file = fileChooser.showSaveDialog(this);
-            if (file != null) {
-                try {
-                    Encounter_Log_PDF.generate(
-                            combatEngine.get_combat_log(),
-                            combatEngine.get_initiative_order(),
-                            combatEngine.get_current_round(),
-                            combatEngine.get_total_damage_by_players(),
-                            combatEngine.get_total_damage_by_enemies(),
-                            combatEngine.get_total_healing(),
-                            combatEngine.did_players_win(),
-                            combatEngine.get_distributed_xp(),
-                            file.getAbsolutePath()
-                    );
-                    showAlert(Alert.AlertType.INFORMATION, "战斗日志 PDF 已成功导出至：" + file.getAbsolutePath());
-                } catch (Exception ex) {
-                    showAlert(Alert.AlertType.ERROR, "导出失败：" + ex.getMessage());
-                }
-            }
-        }
 
         appendLog("战后结算完成。剩余未分配掉落：" + this.combatEngine.get_pending_loot_keys().size() + " 件。");
         refreshBattleUI();

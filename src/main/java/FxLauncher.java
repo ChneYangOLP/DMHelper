@@ -118,12 +118,12 @@ public final class FxLauncher extends Application {
         ));
         grid.getChildren().add(buildActionCard(
                 "角色一览",
-                "查看现有角色列表与详情，支持搜索、排序与导出角色卡 PDF。",
+                "查看现有角色列表与详情，支持搜索、排序与角色管理。",
                 () -> new CharacterRosterWindow(getActiveStage()).show()
         ));
         grid.getChildren().add(buildActionCard(
                 "角色管理",
-                "全功能角色管理：装备与背包、施法与法术、短休/长休、升级与成长、导出角色卡 PDF。",
+                "全功能角色管理：装备与背包、施法与法术、短休/长休、升级与成长。",
                 () -> {
                     if (ensureCharactersAvailable("角色管理")) {
                         new CharacterManagerWindow(getActiveStage()).show();
@@ -132,7 +132,7 @@ public final class FxLauncher extends Application {
         ));
         grid.getChildren().add(buildActionCard(
                 "战斗系统",
-                "完整战斗系统：选择参战角色与敌人、先攻排序、攻击结算、道具使用、战后结算与导出战斗日志 PDF。",
+                "完整战斗系统：选择参战角色与敌人、先攻排序、攻击结算、道具使用与战后结算。",
                 () -> {
                     if (ensureCharactersAvailable("战斗系统")) {
                         new CombatConsoleWindow(getActiveStage()).show();

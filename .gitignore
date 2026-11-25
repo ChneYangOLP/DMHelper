@@ -5,6 +5,14 @@ out/
 !**/src/test/**/out/
 .kotlin
 frontend/node_modules/
+frontend/.electron-dist*/
+frontend/core/
+frontend/runtime/
+frontend/release/
+frontend/dist/win-unpacked/
+frontend/dist/*.exe
+frontend/dist/*.blockmap
+frontend/dist/builder-debug.yml
 
 ### Build Outputs ###
 target/

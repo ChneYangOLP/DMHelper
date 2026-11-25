@@ -21,7 +21,7 @@ public class Monster_Library {
                 8, 14, 10, 10, 8, 8,
                 Arrays.asList(
                         Attack_Option.attack_roll("弯刀 (Scimitar)", "近战攻击。", 4, 1, 6, 2, 1, "挥砍"),
-                        Attack_Option.attack_roll("短弓 (Shortbow)", "远程攻击。", 4, 1, 6, 2, 1, "穿刺")
+                        Attack_Option.attack_roll("短弓 (Shortbow)", "远程攻击。", 4, 1, 6, 2, 1, "穿刺").with_ranged_range(80, 320)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -38,7 +38,7 @@ public class Monster_Library {
                 10, 14, 15, 6, 8, 5,
                 Arrays.asList(
                         Attack_Option.attack_roll("短剑 (Shortsword)", "近战攻击。", 4, 1, 6, 2, 1, "穿刺"),
-                        Attack_Option.attack_roll("短弓 (Shortbow)", "远程攻击。", 4, 1, 6, 2, 1, "穿刺")
+                        Attack_Option.attack_roll("短弓 (Shortbow)", "远程攻击。", 4, 1, 6, 2, 1, "穿刺").with_ranged_range(80, 320)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -71,7 +71,7 @@ public class Monster_Library {
                 16, 12, 16, 7, 11, 10,
                 Arrays.asList(
                         Attack_Option.attack_roll("巨斧 (Greataxe)", "近战攻击。", 5, 1, 12, 3, 1, "挥砍"),
-                        Attack_Option.attack_roll("标枪 (Javelin)", "投掷攻击。", 5, 1, 6, 3, 1, "穿刺")
+                        Attack_Option.attack_roll("标枪 (Javelin)", "投掷攻击。", 5, 1, 6, 3, 1, "穿刺").with_ranged_range(30, 120)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -87,7 +87,7 @@ public class Monster_Library {
                 13, 12, 12, 10, 10, 9,
                 Arrays.asList(
                         Attack_Option.attack_roll("长剑 (Longsword)", "近战攻击。", 3, 1, 8, 1, 1, "挥砍"),
-                        Attack_Option.attack_roll("长弓 (Longbow)", "远程攻击。", 3, 1, 8, 1, 1, "穿刺")
+                        Attack_Option.attack_roll("长弓 (Longbow)", "远程攻击。", 3, 1, 8, 1, 1, "穿刺").with_ranged_range(150, 600)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -103,7 +103,7 @@ public class Monster_Library {
                 15, 14, 13, 8, 11, 9,
                 Arrays.asList(
                         Attack_Option.attack_roll("晨星锤 (Morningstar)", "近战攻击。", 4, 2, 8, 2, 1, "穿刺"),
-                        Attack_Option.attack_roll("标枪 (Javelin)", "投掷攻击。", 4, 2, 6, 2, 1, "穿刺")
+                        Attack_Option.attack_roll("标枪 (Javelin)", "投掷攻击。", 4, 2, 6, 2, 1, "穿刺").with_ranged_range(30, 120)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -137,7 +137,7 @@ public class Monster_Library {
                 15, 16, 14, 14, 11, 14,
                 Arrays.asList(
                         Attack_Option.attack_roll("弯刀连击 (Scimitar)", "多重近战攻击。", 5, 1, 6, 3, 3, "挥砍"),
-                        Attack_Option.attack_roll("轻弩 (Light Crossbow)", "远程攻击。", 5, 1, 8, 3, 1, "穿刺")
+                        Attack_Option.attack_roll("轻弩 (Light Crossbow)", "远程攻击。", 5, 1, 8, 3, 1, "穿刺").with_ranged_range(80, 320)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -153,7 +153,7 @@ public class Monster_Library {
                 19, 8, 16, 5, 7, 7,
                 Arrays.asList(
                         Attack_Option.attack_roll("大木棒 (Greatclub)", "近战攻击。", 6, 2, 8, 4, 1, "钝击"),
-                        Attack_Option.attack_roll("标枪 (Javelin)", "远程攻击。", 6, 2, 6, 4, 1, "穿刺")
+                        Attack_Option.attack_roll("标枪 (Javelin)", "远程攻击。", 6, 2, 6, 4, 1, "穿刺").with_ranged_range(30, 120)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -186,7 +186,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("啃咬 (Bite)", "近战攻击。", 7, 2, 10, 4, 1, "穿刺"),
                         Attack_Option.attack_roll("利爪 (Claw)", "近战攻击。", 7, 2, 6, 4, 2, "挥砍"),
-                        Attack_Option.save_dc("毒息 (Poison Breath)", "锥形吐息。", 14, "Constitution", 12, 6, 0, true, "毒素")
+                        Attack_Option.save_dc("毒息 (Poison Breath)", "锥形吐息。", 14, "Constitution", 12, 6, 0, true, "毒素").with_range(30).with_area(Attack_Option.Area_Shape.CONE, 30, 5, true)
                                 .with_status(Combat_Status_Type.POISONED, 3, "", 0)
                 )
         ));
@@ -203,7 +203,7 @@ public class Monster_Library {
                 11, 12, 10, 10, 11, 10,
                 Arrays.asList(
                         Attack_Option.attack_roll("弯刀 (Scimitar)", "近战攻击。", 3, 1, 6, 1, 1, "挥砍"),
-                        Attack_Option.attack_roll("轻弩 (Light Crossbow)", "远程攻击。", 3, 1, 8, 1, 1, "穿刺")
+                        Attack_Option.attack_roll("轻弩 (Light Crossbow)", "远程攻击。", 3, 1, 8, 1, 1, "穿刺").with_ranged_range(80, 320)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -237,7 +237,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("毒牙 (Bite)", "近战攻击。", 5, 1, 8, 3, 1, "穿刺")
                                 .with_status(Combat_Status_Type.POISONED, 3, "Constitution", 11),
-                        Attack_Option.save_dc("蛛网喷射 (Web)", "远程蛛网束缚。", 12, "Dexterity", 0, 1, 0, false, "束缚")
+                        Attack_Option.save_dc("蛛网喷射 (Web)", "远程蛛网束缚。", 12, "Dexterity", 0, 1, 0, false, "束缚").with_range(60)
                                 .with_status(Combat_Status_Type.RESTRAINED, 2, "", 0)
                 )
         ));
@@ -255,7 +255,7 @@ public class Monster_Library {
                 15, 14, 16, 10, 13, 15,
                 Arrays.asList(
                         Attack_Option.attack_roll("长剑 (Longsword)", "近战攻击。", 4, 1, 8, 2, 1, "挥砍"),
-                        Attack_Option.attack_roll("长弓 (Longbow)", "远程攻击。", 4, 1, 8, 2, 2, "穿刺")
+                        Attack_Option.attack_roll("长弓 (Longbow)", "远程攻击。", 4, 1, 8, 2, 2, "穿刺").with_ranged_range(150, 600)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -405,9 +405,9 @@ public class Monster_Library {
                 6,
                 1, 17, 14, 16, 10, 11,
                 Arrays.asList(
-                        Attack_Option.save_dc("火焰射线 (Fire Ray)", "炽热火焰射线。", 13, "Dexterity", 3, 6, 0, false, "火焰")
+                        Attack_Option.save_dc("火焰射线 (Fire Ray)", "炽热火焰射线。", 13, "Dexterity", 3, 6, 0, false, "火焰").with_range(120)
                                 .with_status(Combat_Status_Type.BURNING, 2, "", 0),
-                        Attack_Option.save_dc("火球术 (Fireball)", "焰颅释放火球。", 13, "Dexterity", 8, 6, 0, true, "火焰")
+                        Attack_Option.save_dc("火球术 (Fireball)", "焰颅释放火球。", 13, "Dexterity", 8, 6, 0, true, "火焰").with_range(150).as_spell(3).with_area(Attack_Option.Area_Shape.CIRCLE, 20, 5, false).around_corners()
                                 .with_status(Combat_Status_Type.BURNING, 2, "", 0)
                 )
         ));
@@ -426,7 +426,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("衰朽之触 (Withering Touch)", "冰冷的死灵触碰。", 5, 4, 6, 3, 1, "死灵")
                                 .with_status(Combat_Status_Type.CURSED, 2, "Constitution", 13),
-                        Attack_Option.save_dc("恐怖显现 (Horrifying Visage)", "骇人的幽灵姿态。", 13, "Wisdom", 0, 1, 0, false, "恐惧")
+                        Attack_Option.save_dc("恐怖显现 (Horrifying Visage)", "骇人的幽灵姿态。", 13, "Wisdom", 0, 1, 0, false, "恐惧").with_range(60)
                                 .with_status(Combat_Status_Type.FRIGHTENED, 2, "", 0)
                 )
         ));
@@ -445,7 +445,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("腐蚀之触 (Corrupting Touch)", "带着哀嚎的死灵触碰。", 4, 3, 6, 2, 1, "死灵")
                                 .with_status(Combat_Status_Type.CURSED, 2, "Constitution", 13),
-                        Attack_Option.save_dc("骇人哀号 (Horrifying Wail)", "尖啸震慑周围敌人。", 13, "Wisdom", 0, 1, 0, false, "恐惧")
+                        Attack_Option.save_dc("骇人哀号 (Horrifying Wail)", "尖啸震慑周围敌人。", 13, "Wisdom", 0, 1, 0, false, "恐惧").with_range(30).with_area(Attack_Option.Area_Shape.CIRCLE, 30, 5, true)
                                 .with_status(Combat_Status_Type.FRIGHTENED, 3, "", 0)
                 )
         ));
@@ -499,7 +499,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("啃咬 (Bite)", "带毒的骸骨咬击。", 5, 1, 8, 3, 1, "穿刺")
                                 .with_status(Combat_Status_Type.POISONED, 2, "Constitution", 13),
-                        Attack_Option.save_dc("定身法术 (Hold Person)", "骨蛇妖释放控制法术。", 14, "Wisdom", 0, 1, 0, false, "控制")
+                        Attack_Option.save_dc("定身法术 (Hold Person)", "骨蛇妖释放控制法术。", 14, "Wisdom", 0, 1, 0, false, "控制").with_range(60)
                                 .with_status(Combat_Status_Type.PARALYZED, 2, "", 0)
                 )
         ));
@@ -516,8 +516,8 @@ public class Monster_Library {
                 10,
                 10, 15, 12, 14, 12, 16,
                 Arrays.asList(
-                        Attack_Option.attack_roll("魔能爆 (Eldritch Blast)", "远程力场攻击。", 7, 3, 10, 3, 2, "力场"),
-                        Attack_Option.save_dc("枯萎术 (Blight)", "腐朽死灵法术。", 15, "Constitution", 8, 8, 0, false, "死灵")
+                        Attack_Option.attack_roll("魔能爆 (Eldritch Blast)", "远程力场攻击。", 7, 3, 10, 3, 2, "力场").with_ranged_range(120, 120),
+                        Attack_Option.save_dc("枯萎术 (Blight)", "腐朽死灵法术。", 15, "Constitution", 8, 8, 0, false, "死灵").with_range(30)
                                 .with_status(Combat_Status_Type.CURSED, 2, "", 0)
                 )
         ));
@@ -552,10 +552,10 @@ public class Monster_Library {
                 54,
                 11, 16, 16, 20, 14, 16,
                 Arrays.asList(
-                        Attack_Option.save_dc("解离术 (Disintegrate)", "可怕的高阶奥术光线。", 18, "Dexterity", 10, 6, 40, false, "力场"),
-                        Attack_Option.save_dc("死亡一指 (Finger of Death)", "毁灭性的死灵法术。", 18, "Constitution", 7, 8, 30, false, "死灵")
+                        Attack_Option.save_dc("解离术 (Disintegrate)", "可怕的高阶奥术光线。", 18, "Dexterity", 10, 6, 40, false, "力场").with_range(60),
+                        Attack_Option.save_dc("死亡一指 (Finger of Death)", "毁灭性的死灵法术。", 18, "Constitution", 7, 8, 30, false, "死灵").with_range(60)
                                 .with_status(Combat_Status_Type.CURSED, 3, "", 0),
-                        Attack_Option.save_dc("支配凝视 (Dominating Gaze)", "巫妖可怕的支配凝视。", 18, "Wisdom", 0, 1, 0, false, "精神")
+                        Attack_Option.save_dc("支配凝视 (Dominating Gaze)", "巫妖可怕的支配凝视。", 18, "Wisdom", 0, 1, 0, false, "精神").with_range(30)
                                 .with_status(Combat_Status_Type.CHARMED, 2, "", 0)
                 )
         ));
@@ -572,7 +572,7 @@ public class Monster_Library {
                 7, 15, 9, 8, 7, 8,
                 Arrays.asList(
                         Attack_Option.attack_roll("匕首 (Dagger)", "近战攻击。", 4, 1, 4, 2, 1, "穿刺"),
-                        Attack_Option.attack_roll("投石索 (Sling)", "远程攻击。", 4, 1, 4, 2, 1, "钝击")
+                        Attack_Option.attack_roll("投石索 (Sling)", "远程攻击。", 4, 1, 4, 2, 1, "钝击").with_ranged_range(30, 120)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -657,7 +657,7 @@ public class Monster_Library {
                 16, 14, 14, 6, 12, 7,
                 Arrays.asList(
                         Attack_Option.attack_roll("拳击 (Fist)", "近战攻击。", 5, 1, 6, 3, 2, "钝击"),
-                        Attack_Option.attack_roll("石块 (Rock)", "远程投掷攻击。", 5, 1, 6, 3, 1, "钝击")
+                        Attack_Option.attack_roll("石块 (Rock)", "远程投掷攻击。", 5, 1, 6, 3, 1, "钝击").with_ranged_range(60, 240)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -758,7 +758,7 @@ public class Monster_Library {
                 11, 12, 12, 10, 10, 10,
                 Arrays.asList(
                         Attack_Option.attack_roll("弯刀 (Scimitar)", "近战攻击。", 3, 1, 6, 1, 1, "挥砍"),
-                        Attack_Option.attack_roll("轻弩 (Light Crossbow)", "远程攻击。", 3, 1, 8, 1, 1, "穿刺")
+                        Attack_Option.attack_roll("轻弩 (Light Crossbow)", "远程攻击。", 3, 1, 8, 1, 1, "穿刺").with_ranged_range(80, 320)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -774,7 +774,7 @@ public class Monster_Library {
                 13, 12, 12, 10, 11, 10,
                 Arrays.asList(
                         Attack_Option.attack_roll("长矛 (Spear)", "近战攻击。", 3, 1, 6, 1, 1, "穿刺"),
-                        Attack_Option.attack_roll("长矛投掷 (Thrown Spear)", "远程攻击。", 3, 1, 6, 1, 1, "穿刺")
+                        Attack_Option.attack_roll("长矛投掷 (Thrown Spear)", "远程攻击。", 3, 1, 6, 1, 1, "穿刺").with_ranged_range(20, 60)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -790,7 +790,7 @@ public class Monster_Library {
                 10, 10, 10, 10, 14, 11,
                 Arrays.asList(
                         Attack_Option.attack_roll("木杖 (Club)", "近战攻击。", 2, 1, 4, 0, 1, "钝击"),
-                        Attack_Option.save_dc("圣焰 (Sacred Flame)", "神圣火焰灼烧目标。", 12, "Dexterity", 1, 8, 0, false, "光耀")
+                        Attack_Option.save_dc("圣焰 (Sacred Flame)", "神圣火焰灼烧目标。", 12, "Dexterity", 1, 8, 0, false, "光耀").with_range(60)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -855,7 +855,7 @@ public class Monster_Library {
                 15, 11, 14, 10, 10, 11,
                 Arrays.asList(
                         Attack_Option.attack_roll("晨星锤 (Mace)", "连续近战攻击。", 4, 1, 6, 2, 2, "钝击"),
-                        Attack_Option.attack_roll("轻弩 (Light Crossbow)", "远程攻击。", 2, 1, 8, 0, 1, "穿刺")
+                        Attack_Option.attack_roll("轻弩 (Light Crossbow)", "远程攻击。", 2, 1, 8, 0, 1, "穿刺").with_ranged_range(80, 320)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -871,7 +871,7 @@ public class Monster_Library {
                 11, 14, 12, 11, 13, 11,
                 Arrays.asList(
                         Attack_Option.attack_roll("短剑 (Shortsword)", "近战攻击。", 4, 1, 6, 2, 1, "穿刺"),
-                        Attack_Option.attack_roll("长弓 (Longbow)", "双发远程攻击。", 4, 1, 8, 2, 2, "穿刺")
+                        Attack_Option.attack_roll("长弓 (Longbow)", "双发远程攻击。", 4, 1, 8, 2, 2, "穿刺").with_ranged_range(150, 600)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -1074,9 +1074,9 @@ public class Monster_Library {
                 11, 14, 12, 10, 13, 14,
                 Arrays.asList(
                         Attack_Option.attack_roll("匕首 (Dagger)", "近战攻击。", 4, 1, 4, 2, 1, "穿刺"),
-                        Attack_Option.save_dc("命令术 (Command)", "强迫目标短暂失去行动节奏。", 11, "Wisdom", 0, 1, 0, false, "控制")
+                        Attack_Option.save_dc("命令术 (Command)", "强迫目标短暂失去行动节奏。", 11, "Wisdom", 0, 1, 0, false, "控制").with_range(60)
                                 .with_status(Combat_Status_Type.FRIGHTENED, 1, "", 0),
-                        Attack_Option.save_dc("灵体守卫 (Spiritual Assault)", "神圣或邪异能量重创目标。", 11, "Wisdom", 3, 8, 0, true, "死灵")
+                        Attack_Option.save_dc("灵体守卫 (Spiritual Assault)", "神圣或邪异能量重创目标。", 11, "Wisdom", 3, 8, 0, true, "死灵").with_range(15)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -1129,7 +1129,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("触腕 (Tentacles)", "缠绕并挤压目标。", 5, 2, 6, 3, 1, "钝击")
                                 .with_status(Combat_Status_Type.RESTRAINED, 2, "Strength", 13),
-                        Attack_Option.save_dc("墨汁喷射 (Ink Cloud)", "制造遮蔽并扰乱目标。", 12, "Constitution", 0, 1, 0, false, "干扰")
+                        Attack_Option.save_dc("墨汁喷射 (Ink Cloud)", "制造遮蔽并扰乱目标。", 12, "Constitution", 0, 1, 0, false, "干扰").with_range(20).with_area(Attack_Option.Area_Shape.CIRCLE, 20, 5, true)
                                 .with_status(Combat_Status_Type.CURSED, 1, "", 0)
                 )
         ));
@@ -1161,7 +1161,7 @@ public class Monster_Library {
                 5,
                 12, 13, 12, 7, 10, 13,
                 Arrays.asList(
-                        Attack_Option.save_dc("惑魂歌声 (Luring Song)", "歌声迷惑目标。", 11, "Wisdom", 0, 1, 0, false, "惑控")
+                        Attack_Option.save_dc("惑魂歌声 (Luring Song)", "歌声迷惑目标。", 11, "Wisdom", 0, 1, 0, false, "惑控").with_range(300)
                                 .with_status(Combat_Status_Type.CHARMED, 2, "", 0),
                         Attack_Option.attack_roll("利爪 (Claws)", "近战攻击。", 3, 2, 4, 1, 1, "挥砍"),
                         Attack_Option.attack_roll("木棒 (Club)", "近战攻击。", 3, 1, 4, 1, 1, "钝击")
@@ -1217,7 +1217,7 @@ public class Monster_Library {
                 23, 14, 18, 7, 12, 7,
                 Arrays.asList(
                         Attack_Option.attack_roll("重拳 (Fist)", "沉重近战连击。", 9, 3, 10, 6, 2, "钝击"),
-                        Attack_Option.attack_roll("投掷巨石 (Rock)", "远程重型投掷。", 9, 7, 6, 6, 1, "钝击")
+                        Attack_Option.attack_roll("投掷巨石 (Rock)", "远程重型投掷。", 9, 7, 6, 6, 1, "钝击").with_ranged_range(60, 240)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -1250,9 +1250,9 @@ public class Monster_Library {
                 8, 14, 14, 13, 14, 11,
                 Arrays.asList(
                         Attack_Option.attack_roll("咬击 (Bite)", "近战攻击。", 1, 2, 6, -1, 1, "穿刺"),
-                        Attack_Option.save_dc("麻痹眼线 (Paralyzing Ray)", "眼线令目标麻痹。", 13, "Constitution", 0, 1, 0, false, "控制")
+                        Attack_Option.save_dc("麻痹眼线 (Paralyzing Ray)", "眼线令目标麻痹。", 13, "Constitution", 0, 1, 0, false, "控制").with_range(90)
                                 .with_status(Combat_Status_Type.PARALYZED, 1, "", 0),
-                        Attack_Option.save_dc("恐惧眼线 (Fear Ray)", "眼线令目标恐慌。", 13, "Wisdom", 0, 1, 0, false, "精神")
+                        Attack_Option.save_dc("恐惧眼线 (Fear Ray)", "眼线令目标恐慌。", 13, "Wisdom", 0, 1, 0, false, "精神").with_range(90)
                                 .with_status(Combat_Status_Type.FRIGHTENED, 2, "", 0)
                 )
         ));
@@ -1286,7 +1286,7 @@ public class Monster_Library {
                 16,
                 16, 8, 15, 2, 8, 7,
                 Arrays.asList(
-                        Attack_Option.save_dc("石化凝视 (Petrifying Gaze)", "恐怖凝视令目标逐渐石化。", 12, "Constitution", 0, 1, 0, false, "石化")
+                        Attack_Option.save_dc("石化凝视 (Petrifying Gaze)", "恐怖凝视令目标逐渐石化。", 12, "Constitution", 0, 1, 0, false, "石化").with_range(30)
                                 .with_status(Combat_Status_Type.RESTRAINED, 2, "", 0),
                         Attack_Option.attack_roll("撕咬 (Bite)", "近战攻击。", 5, 2, 6, 3, 1, "穿刺")
                 )
@@ -1305,7 +1305,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("啃咬 (Bite)", "近战攻击。", 5, 1, 8, 3, 1, "穿刺"),
                         Attack_Option.attack_roll("利爪 (Claws)", "近战攻击。", 5, 1, 6, 3, 2, "挥砍"),
-                        Attack_Option.attack_roll("尾刺 (Tail Spike)", "远程尾刺攻击。", 5, 1, 8, 3, 3, "穿刺")
+                        Attack_Option.attack_roll("尾刺 (Tail Spike)", "远程尾刺攻击。", 5, 1, 8, 3, 3, "穿刺").with_ranged_range(100, 200)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -1322,7 +1322,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("长剑 (Longsword)", "多重近战攻击。", 5, 1, 8, 3, 2, "挥砍"),
                         Attack_Option.attack_roll("短剑 (Shortsword)", "副手近战攻击。", 5, 1, 6, 3, 1, "穿刺"),
-                        Attack_Option.attack_roll("轻弩 (Heavy Crossbow)", "远程攻击。", 3, 1, 10, 1, 1, "穿刺")
+                        Attack_Option.attack_roll("轻弩 (Heavy Crossbow)", "远程攻击。", 3, 1, 10, 1, 1, "穿刺").with_ranged_range(100, 400)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -1374,7 +1374,7 @@ public class Monster_Library {
                 16, 11, 14, 11, 11, 15,
                 Arrays.asList(
                         Attack_Option.attack_roll("巨剑 (Greatsword)", "多重近战攻击。", 5, 2, 6, 3, 2, "挥砍"),
-                        Attack_Option.attack_roll("重弩 (Heavy Crossbow)", "远程攻击。", 2, 1, 10, 0, 1, "穿刺")
+                        Attack_Option.attack_roll("重弩 (Heavy Crossbow)", "远程攻击。", 2, 1, 10, 0, 1, "穿刺").with_ranged_range(100, 400)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -1406,7 +1406,7 @@ public class Monster_Library {
                 21, 8, 19, 5, 9, 6,
                 Arrays.asList(
                         Attack_Option.attack_roll("巨棒 (Greatclub)", "近战重击。", 8, 3, 8, 5, 1, "钝击"),
-                        Attack_Option.attack_roll("巨石 (Rock)", "远程巨石投掷。", 8, 3, 10, 5, 1, "钝击")
+                        Attack_Option.attack_roll("巨石 (Rock)", "远程巨石投掷。", 8, 3, 10, 5, 1, "钝击").with_ranged_range(60, 240)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -1424,7 +1424,7 @@ public class Monster_Library {
                         Attack_Option.attack_roll("啃咬 (Bite)", "多重近战攻击。", 7, 2, 6, 4, 1, "穿刺"),
                         Attack_Option.attack_roll("撞角 (Horns)", "多重近战攻击。", 7, 1, 12, 4, 1, "钝击"),
                         Attack_Option.attack_roll("利爪 (Claws)", "多重近战攻击。", 7, 2, 6, 4, 1, "挥砍"),
-                        Attack_Option.save_dc("火焰吐息 (Fire Breath)", "锥形火焰吐息。", 15, "Dexterity", 7, 8, 0, true, "火焰")
+                        Attack_Option.save_dc("火焰吐息 (Fire Breath)", "锥形火焰吐息。", 15, "Dexterity", 7, 8, 0, true, "火焰").with_range(30).with_area(Attack_Option.Area_Shape.CONE, 30, 5, true)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -1459,7 +1459,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("巨颚 (Bite)", "强力近战啃咬。", 5, 2, 6, 3, 1, "挥砍")
                                 .with_status(Combat_Status_Type.RESTRAINED, 1, "Strength", 13),
-                        Attack_Option.save_dc("酸液喷吐 (Acid Spray)", "喷吐腐蚀性酸液。", 13, "Dexterity", 4, 6, 0, true, "强酸")
+                        Attack_Option.save_dc("酸液喷吐 (Acid Spray)", "喷吐腐蚀性酸液。", 13, "Dexterity", 4, 6, 0, true, "强酸").with_range(30).with_area(Attack_Option.Area_Shape.LINE, 30, 5, true)
                 )
         ));
         MONSTERS.add(new Monster_Definition(
@@ -1477,7 +1477,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("啃咬 (Bite)", "带毒的近战啃咬。", 5, 1, 8, 2, 1, "穿刺")
                                 .with_status(Combat_Status_Type.POISONED, 2, "Constitution", 11),
-                        Attack_Option.save_dc("蛛网 (Web)", "黏稠蛛网困住目标。", 12, "Dexterity", 0, 1, 0, false, "束缚")
+                        Attack_Option.save_dc("蛛网 (Web)", "黏稠蛛网困住目标。", 12, "Dexterity", 0, 1, 0, false, "束缚").with_range(60)
                                 .with_status(Combat_Status_Type.RESTRAINED, 2, "", 0)
                 )
         ));
@@ -1496,7 +1496,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("撕咬 (Bite)", "燃烧獠牙的近战攻击。", 5, 2, 6, 3, 1, "穿刺")
                                 .with_status(Combat_Status_Type.BURNING, 2, "", 0),
-                        Attack_Option.save_dc("火焰吐息 (Fire Breath)", "锥形火焰吐息。", 12, "Dexterity", 6, 6, 0, true, "火焰")
+                        Attack_Option.save_dc("火焰吐息 (Fire Breath)", "锥形火焰吐息。", 12, "Dexterity", 6, 6, 0, true, "火焰").with_range(30).with_area(Attack_Option.Area_Shape.CONE, 30, 5, true)
                                 .with_status(Combat_Status_Type.BURNING, 2, "", 0)
                 )
         ));
@@ -1530,9 +1530,9 @@ public class Monster_Library {
                 34,
                 10, 15, 16, 12, 13, 15,
                 Arrays.asList(
-                        Attack_Option.save_dc("石化凝视 (Petrifying Gaze)", "凝视令目标逐渐僵硬石化。", 14, "Constitution", 0, 1, 0, false, "石化")
+                        Attack_Option.save_dc("石化凝视 (Petrifying Gaze)", "凝视令目标逐渐僵硬石化。", 14, "Constitution", 0, 1, 0, false, "石化").with_range(30)
                                 .with_status(Combat_Status_Type.RESTRAINED, 2, "", 0),
-                        Attack_Option.attack_roll("蛇发短弓 (Longbow)", "精准的远程攻击。", 5, 1, 8, 2, 2, "穿刺"),
+                        Attack_Option.attack_roll("蛇发短弓 (Longbow)", "精准的远程攻击。", 5, 1, 8, 2, 2, "穿刺").with_ranged_range(150, 600),
                         Attack_Option.attack_roll("蛇发短剑 (Shortsword)", "近战攻击。", 5, 1, 6, 2, 1, "穿刺")
                 )
         ));
@@ -1550,7 +1550,7 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("啃咬 (Bite)", "近战攻击。", 7, 2, 10, 4, 1, "穿刺"),
                         Attack_Option.attack_roll("利爪 (Claw)", "近战攻击。", 7, 2, 6, 4, 2, "挥砍"),
-                        Attack_Option.save_dc("强酸吐息 (Acid Breath)", "直线强酸吐息。", 14, "Dexterity", 11, 8, 0, true, "强酸")
+                        Attack_Option.save_dc("强酸吐息 (Acid Breath)", "直线强酸吐息。", 14, "Dexterity", 11, 8, 0, true, "强酸").with_range(30).with_area(Attack_Option.Area_Shape.LINE, 30, 5, true)
                                 .with_status(Combat_Status_Type.BURNING, 2, "", 0)
                 )
         ));
@@ -1568,10 +1568,17 @@ public class Monster_Library {
                 Arrays.asList(
                         Attack_Option.attack_roll("啃咬 (Bite)", "近战攻击。", 10, 2, 10, 6, 1, "穿刺"),
                         Attack_Option.attack_roll("利爪 (Claw)", "近战攻击。", 10, 2, 6, 6, 2, "挥砍"),
-                        Attack_Option.save_dc("火焰吐息 (Fire Breath)", "大范围火焰吐息。", 17, "Dexterity", 16, 6, 0, true, "火焰")
+                        Attack_Option.save_dc("火焰吐息 (Fire Breath)", "大范围火焰吐息。", 17, "Dexterity", 16, 6, 0, true, "火焰").with_range(30).with_area(Attack_Option.Area_Shape.CONE, 30, 5, true)
                                 .with_status(Combat_Status_Type.BURNING, 3, "", 0)
                 )
         ));
+        for (Monster_Definition monster : MONSTERS) {
+            monster.footprint = switch (monster.key) {
+                case "young_green_dragon", "young_black_dragon", "young_red_dragon", "giant_ape", "hill_giant", "giant_crocodile", "giant_constrictor_snake", "giant_elk" -> 3;
+                case "ogre", "owlbear", "troll", "wyvern", "giant_spider", "minotaur_skeleton", "bone_naga", "panther", "crocodile", "ape", "constrictor_snake", "reef_shark", "giant_boar", "lion", "tiger", "giant_goat", "giant_hyena", "brown_bear", "giant_eagle", "giant_vulture", "giant_toad", "dire_wolf", "giant_octopus", "minotaur", "gelatinous_cube", "manticore", "saber_toothed_tiger", "ettin", "chimera", "worg", "ankheg", "shambling_mound" -> 2;
+                default -> 1;
+            };
+        }
     }
 
     private Monster_Library() {

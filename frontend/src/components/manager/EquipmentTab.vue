@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { CharacterAPI, ItemAPI } from '../../api'
 
 const props = defineProps<{ character: any }>()
@@ -10,6 +10,17 @@ const mainHand = ref(props.character.equipped_main_hand_key || '')
 const offHand = ref(props.character.equipped_off_hand_key || '')
 const cloak = ref(props.character.equipped_cloak_key || '')
 const accessory = ref(props.character.equipped_accessory_key || '')
+
+watch(() => props.character, (character) => {
+  armor.value = character.equipped_armor_key || ''
+  mainHand.value = character.equipped_main_hand_key || ''
+  offHand.value = character.equipped_off_hand_key || ''
+  cloak.value = character.equipped_cloak_key || ''
+  accessory.value = character.equipped_accessory_key || ''
+  if (selectedItemKey.value && !(character.inventory || []).some((item: any) => item.key === selectedItemKey.value)) {
+    selectedItemKey.value = ''
+  }
+})
 
 const selectedCategory = ref('全部')
 const categories = ['全部', '消耗品', '材料/战利品', '工具/任务', '自定义']
@@ -38,9 +49,15 @@ const selectedItem = computed(() => {
 })
 
 const formatCp = (cp: number) => {
-  if (cp >= 100) return `${Math.floor(cp / 100)} gp ${cp % 100 > 0 ? (cp % 100) + ' cp' : ''}`
-  if (cp >= 10) return `${Math.floor(cp / 10)} sp ${cp % 10 > 0 ? (cp % 10) + ' cp' : ''}`
-  return `${cp} cp`
+  const safeCp = Math.max(0, Math.floor(cp))
+  const parts: string[] = []
+  const gp = Math.floor(safeCp / 100)
+  const sp = Math.floor((safeCp % 100) / 10)
+  const copper = safeCp % 10
+  if (gp > 0) parts.push(`${gp} gp`)
+  if (sp > 0) parts.push(`${sp} sp`)
+  if (copper > 0 || parts.length === 0) parts.push(`${copper} cp`)
+  return parts.join(' ')
 }
 
 const applyEquipment = async () => {
@@ -53,8 +70,9 @@ const applyEquipment = async () => {
     await CharacterAPI.equipItem(id, 'CLOAK', cloak.value)
     await CharacterAPI.equipItem(id, 'ACCESSORY', accessory.value)
     emit('refresh')
-  } catch (e) {
-    alert('应用失败')
+  } catch (error) {
+    console.error(error)
+    alert(error instanceof Error ? `应用失败：${error.message}` : '应用失败')
   } finally {
     isApplying.value = false
   }
@@ -62,32 +80,65 @@ const applyEquipment = async () => {
 
 const handleUse = async () => {
   if (!selectedItemKey.value) return
-  await CharacterAPI.manageInventory(props.character.database_id, 'USE', selectedItemKey.value, 1)
-  emit('refresh')
+  try {
+    await CharacterAPI.manageInventory(props.character.database_id, 'USE', selectedItemKey.value, 1)
+    emit('refresh')
+  } catch (error) {
+    console.error(error)
+    alert(error instanceof Error ? `使用失败：${error.message}` : '使用失败')
+  }
 }
 
 const handleSell = async () => {
   if (!selectedItemKey.value) return
   const qty = prompt('出售数量:', '1')
   if (!qty) return
-  await CharacterAPI.manageInventory(props.character.database_id, 'SELL', selectedItemKey.value, parseInt(qty))
-  emit('refresh')
+  const quantity = Number(qty)
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    alert('请输入大于 0 的整数数量')
+    return
+  }
+  if (quantity > (selectedItem.value?.count || 1)) {
+    alert('出售数量不能超过持有数量')
+    return
+  }
+  try {
+    await CharacterAPI.manageInventory(props.character.database_id, 'SELL', selectedItemKey.value, quantity)
+    emit('refresh')
+  } catch (error) {
+    console.error(error)
+    alert(error instanceof Error ? `出售失败：${error.message}` : '出售失败')
+  }
 }
 
 const searchShop = async () => {
-  const res = await ItemAPI.search(shopQuery.value)
-  shopResults.value = res || []
+  try {
+    shopResults.value = await ItemAPI.search(shopQuery.value)
+  } catch (error) {
+    console.error(error)
+    shopResults.value = []
+    alert(error instanceof Error ? `搜索失败：${error.message}` : '搜索失败')
+  }
 }
 
 const buyItem = async (item: any) => {
-  const qty = prompt(`购买 ${item.display_name} 的数量 (单价: ${formatCp(item.value_in_cp)}):`, '1')
-  if (!qty) return
+  const isStackable = item.slot === 'BACKPACK'
+  const qty = isStackable
+    ? prompt(`购买 ${item.display_name} 的数量 (单价: ${formatCp(item.value_in_cp)}):`, '1')
+    : '1'
+  if (qty === null || qty.trim() === '') return
+  const quantity = Number(qty)
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    alert('请输入大于 0 的整数数量')
+    return
+  }
   try {
-    await CharacterAPI.manageInventory(props.character.database_id, 'BUY', item.key, parseInt(qty))
+    await CharacterAPI.manageInventory(props.character.database_id, 'BUY', item.key, quantity)
     alert('购买成功')
     emit('refresh')
-  } catch(e: any) {
-    alert('购买失败：钱币不足或服务器错误')
+  } catch(error) {
+    console.error(error)
+    alert(error instanceof Error ? `购买失败：${error.message}` : '购买失败')
   }
 }
 </script>
@@ -183,7 +234,7 @@ const buyItem = async (item: any) => {
             <div class="detail-row"><span class="text-dim">参考价:</span> {{ formatCp(selectedItem.value_in_cp) }} (出售价: {{ formatCp(Math.floor(selectedItem.value_in_cp / 2)) }})</div>
             
             <div class="action-buttons mt-4">
-              <button class="btn-primary" @click="handleUse">使用</button>
+              <button v-if="selectedItem.auto_usable" class="btn-primary" @click="handleUse">使用</button>
               <button class="btn-secondary" @click="handleSell">出售</button>
             </div>
           </div>

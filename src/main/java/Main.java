@@ -37,9 +37,15 @@ public class Main {
             try {
                 // Use a ProcessBuilder to launch npm in the frontend directory
                 File frontendDir = new File(System.getProperty("user.dir"), "frontend");
-                ProcessBuilder pb = new ProcessBuilder("npm", "run", "electron:dev");
+                String osName = System.getProperty("os.name", "").toLowerCase();
+                ProcessBuilder pb = new ProcessBuilder(
+                        osName.contains("win") ? "npm.cmd" : "npm",
+                        "run",
+                        "electron:dev"
+                );
+
                 // Fallback for macOS if npm is not in PATH
-                if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+                if (osName.contains("mac")) {
                     pb = new ProcessBuilder("/bin/bash", "-c", "source ~/.bash_profile 2>/dev/null || source ~/.zshrc 2>/dev/null || true; npm run electron:dev");
                 }
                 
@@ -48,6 +54,7 @@ public class Main {
                 
                 Map<String, String> env = pb.environment();
                 env.put("EXTERNAL_SERVER", "true");
+                env.put("DMHELPER_API_TOKEN", ApiServer.getClientToken());
                 
                 Process p = pb.start();
                 p.waitFor();

@@ -21,6 +21,7 @@ public class Monster_Definition {
     public final int wis;
     public final int cha;
     public final List<Attack_Option> attack_options;
+    public int footprint = 1;
 
     public Monster_Definition(String key,
                               String monster_type,

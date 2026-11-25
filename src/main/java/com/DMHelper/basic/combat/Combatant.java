@@ -45,6 +45,7 @@ public class Combatant {
     public int superiority_dice_size;
     public int lay_on_hands_remaining;
     public final List<Combat_Status_Effect> status_effects;
+    public boolean reaction_available = true;
 
     public Combatant(String display_name,
                      Side side,
@@ -89,6 +90,27 @@ public class Combatant {
 
     public boolean is_alive() {
         return this.current_hp > 0;
+    }
+
+    /** Reattach saved runtime data to a persisted character without rolling or rebuilding attacks. */
+    public static Combatant restore(Combatant saved, Character_Sheet character, Monster_Definition monster) {
+        Combatant result = new Combatant(saved.display_name, saved.side, saved.armor_class, saved.max_hp,
+                saved.initiative_modifier, saved.strength, saved.dexterity, saved.constitution, saved.intelligence,
+                saved.wisdom, saved.charisma, saved.proficiency_bonus, saved.attack_options, character, monster, saved.xp_reward);
+        result.current_hp = saved.current_hp;
+        result.initiative_roll = saved.initiative_roll;
+        result.initiative_total = saved.initiative_total;
+        result.spell_slots_remaining = saved.spell_slots_remaining.clone();
+        result.pact_slots_remaining = saved.pact_slots_remaining;
+        result.pact_slot_level = saved.pact_slot_level;
+        result.sorcery_points_remaining = saved.sorcery_points_remaining;
+        result.bardic_inspiration_remaining = saved.bardic_inspiration_remaining;
+        result.superiority_dice_remaining = saved.superiority_dice_remaining;
+        result.superiority_dice_size = saved.superiority_dice_size;
+        result.lay_on_hands_remaining = saved.lay_on_hands_remaining;
+        result.status_effects.addAll(saved.status_effects);
+        result.reaction_available = saved.reaction_available;
+        return result;
     }
 
     public int get_saving_throw_bonus(String ability) {

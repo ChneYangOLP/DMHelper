@@ -23,12 +23,32 @@ public class Equipment_Library {
                 "华丽而轻盈的礼袍，更像是力量象征而非防具。", "None", 10, 0, 0, 0, 0, "", false, false, 500));
         add(new Equipment_Item("warlock_robes", "邪术士长袍", Equipment_Slot.ARMOR,
                 "带有神秘纹样的长袍，常见于契约施法者。", "None", 10, 0, 0, 0, 0, "", false, false, 450));
+        add(new Equipment_Item("padded_armor", "絮甲 (Padded Armor)", Equipment_Slot.ARMOR,
+                "填充衬垫制成的轻甲，AC 为 11 + 敏捷调整值；穿着时潜行检定具有劣势。", "Light", 11, 0, 0, 0, 0, "", false, false, 500));
         add(new Equipment_Item("leather_armor", "皮甲 (Leather Armor)", Equipment_Slot.ARMOR,
-                "轻甲，提供基础保护且不妨碍敏捷行动。", "Light", 11, 0, 0, 0, 0, "", false, false, 1000));
+                "柔韧皮革制成的轻甲，AC 为 11 + 敏捷调整值。", "Light", 11, 0, 0, 0, 0, "", false, false, 1000));
+        add(new Equipment_Item("studded_leather", "镶钉皮甲 (Studded Leather)", Equipment_Slot.ARMOR,
+                "以金属铆钉加固的轻甲，AC 为 12 + 敏捷调整值。", "Light", 12, 0, 0, 0, 0, "", false, false, 4500));
+
+        add(new Equipment_Item("hide_armor", "兽皮甲 (Hide Armor)", Equipment_Slot.ARMOR,
+                "由厚重毛皮与皮革制成的中甲，AC 为 12 + 敏捷调整值（最多 +2）。", "Medium", 12, 0, 0, 0, 0, "", false, false, 1000));
+        add(new Equipment_Item("chain_shirt", "链甲衫 (Chain Shirt)", Equipment_Slot.ARMOR,
+                "穿在衣物内的轻便链甲，AC 为 13 + 敏捷调整值（最多 +2）。", "Medium", 13, 0, 0, 0, 0, "", false, false, 5000));
+        add(new Equipment_Item("scale_mail", "鳞甲 (Scale Mail)", Equipment_Slot.ARMOR,
+                "交叠金属鳞片制成的中甲，AC 为 14 + 敏捷调整值（最多 +2）；穿着时潜行检定具有劣势。", "Medium", 14, 0, 0, 0, 0, "", false, false, 5000));
+        add(new Equipment_Item("breastplate", "胸甲 (Breastplate)", Equipment_Slot.ARMOR,
+                "以金属胸板保护躯干的中甲，AC 为 14 + 敏捷调整值（最多 +2）。", "Medium", 14, 0, 0, 0, 0, "", false, false, 40000));
         add(new Equipment_Item("half_plate", "半身甲 (Half Plate)", Equipment_Slot.ARMOR,
-                "厚重的中甲，提供较高 AC，但敏捷加值最多 +2。", "Medium", 15, 0, 0, 0, 0, "", false, false, 75000));
+                "覆盖大部分身体的金属中甲，AC 为 15 + 敏捷调整值（最多 +2）；穿着时潜行检定具有劣势。", "Medium", 15, 0, 0, 0, 0, "", false, false, 75000));
+
+        add(new Equipment_Item("ring_mail", "环甲 (Ring Mail)", Equipment_Slot.ARMOR,
+                "缝有金属环的重甲，基础 AC 14；穿着时潜行检定具有劣势。", "Heavy", 14, 0, 0, 0, 0, "", false, false, 3000));
         add(new Equipment_Item("chain_mail", "锁子甲 (Chain Mail)", Equipment_Slot.ARMOR,
-                "经典重甲，提供稳定的高防护。", "Heavy", 16, 0, 0, 0, 0, "", false, false, 7500));
+                "经典重甲，基础 AC 16，需要力量 13；穿着时潜行检定具有劣势。", "Heavy", 16, 0, 0, 0, 0, "", false, false, 7500));
+        add(new Equipment_Item("splint_armor", "板条甲 (Splint Armor)", Equipment_Slot.ARMOR,
+                "以金属板条加固的重甲，基础 AC 17，需要力量 15；穿着时潜行检定具有劣势。", "Heavy", 17, 0, 0, 0, 0, "", false, false, 20000));
+        add(new Equipment_Item("plate_armor", "板甲 (Plate Armor)", Equipment_Slot.ARMOR,
+                "由相互咬合的金属板构成的重甲，基础 AC 18，需要力量 15；穿着时潜行检定具有劣势。", "Heavy", 18, 0, 0, 0, 0, "", false, false, 150000));
 
         add_weapon("club", "短棒 (Club)", "简易近战武器", 1, 4, "钝击", false, false, 10, "2 磅", "轻型");
         add_weapon("dagger", "匕首 (Dagger)", "简易近战武器", 1, 4, "穿刺", true, false, 200, "1 磅", "灵巧、轻型、投掷（射程 20/60）");

@@ -451,6 +451,10 @@ public class Sorcerer_Class extends Character_Class {
         if (this.sorcerous_origin == Sorcerous_Origin.NONE) {
             pending.add("选择术法起源");
         }
+        if (this.sorcerous_origin == Sorcerous_Origin.DRACONIC_BLOODLINE
+                && (this.dragon_ancestry == null || this.dragon_ancestry.isBlank())) {
+            pending.add("选择龙族先祖");
+        }
         int pendingCantrips = Math.max(0, this.cantrips_known - this.known_cantrip_keys.size());
         if (pendingCantrips > 0) {
             pending.add("选择 " + pendingCantrips + " 个术士戏法");

@@ -28,7 +28,7 @@ public class Init_DB {
                 + "current_level INTEGER DEFAULT 1, "
                 + "experience_points INTEGER DEFAULT 0, "
                 + "hp INTEGER DEFAULT 0, "
-                + "current_hp INTEGER DEFAULT 0, "
+                + "current_hp INTEGER DEFAULT NULL, "
                 + "available_hit_dice INTEGER DEFAULT -1, "
                 + "ac INTEGER DEFAULT 0, "
                 + "gold_pieces INTEGER DEFAULT 0, "
@@ -72,6 +72,21 @@ public class Init_DB {
                 + "value_in_cp INTEGER DEFAULT 0"
                 + ");";
 
+        String create_adventure_logs_table = "CREATE TABLE IF NOT EXISTS adventure_logs ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "entry_type TEXT NOT NULL, "
+                + "title TEXT NOT NULL, "
+                + "content TEXT DEFAULT '', "
+                + "character_id INTEGER DEFAULT NULL, "
+                + "location TEXT DEFAULT '', "
+                + "tags TEXT DEFAULT '', "
+                + "quest_status TEXT DEFAULT '', "
+                + "event_date TEXT DEFAULT '', "
+                + "pinned INTEGER DEFAULT 0, "
+                + "created_at TEXT DEFAULT CURRENT_TIMESTAMP, "
+                + "updated_at TEXT DEFAULT CURRENT_TIMESTAMP"
+                + ");";
+
         Connection conn = DB_Helper.get_connection();
         if (conn == null) {
             return;
@@ -83,6 +98,32 @@ public class Init_DB {
             stmt.execute(create_traits_table);
             stmt.execute(create_characters_table);
             stmt.execute(create_custom_items_table);
+            stmt.execute(create_adventure_logs_table);
+            stmt.execute("CREATE TABLE IF NOT EXISTS combat_save (slot INTEGER PRIMARY KEY CHECK(slot=1), "
+                    + "session_id TEXT NOT NULL, snapshot TEXT NOT NULL, saved_at TEXT NOT NULL)");
+            stmt.execute("CREATE TABLE IF NOT EXISTS adventure_locations (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + "name TEXT NOT NULL, kind TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', "
+                    + "status TEXT NOT NULL DEFAULT 'UNKNOWN', is_current INTEGER NOT NULL DEFAULT 0)");
+            stmt.execute("CREATE TABLE IF NOT EXISTS adventure_maps (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + "name TEXT NOT NULL, image_data TEXT NOT NULL)");
+            stmt.execute("CREATE TABLE IF NOT EXISTS adventure_map_markers (map_id INTEGER NOT NULL, "
+                    + "location_id INTEGER NOT NULL, x REAL NOT NULL, y REAL NOT NULL, PRIMARY KEY(map_id, location_id))");
+            ensure_column(stmt, "adventure_logs", "location_id", "INTEGER DEFAULT NULL");
+            stmt.execute("CREATE TABLE IF NOT EXISTS adventure_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + "title TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'ACTIVE', "
+                    + "started_at TEXT NOT NULL, ended_at TEXT DEFAULT NULL)");
+            stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS one_active_adventure_session ON adventure_sessions(status) WHERE status='ACTIVE'");
+            ensure_column(stmt, "adventure_logs", "adventure_session_id", "INTEGER DEFAULT NULL");
+            ensure_column(stmt, "adventure_logs", "combat_source_id", "TEXT DEFAULT NULL");
+            stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_combat_archive ON adventure_logs(combat_source_id) WHERE combat_source_id IS NOT NULL");
+            stmt.execute("CREATE INDEX IF NOT EXISTS logs_adventure_session ON adventure_logs(adventure_session_id)");
+            ensure_column(stmt, "combat_save", "adventure_session_id", "INTEGER DEFAULT NULL");
+            ensure_column(stmt, "combat_save", "location_id", "INTEGER DEFAULT NULL");
+            stmt.execute("CREATE TABLE IF NOT EXISTS adventure_recaps (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + "title TEXT NOT NULL, content TEXT NOT NULL, mode TEXT NOT NULL, model TEXT NOT NULL DEFAULT '', "
+                    + "focus TEXT NOT NULL DEFAULT '', adventure_session_id INTEGER DEFAULT NULL, "
+                    + "context_snapshot TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS recaps_adventure_session ON adventure_recaps(adventure_session_id)");
 
             ensure_column(stmt, "saved_characters", "age", "INTEGER DEFAULT 20");
             ensure_column(stmt, "saved_characters", "gender", "TEXT DEFAULT '未知'");
@@ -92,7 +133,7 @@ public class Init_DB {
             ensure_column(stmt, "saved_characters", "bonds", "TEXT DEFAULT ''");
             ensure_column(stmt, "saved_characters", "flaws", "TEXT DEFAULT ''");
             ensure_column(stmt, "saved_characters", "experience_points", "INTEGER DEFAULT 0");
-            ensure_column(stmt, "saved_characters", "current_hp", "INTEGER DEFAULT 0");
+            ensure_column(stmt, "saved_characters", "current_hp", "INTEGER DEFAULT NULL");
             ensure_column(stmt, "saved_characters", "available_hit_dice", "INTEGER DEFAULT -1");
             ensure_column(stmt, "saved_characters", "armor_name", "TEXT DEFAULT '普通旅行者服装'");
             ensure_column(stmt, "saved_characters", "armor_type", "TEXT DEFAULT 'None'");

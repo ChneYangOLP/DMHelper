@@ -462,7 +462,7 @@ public class Bard_Class extends Character_Class {
 
     @Override
     public int get_initiative_bonus() {
-        return get_untrained_ability_check_bonus();
+        return super.get_initiative_bonus() + get_untrained_ability_check_bonus();
     }
 
     @Override

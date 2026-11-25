@@ -3,18 +3,30 @@ import { ref, onMounted } from 'vue'
 import { CharacterAPI } from '../api'
 
 const characters = ref<any[]>([])
+const loadError = ref('')
 
-onMounted(async () => {
-  const data = await CharacterAPI.getAll()
-  if (data) {
+const loadCharacters = async () => {
+  loadError.value = ''
+  try {
+    const data = await CharacterAPI.getAll()
     characters.value = data
+  } catch (error) {
+    console.error(error)
+    characters.value = []
+    loadError.value = error instanceof Error ? error.message : '无法连接角色服务'
   }
-})
+}
+
+onMounted(loadCharacters)
 </script>
 
 <template>
   <div class="roster-container">
     <h2>角色一览 (Character Roster)</h2>
+    <div v-if="loadError" class="load-error">
+      <span>加载失败：{{ loadError }}</span>
+      <button class="btn-secondary" @click="loadCharacters">重试</button>
+    </div>
     <div class="card-grid">
       <div v-for="char in characters" :key="char.database_id" class="card char-card" @click="$router.push(`/manage/${char.database_id}`)">
         <div class="char-header">
@@ -47,6 +59,19 @@ h2 {
   color: var(--antique-gold);
   margin-bottom: var(--space-lg);
   font-family: var(--font-display);
+}
+
+.load-error {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--danger, #ff8a80);
+  border: 1px solid rgba(255, 138, 128, 0.35);
+  border-radius: var(--radius-sm);
+  background: rgba(120, 20, 20, 0.18);
 }
 
 .card-grid {

@@ -9,6 +9,8 @@ const formatMod = (score: number) => {
   return mod >= 0 ? `+${mod}` : `${mod}`
 }
 
+const formatBonus = (value: number) => value >= 0 ? `+${value}` : `${value}`
+
 const statsList = computed(() => [
   { key: 'STR', name: '力量', val: props.character.stats.str },
   { key: 'DEX', name: '敏捷', val: props.character.stats.dex },
@@ -66,7 +68,7 @@ const savingThrowBonus = (statKey: string) => {
           </div>
           <div class="stat-box">
             <div class="stat-label">先攻</div>
-            <div class="stat-val">{{ formatMod(character.stats.dex) }}</div>
+            <div class="stat-val">{{ formatBonus(character.initiative_modifier ?? calcMod(character.stats.dex)) }}</div>
           </div>
         </div>
 

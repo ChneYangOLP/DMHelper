@@ -77,7 +77,7 @@ public abstract class Character_Class {
     }
 
     public int get_initiative_bonus() {
-        return 0;
+        return has_feat("Alert") ? 5 : 0;
     }
 
     public void restore_short_rest_resources() {

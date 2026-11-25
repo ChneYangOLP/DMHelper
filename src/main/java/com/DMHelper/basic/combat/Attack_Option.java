@@ -1,6 +1,38 @@
 package com.DMHelper.basic.combat;
 
 public class Attack_Option {
+    public enum Action_Economy { ACTION, BONUS_ACTION, REACTION }
+    public enum Area_Shape { NONE, CIRCLE, CONE, LINE, CUBE }
+    public Action_Economy action_economy = Action_Economy.ACTION;
+    public Area_Shape area_shape = Area_Shape.NONE;
+    public int area_size_ft;
+    public int area_width_ft = 5;
+    public boolean area_from_self;
+    public boolean spell;
+    public int spell_level;
+    public boolean area_wraps_corners;
+    public boolean reacts_to_damage;
+    public Attack_Option on_damage() { this.reacts_to_damage = true; this.action_economy = Action_Economy.REACTION; return this; }
+
+    public Attack_Option with_economy(Action_Economy economy) { this.action_economy = economy; return this; }
+    public Attack_Option as_spell(int level) { this.spell = true; this.spell_level = level; return this; }
+    public Attack_Option as_weapon() { this.spell = false; this.spell_level = 0; return this; }
+    public Attack_Option with_area(Area_Shape shape, int sizeFt, int widthFt, boolean fromSelf) {
+        this.area_shape = shape;
+        this.area_size_ft = sizeFt;
+        this.area_width_ft = widthFt;
+        this.area_from_self = fromSelf;
+        return this;
+    }
+
+    public Attack_Option around_corners() { this.area_wraps_corners = true; return this; }
+
+    public Attack_Option opportunity_attack() {
+        Attack_Option copy = attack_roll(name, description, attack_bonus, damage_dice_count, damage_dice_size, damage_bonus, 1, damage_type)
+                .with_range(range_ft).with_economy(Action_Economy.REACTION);
+        if (applied_status_type != null) copy.with_status(applied_status_type, status_duration_rounds, status_save_ability, status_save_dc);
+        return copy;
+    }
     public enum Resolution_Type {
         ATTACK_ROLL,
         SAVE_DC,
@@ -36,10 +68,28 @@ public class Attack_Option {
     public int bardic_inspiration_cost;
     public int superiority_die_cost;
     public int lay_on_hands_cost;
+    public boolean requires_concentration;
     public Combat_Status_Type applied_status_type;
     public int status_duration_rounds;
     public String status_save_ability;
     public int status_save_dc;
+    public int range_ft = 5;
+    public int max_range_ft = 5;
+    public boolean ranged_attack;
+
+    public Attack_Option with_range(int feet) {
+        this.range_ft = Math.max(0, feet);
+        this.max_range_ft = this.range_ft;
+        this.ranged_attack = false;
+        return this;
+    }
+
+    public Attack_Option with_ranged_range(int normalFeet, int maximumFeet) {
+        this.range_ft = Math.max(0, normalFeet);
+        this.max_range_ft = Math.max(this.range_ft, maximumFeet);
+        this.ranged_attack = true;
+        return this;
+    }
 
     private Attack_Option(String name,
                           String description,
@@ -209,11 +259,13 @@ public class Attack_Option {
 
     public Attack_Option with_spell_slot_cost(int level) {
         this.spell_slot_cost_level = Math.max(0, level);
+        as_spell(level);
         return this;
     }
 
     public Attack_Option with_pact_slot_cost() {
         this.pact_slot_cost = 1;
+        as_spell(1);
         return this;
     }
 
@@ -234,6 +286,11 @@ public class Attack_Option {
 
     public Attack_Option with_lay_on_hands_cost(int amount) {
         this.lay_on_hands_cost = Math.max(0, amount);
+        return this;
+    }
+
+    public Attack_Option with_concentration() {
+        this.requires_concentration = true;
         return this;
     }
 

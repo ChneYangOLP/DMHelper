@@ -16,6 +16,8 @@ const isSpellcaster = computed(() => {
 })
 
 const spellMap = computed(() => props.character.spell_map || {})
+const isWizard = computed(() => props.character.job?.class_name?.includes('法师'))
+const isPaladin = computed(() => props.character.job?.class_name?.includes('圣武士'))
 
 const resolveSpellName = (key: string) => {
   return spellMap.value[key] || key
@@ -34,36 +36,53 @@ const availableSpells = ref<any[]>([])
 const loadingSpells = ref(false)
 
 const currentKnownCantrips = computed(() => props.character.job?.known_cantrip_keys || [])
-const currentKnownSpells = computed(() => props.character.job?.known_spell_keys || [])
+const currentKnownSpells = computed(() => isWizard.value
+  ? (props.character.job?.spellbook_spell_keys || [])
+  : (props.character.job?.known_spell_keys || []))
 const currentPreparedSpells = computed(() => props.character.job?.prepared_spell_keys || [])
+const selectionLimit = computed(() => {
+  if (modalMode.value === 'cantrip') return props.character.max_cantrips || 0
+  if (modalMode.value === 'spell') return props.character.max_known_spells || 0
+  return props.character.max_prepared_spells || 0
+})
+const selectionCount = computed(() => {
+  if (modalMode.value === 'cantrip') return currentKnownCantrips.value.length
+  if (modalMode.value === 'spell') return currentKnownSpells.value.length
+  return currentPreparedSpells.value.length
+})
 
 const openModal = async (mode: 'cantrip' | 'spell' | 'prepared') => {
   modalMode.value = mode
   showModal.value = true
   loadingSpells.value = true
 
-  const jobName = props.character.job.class_name
-  const level = props.character.job.current_level
+  const characterId = props.character.database_id
 
-  if (mode === 'cantrip') {
-    modalTitle.value = '管理戏法 (Cantrips)'
-    const spells = await SpellAPI.getAvailableSpells(jobName, 0, true)
-    availableSpells.value = spells || []
-  } else if (mode === 'spell') {
-    modalTitle.value = '管理已知法术 (Known Spells)'
-    const maxSpellLevel = Math.min(9, Math.ceil(level / 2))
-    const spells = await SpellAPI.getAvailableSpells(jobName, maxSpellLevel, false)
-    availableSpells.value = spells || []
-  } else {
-    modalTitle.value = '管理准备法术 (Prepared Spells)'
-    availableSpells.value = (currentKnownSpells.value || []).map((key: string) => ({
-      key,
-      display_name: resolveSpellName(key),
-      level: 0,
-      school_or_theme: ''
-    }))
+  try {
+    if (mode === 'cantrip') {
+      modalTitle.value = '管理戏法 (Cantrips)'
+      availableSpells.value = await SpellAPI.getAvailableSpells(characterId, true)
+    } else if (mode === 'spell') {
+      modalTitle.value = isWizard.value ? '管理法术书 (Spellbook)' : '管理已知法术 (Known Spells)'
+      availableSpells.value = await SpellAPI.getAvailableSpells(characterId, false)
+    } else {
+      modalTitle.value = '管理准备法术 (Prepared Spells)'
+      availableSpells.value = isPaladin.value
+        ? await SpellAPI.getAvailableSpells(characterId, false)
+        : (currentKnownSpells.value || []).map((key: string) => ({
+            key,
+            display_name: resolveSpellName(key),
+            level: null,
+            school_or_theme: ''
+          }))
+    }
+  } catch (error) {
+    console.error(error)
+    availableSpells.value = []
+    alert(error instanceof Error ? `加载法术失败：${error.message}` : '加载法术失败')
+  } finally {
+    loadingSpells.value = false
   }
-  loadingSpells.value = false
 }
 
 const isSelected = (spellKey: string) => {
@@ -75,6 +94,10 @@ const isSelected = (spellKey: string) => {
 
 const toggleSpell = async (spellKey: string) => {
   const selected = isSelected(spellKey)
+  if (!selected && selectionCount.value >= selectionLimit.value) {
+    alert(`已达到数量上限（${selectionLimit.value}）`)
+    return
+  }
   let action = ''
   if (modalMode.value === 'cantrip') action = selected ? 'REMOVE_CANTRIP' : 'ADD_CANTRIP'
   else if (modalMode.value === 'spell') action = selected ? 'REMOVE_SPELL' : 'ADD_SPELL'
@@ -145,13 +168,13 @@ const closeModal = () => {
           <h3>法术书与配置 (Spellbook & Preparation)</h3>
           
           <div class="action-btn-group">
-            <button class="btn-primary highlight-btn" @click="openModal('cantrip')">
+            <button v-if="character.max_cantrips > 0" class="btn-primary highlight-btn" @click="openModal('cantrip')">
               管理戏法 (Cantrips)
             </button>
-            <button class="btn-primary highlight-btn" @click="openModal('spell')">
-              管理已知法术 (Known Spells)
+            <button v-if="!isPaladin" class="btn-primary highlight-btn" @click="openModal('spell')">
+              {{ isWizard ? '管理法术书 (Spellbook)' : '管理已知法术 (Known Spells)' }}
             </button>
-            <button v-if="character.job.class_name.includes('法师') || character.job.class_name.includes('圣武士')" class="btn-primary highlight-btn" @click="openModal('prepared')">
+            <button v-if="isWizard || isPaladin" class="btn-primary highlight-btn" @click="openModal('prepared')">
               管理准备法术 (Prepared Spells)
             </button>
           </div>
@@ -213,6 +236,7 @@ const closeModal = () => {
             </div>
           </div>
           <div class="modal-footer">
+            <span class="text-dim">已选择 {{ selectionCount }} / {{ selectionLimit }}</span>
             <button class="btn-primary" @click="closeModal">完成</button>
           </div>
         </div>

@@ -5,7 +5,7 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * 战斗日志条目记录类。
- * 用于记录战斗过程中发生的各类事件，支持简短格式、详细格式和 PDF 导出格式的输出。
+ * 用于记录战斗过程中发生的各类事件，支持简短格式和详细格式输出。
  */
 public class Combat_Log_Entry {
 
@@ -151,29 +151,4 @@ public class Combat_Log_Entry {
         return sb.toString();
     }
 
-    /**
-     * PDF 导出格式：使用制表符分隔的紧凑格式，适合 PDF 表格或纯文本导出。
-     * 格式：时间戳 | 回合 | 类型 | 行动者 | 目标 | 描述 | 数值 | 详情
-     *
-     * @return PDF 导出格式字符串
-     */
-    public String format_for_pdf() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(timestamp.format(TIMESTAMP_FORMATTER));
-        sb.append(" | ");
-        sb.append(round_number);
-        sb.append(" | ");
-        sb.append(type.label);
-        sb.append(" | ");
-        sb.append(actor_name != null && !actor_name.isEmpty() ? actor_name : "-");
-        sb.append(" | ");
-        sb.append(target_name != null && !target_name.isEmpty() ? target_name : "-");
-        sb.append(" | ");
-        sb.append(description);
-        sb.append(" | ");
-        sb.append(numeric_value != 0 ? numeric_value : "-");
-        sb.append(" | ");
-        sb.append(detail != null && !detail.isEmpty() ? detail : "-");
-        return sb.toString();
-    }
 }

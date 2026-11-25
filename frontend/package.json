@@ -2,13 +2,17 @@
   "name": "dmhelper-frontend",
   "version": "1.0.0",
   "description": "D&D 5e DM Helper - Electron + Vue 3 Frontend",
+  "author": "DMHelper",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "electron:dev": "vite build && electron .",
-    "electron:build": "vite build && electron-builder"
+    "test:ai": "node --test tests/aiSettings.test.cjs",
+    "backend:jar": "node scripts/build-backend.mjs --jar-only",
+    "backend:build": "node scripts/build-backend.mjs",
+    "electron:dev": "npm run backend:jar && vite build && electron .",
+    "electron:build": "npm run backend:build && vite build && electron-builder"
   },
   "dependencies": {
     "vue": "^3.5.13",
@@ -23,5 +27,49 @@
     "vite-plugin-electron": "^1.0.4",
     "vite-plugin-electron-renderer": "^1.0.0",
     "vue-tsc": "^2.2.8"
+  },
+  "build": {
+    "appId": "com.dmhelper.desktop",
+    "productName": "DMHelper",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/index.html",
+      "dist/assets/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "core",
+        "to": "core",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "runtime",
+        "to": "runtime",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "icon": "../src/main/java/com/DMHelper/assets/app_icon.ico",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "icon": "../src/main/java/com/DMHelper/assets/app_icon.icns",
+      "target": "dmg",
+      "category": "public.app-category.role-playing-games"
+    },
+    "linux": {
+      "icon": "../src/main/java/com/DMHelper/assets/app_icon.png",
+      "target": "AppImage",
+      "category": "Game"
+    }
   }
 }

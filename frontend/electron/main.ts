@@ -1,32 +1,73 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { spawn, ChildProcess } from 'child_process'
+import { randomBytes } from 'crypto'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { pathToFileURL } from 'node:url'
+import { registerAiSettingsIpc } from './aiIpc'
 
 // --- Java Backend Manager ---
 
 let javaProcess: ChildProcess | null = null
+const apiToken = process.env.DMHELPER_API_TOKEN || randomBytes(32).toString('hex')
+process.env.DMHELPER_API_TOKEN = apiToken
 
-function startBackend() {
+function packagedResource(...parts: string[]): string {
+  return join(app.isPackaged ? process.resourcesPath : app.getAppPath(), ...parts)
+}
+
+function resolveJavaExecutable(): string {
+  const bundledJava = packagedResource('runtime', 'bin', process.platform === 'win32' ? 'java.exe' : 'java')
+  if (existsSync(bundledJava)) return bundledJava
+
+  const javaHome = process.env.JAVA_HOME
+  if (javaHome) {
+    const javaFromHome = join(javaHome, 'bin', process.platform === 'win32' ? 'java.exe' : 'java')
+    if (existsSync(javaFromHome)) return javaFromHome
+  }
+  return process.platform === 'win32' ? 'java.exe' : 'java'
+}
+
+async function waitForBackend(timeoutMs = 15000): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch('http://127.0.0.1:8080/api/ping', {
+        headers: { 'X-DMHelper-Token': apiToken }
+      })
+      if (response.ok) return true
+    } catch {
+      // The backend may still be starting.
+    }
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+  return false
+}
+
+async function startBackend(): Promise<boolean> {
   if (process.env.EXTERNAL_SERVER === 'true') {
     console.log('[Backend] Running in external server mode (Java already started). Skipping spawn.')
-    return
+    return waitForBackend()
   }
 
-  const isDev = process.env.VITE_DEV_SERVER_URL ? true : false
-  let jarPath = join(app.getAppPath(), 'core', 'dmhelper-backend.jar')
+  let jarPath = packagedResource('core', 'dmhelper-backend.jar')
   
   if (!existsSync(jarPath)) {
     jarPath = join(process.cwd(), 'core', 'dmhelper-backend.jar')
   }
 
   if (!existsSync(jarPath)) {
-    console.log('[Backend] JAR not found at expected paths. Frontend will run standalone.')
-    return
+    console.error('[Backend] JAR not found at expected paths.')
+    return false
   }
 
   console.log(`[Backend] Starting Java backend: ${jarPath}`)
-  javaProcess = spawn('java', ['-jar', jarPath, '--server'])
+  javaProcess = spawn(resolveJavaExecutable(), ['-jar', jarPath], {
+    env: {
+      ...process.env,
+      DMHELPER_API_TOKEN: apiToken
+    }
+  })
 
   javaProcess.stdout?.on('data', (data) => {
     console.log(`[Backend] ${data.toString().trim()}`)
@@ -45,6 +86,7 @@ function startBackend() {
     console.error(`[Backend] Failed to start Java process:`, err)
     javaProcess = null
   })
+  return waitForBackend()
 }
 
 function stopBackend(): void {
@@ -72,7 +114,8 @@ function createWindow(): void {
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      additionalArguments: [`--dmhelper-api-token=${apiToken}`]
     }
   })
 
@@ -111,13 +154,20 @@ function createWindow(): void {
 
 // --- App Lifecycle ---
 
-app.whenReady().then(() => {
-  startBackend()
+app.whenReady().then(async () => {
+  const ai = registerAiSettingsIpc(() => mainWindow,
+    process.env.VITE_DEV_SERVER_URL || pathToFileURL(join(__dirname, '../dist/index.html')).href)
+  app.on('before-quit', () => { ai.cancelTest(); ai.cancelGeneration() })
+  const backendReady = await startBackend()
+  if (!backendReady) {
+    dialog.showErrorBox('DMHelper 启动失败', '本地规则服务未能启动。请重新安装应用，或检查日志中的 Java 后端错误。')
+    app.quit()
+    return
+  }
   createWindow()
 })
 
 app.on('window-all-closed', () => {
-  stopBackend()
   if (process.platform !== 'darwin') {
     app.quit()
   }

@@ -17,7 +17,9 @@ import java.nio.file.StandardCopyOption;
 public class DB_Helper {
     private static final String DB_FILE_NAME = "dnd_data.db";
     private static final String APP_FOLDER_NAME = "DMHelper";
+    private static final String DATA_DIR_PROPERTY = "dmhelper.data.dir";
     private static String cached_db_url;
+    private static Path cached_database_path;
 
     public static Connection get_connection() {
         Connection conn = null;
@@ -32,19 +34,25 @@ public class DB_Helper {
     }
 
     private static String get_db_url() {
-        if (cached_db_url != null) {
+        Path databasePath = get_database_path().toAbsolutePath().normalize();
+        if (cached_db_url != null && databasePath.equals(cached_database_path)) {
             return cached_db_url;
         }
 
-        Path databasePath = get_database_path();
         // 先保证目录存在，再做旧数据库迁移，最后再拼 JDBC URL。
         ensure_database_parent(databasePath);
         migrate_legacy_database_if_needed(databasePath);
-        cached_db_url = "jdbc:sqlite:" + databasePath.toAbsolutePath();
+        cached_database_path = databasePath;
+        cached_db_url = "jdbc:sqlite:" + databasePath;
         return cached_db_url;
     }
 
     private static Path get_database_path() {
+        String configuredDataDir = System.getProperty(DATA_DIR_PROPERTY);
+        if (configuredDataDir != null && !configuredDataDir.trim().isEmpty()) {
+            return Paths.get(configuredDataDir.trim(), DB_FILE_NAME);
+        }
+
         String osName = System.getProperty("os.name", "").toLowerCase();
         String userHome = System.getProperty("user.home", ".");
 
