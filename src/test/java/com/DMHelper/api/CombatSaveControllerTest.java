@@ -7,10 +7,8 @@ import com.DMHelper.basic.database.*;
 import com.DMHelper.basic.playerclass.Fighter.Fighter_Class;
 import com.DMHelper.basic.race.Human_Race;
 import com.google.gson.JsonObject;
-import io.javalin.Javalin;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
-import java.net.URI;
 import java.net.http.*;
 import java.nio.file.*;
 import java.util.*;
@@ -18,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CombatSaveControllerTest {
     @TempDir Path directory;
-    Javalin app;
+    ApiTestServer app;
     String previousDirectory, sessionId;
     List<Character_Sheet> previousPool;
     Character_Sheet character;
@@ -32,25 +30,18 @@ class CombatSaveControllerTest {
         Global_Data.character_pool.add(character); startServer();
     }
     void startServer() {
-        app=Javalin.create(config -> config.jetty.defaultHost="127.0.0.1");
-        app.get("/current",CombatController::getCurrent); app.delete("/current",CombatController::clearCurrent);
-        app.post("/sessions",CombatController::start); app.get("/sessions/{id}",CombatController::getState);
-        app.post("/sessions/{id}/deployment",CombatController::deploy); app.post("/sessions/{id}/begin",CombatController::begin);
-        app.post("/sessions/{id}/move",CombatController::move); app.post("/sessions/{id}/undo-move",CombatController::undoMove);
-        app.post("/sessions/{id}/tactical",CombatController::tactical); app.post("/sessions/{id}/skip",CombatController::skip);
-        app.post("/sessions/{id}/actions",CombatController::act); app.post("/sessions/{id}/loot",CombatController::assignLoot);
-        app.start(0);
+        app = new ApiTestServer();
     }
     void clearCache() throws Exception {
         var field=CombatController.class.getDeclaredField("SESSIONS"); field.setAccessible(true); ((Map<?,?>)field.get(null)).clear();
     }
-    void restart() throws Exception { app.stop(); clearCache(); Character_DAO.load_all_characters(); character=Global_Data.character_pool.get(0); startServer(); }
+    void restart() throws Exception { app.close(); clearCache(); Character_DAO.load_all_characters(); character=Global_Data.character_pool.get(0); startServer(); }
     @AfterEach void cleanup() throws Exception {
-        if(app!=null)app.stop(); clearCache(); Global_Data.character_pool.clear(); Global_Data.character_pool.addAll(previousPool);
+        if(app!=null)app.close(); clearCache(); Global_Data.character_pool.clear(); Global_Data.character_pool.addAll(previousPool);
         if(previousDirectory==null)System.clearProperty("dmhelper.data.dir");else System.setProperty("dmhelper.data.dir",previousDirectory);
     }
     String request(String method,String path,String body,int expected) throws Exception {
-        var response=client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+app.port()+path))
+        var response=client.send(app.request("/api/combat" + path)
                 .header("Content-Type","application/json").method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
         assertEquals(expected,response.statusCode(),response.body()); return response.body();
     }

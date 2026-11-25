@@ -3,13 +3,12 @@ package com.DMHelper.api;
 import com.DMHelper.basic.Character_Sheet;
 import com.DMHelper.basic.database.Global_Data;
 import com.DMHelper.basic.spell.Spell_Definition;
-import io.javalin.http.Context;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class SpellController {
 
-    public static void getAvailableSpells(Context ctx) {
+    public static void getAvailableSpells(ApiExchange ctx) {
         try {
             int characterId = Integer.parseInt(ctx.queryParam("characterId"));
             boolean cantrip = "true".equals(ctx.queryParam("cantrip"));

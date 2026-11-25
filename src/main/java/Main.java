@@ -32,9 +32,8 @@ public class Main {
             try_launch_javafx(args);
         } else {
             System.out.println("[Main] Starting Local API Server and Launching Electron Frontend...");
-            ApiServer.start(8080);
-            
-            try {
+
+            try (var server = ApiServer.start(8080)) {
                 // Use a ProcessBuilder to launch npm in the frontend directory
                 File frontendDir = new File(System.getProperty("user.dir"), "frontend");
                 String osName = System.getProperty("os.name", "").toLowerCase();

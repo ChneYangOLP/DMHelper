@@ -5,14 +5,13 @@ import com.DMHelper.basic.database.Adventure_Session_DAO;
 import com.DMHelper.basic.journal.Adventure_Recap;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonParseException;
-import io.javalin.http.Context;
 import java.sql.SQLException;
 import java.util.Set;
 
 public final class AdventureRecapController {
     private AdventureRecapController() {}
     private interface Operation { Object run() throws SQLException; }
-    private static void handle(Context ctx, Operation operation) {
+    private static void handle(ApiExchange ctx, Operation operation) {
         try {
             Object value = operation.run();
             if (value == null) ctx.status(404).result("总结不存在");
@@ -20,7 +19,7 @@ public final class AdventureRecapController {
         } catch (IllegalArgumentException | JsonParseException error) { ctx.status(400).result(error.getMessage() == null ? "总结格式无效" : error.getMessage()); }
         catch (SQLException error) { ctx.status(500).result("总结保存失败，请检查本机数据库。"); }
     }
-    private static Adventure_Recap draft(Context ctx) {
+    private static Adventure_Recap draft(ApiExchange ctx) {
         Adventure_Recap value = ApiServer.GSON.fromJson(ctx.body(), Adventure_Recap.class);
         if (value == null || value.title == null || value.title.isBlank() || value.title.trim().length() > 120)
             throw new IllegalArgumentException("总结标题需为 1–120 个字符。");
@@ -29,9 +28,9 @@ public final class AdventureRecapController {
         value.title = value.title.trim(); value.content = value.content.trim();
         return value;
     }
-    public static void list(Context ctx) { handle(ctx, Adventure_Recap_DAO::list); }
-    public static void get(Context ctx) { handle(ctx, () -> Adventure_Recap_DAO.get(Integer.parseInt(ctx.pathParam("id")))); }
-    public static void create(Context ctx) {
+    public static void list(ApiExchange ctx) { handle(ctx, Adventure_Recap_DAO::list); }
+    public static void get(ApiExchange ctx) { handle(ctx, () -> Adventure_Recap_DAO.get(Integer.parseInt(ctx.pathParam("id")))); }
+    public static void create(ApiExchange ctx) {
         handle(ctx, () -> {
             var value = draft(ctx);
             if (!Set.of("recap", "stories", "progress", "destination").contains(value.mode == null ? "" : value.mode)) throw new IllegalArgumentException("总结类型无效。");
@@ -48,7 +47,7 @@ public final class AdventureRecapController {
             ctx.status(201); return Adventure_Recap_DAO.create(value);
         });
     }
-    public static void update(Context ctx) {
+    public static void update(ApiExchange ctx) {
         handle(ctx, () -> { var value = draft(ctx); return Adventure_Recap_DAO.update(Integer.parseInt(ctx.pathParam("id")), value.title, value.content); });
     }
 }

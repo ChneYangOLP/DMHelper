@@ -5,7 +5,6 @@ import com.DMHelper.basic.database.Adventure_Atlas_DAO;
 import com.DMHelper.basic.database.Global_Data;
 import com.DMHelper.basic.database.Adventure_Session_DAO;
 import com.DMHelper.basic.journal.Adventure_Log_Entry;
-import io.javalin.http.Context;
 
 import java.sql.SQLException;
 import java.util.Set;
@@ -16,7 +15,7 @@ public final class AdventureLogController {
 
     private AdventureLogController() {}
 
-    public static void list(Context ctx) {
+    public static void list(ApiExchange ctx) {
         try {
             json(ctx, Adventure_Log_DAO.find_all());
         } catch (SQLException error) {
@@ -24,7 +23,7 @@ public final class AdventureLogController {
         }
     }
 
-    public static void create(Context ctx) {
+    public static void create(ApiExchange ctx) {
         try {
             Adventure_Log_Entry entry = ApiServer.GSON.fromJson(ctx.body(), Adventure_Log_Entry.class);
             String validation = validate(entry);
@@ -40,7 +39,7 @@ public final class AdventureLogController {
         }
     }
 
-    public static void update(Context ctx) {
+    public static void update(ApiExchange ctx) {
         try {
             Adventure_Log_Entry entry = ApiServer.GSON.fromJson(ctx.body(), Adventure_Log_Entry.class);
             if (entry == null) {
@@ -64,7 +63,7 @@ public final class AdventureLogController {
         }
     }
 
-    public static void delete(Context ctx) {
+    public static void delete(ApiExchange ctx) {
         try {
             int id = Integer.parseInt(ctx.pathParam("id"));
             if (Adventure_Log_DAO.delete(id)) ctx.status(204);
@@ -108,11 +107,11 @@ public final class AdventureLogController {
         return value == null ? "" : value.trim();
     }
 
-    private static void json(Context ctx, Object payload) {
+    private static void json(ApiExchange ctx, Object payload) {
         ctx.contentType("application/json").result(ApiServer.GSON.toJson(payload));
     }
 
-    private static void databaseError(Context ctx, SQLException error) {
+    private static void databaseError(ApiExchange ctx, SQLException error) {
         error.printStackTrace();
         ctx.status(500).result("冒险日志数据库操作失败");
     }

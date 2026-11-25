@@ -23,7 +23,6 @@ import com.DMHelper.basic.equipment.Equipment_Library;
 import com.DMHelper.basic.equipment.Equipment_Slot;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import io.javalin.http.Context;
 
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -72,7 +71,7 @@ public final class CombatController {
     public static class TacticalRequest { public String action; public String combatantId; }
     public static class ReactionRequest { public String offerId; public boolean accept; }
 
-    public static synchronized void getSetup(Context ctx) {
+    public static synchronized void getSetup(ApiExchange ctx) {
         JsonObject result = new JsonObject();
         JsonArray characters = new JsonArray();
         for (Character_Sheet character : Global_Data.character_pool) {
@@ -106,7 +105,7 @@ public final class CombatController {
         respondJson(ctx, result);
     }
 
-    public static synchronized void start(Context ctx) {
+    public static synchronized void start(ApiExchange ctx) {
         try {
             if (Combat_Save_DAO.load()!=null) { ctx.status(409).result("已有已保存的遭遇，请继续战斗或先清除当前遭遇。"); return; }
         } catch (SQLException error) { storageError(ctx); return; }
@@ -157,7 +156,7 @@ public final class CombatController {
         persistResponse(ctx, session, "先攻已生成，请摆放棋子和障碍后开始战斗。");
     }
 
-    public static synchronized void getCurrent(Context ctx) {
+    public static synchronized void getCurrent(ApiExchange ctx) {
         try {
             var saved=Combat_Save_DAO.load();
             if(saved==null) { ctx.status(204); return; }
@@ -165,7 +164,7 @@ public final class CombatController {
         } catch (SQLException error) { storageError(ctx); }
         catch (RuntimeException error) { ctx.status(409).result("无法恢复战斗：存档损坏、版本不兼容或参战角色已删除。可清除当前战斗存档后重新开始。"); }
     }
-    public static synchronized void clearCurrent(Context ctx) {
+    public static synchronized void clearCurrent(ApiExchange ctx) {
         try {
             var saved=Combat_Save_DAO.load();
             if(saved!=null) Combat_Save_DAO.delete(saved.id());
@@ -187,8 +186,8 @@ public final class CombatController {
         SESSIONS.clear(); SESSIONS.put(session.id,session);
         return session;
     }
-    private static void storageError(Context ctx) { ctx.status(500).result("战斗存档读写失败，请检查本机存储空间或数据库权限。"); }
-    private static void persistResponse(Context ctx, CombatSession session, String log) {
+    private static void storageError(ApiExchange ctx) { ctx.status(500).result("战斗存档读写失败，请检查本机存储空间或数据库权限。"); }
+    private static void persistResponse(ApiExchange ctx, CombatSession session, String log) {
         try {
             JsonObject view=session.toJson(log);
             String snapshot=Combat_Checkpoint.encode(new Combat_Checkpoint.Saved(1,session.id,session.started,
@@ -203,12 +202,12 @@ public final class CombatController {
         }
     }
 
-    public static synchronized void getState(Context ctx) {
+    public static synchronized void getState(ApiExchange ctx) {
         CombatSession session = find(ctx);
         if (session != null) synchronized (session) { respondJson(ctx, session.toJson(null)); }
     }
 
-    public static synchronized void deploy(Context ctx) {
+    public static synchronized void deploy(ApiExchange ctx) {
         CombatSession session = find(ctx);
         if (session == null) return;
         GridRequest request = ApiServer.GSON.fromJson(ctx.body(), GridRequest.class);
@@ -224,7 +223,7 @@ public final class CombatController {
         }
     }
 
-    public static synchronized void begin(Context ctx) {
+    public static synchronized void begin(ApiExchange ctx) {
         CombatSession session = find(ctx);
         if (session == null) return;
         synchronized (session) {
@@ -236,7 +235,7 @@ public final class CombatController {
         }
     }
 
-    public static synchronized void move(Context ctx) {
+    public static synchronized void move(ApiExchange ctx) {
         CombatSession session = find(ctx);
         if (session == null) return;
         GridRequest request = ApiServer.GSON.fromJson(ctx.body(), GridRequest.class);
@@ -253,14 +252,14 @@ public final class CombatController {
         }
     }
 
-    private static boolean canControl(Context ctx, CombatSession session, String actorId) {
+    private static boolean canControl(ApiExchange ctx, CombatSession session, String actorId) {
         Combatant actor=session.engine.get_active_combatant();
         if (!session.started || session.engine.is_combat_finished() || actor==null) { ctx.status(409).result("当前不能执行此操作。"); return false; }
         if (actorId!=null && !actorId.equals(session.ids.get(actor))) { ctx.status(409).result("行动者已变化，请刷新战场。"); return false; }
         return true;
     }
 
-    public static synchronized void undoMove(Context ctx) {
+    public static synchronized void undoMove(ApiExchange ctx) {
         CombatSession session=find(ctx); if(session==null)return;
         GridRequest request=ApiServer.GSON.fromJson(ctx.body(),GridRequest.class);
         synchronized(session) {
@@ -269,7 +268,7 @@ public final class CombatController {
             catch(IllegalArgumentException error){ctx.status(400).result(error.getMessage());}
         }
     }
-    public static synchronized void tactical(Context ctx) {
+    public static synchronized void tactical(ApiExchange ctx) {
         CombatSession session=find(ctx);if(session==null)return;
         TacticalRequest request=ApiServer.GSON.fromJson(ctx.body(),TacticalRequest.class);
         synchronized(session) {
@@ -279,7 +278,7 @@ public final class CombatController {
             catch(IllegalArgumentException error){ctx.status(400).result(error.getMessage());}
         }
     }
-    public static synchronized void reaction(Context ctx) {
+    public static synchronized void reaction(ApiExchange ctx) {
         CombatSession session=find(ctx);if(session==null)return;
         ReactionRequest request=ApiServer.GSON.fromJson(ctx.body(),ReactionRequest.class);
         synchronized(session) {
@@ -288,7 +287,7 @@ public final class CombatController {
             catch(IllegalArgumentException error){ctx.status(400).result(error.getMessage());}
         }
     }
-    public static synchronized void previewArea(Context ctx) {
+    public static synchronized void previewArea(ApiExchange ctx) {
         CombatSession session=find(ctx);if(session==null)return;
         ActionRequest request=ApiServer.GSON.fromJson(ctx.body(),ActionRequest.class);
         synchronized(session) {
@@ -300,7 +299,7 @@ public final class CombatController {
         }
     }
 
-    public static synchronized void act(Context ctx) {
+    public static synchronized void act(ApiExchange ctx) {
         CombatSession session = find(ctx);
         if (session == null) return;
         ActionRequest request = ApiServer.GSON.fromJson(ctx.body(), ActionRequest.class);
@@ -347,7 +346,7 @@ public final class CombatController {
         }
     }
 
-    private static void resolveThrownItem(Context ctx, CombatSession session, Combatant actor, ActionRequest request) {
+    private static void resolveThrownItem(ApiExchange ctx, CombatSession session, Combatant actor, ActionRequest request) {
         if (!session.engine.get_reaction_offers().isEmpty()) { ctx.status(409).result("请先处理待决反应。"); return; }
         if (session.engine.is_action_spent()) { ctx.status(409).result("本回合行动已使用。"); return; }
         if (actor == null || actor.linked_character == null || actor.is_turn_blocked()) {
@@ -375,7 +374,7 @@ public final class CombatController {
         persistResponse(ctx, session, log);
     }
 
-    public static synchronized void skip(Context ctx) {
+    public static synchronized void skip(ApiExchange ctx) {
         CombatSession session = find(ctx);
         if (session == null) return;
         GridRequest request=ApiServer.GSON.fromJson(ctx.body(),GridRequest.class);
@@ -393,7 +392,7 @@ public final class CombatController {
         }
     }
 
-    public static synchronized void assignLoot(Context ctx) {
+    public static synchronized void assignLoot(ApiExchange ctx) {
         CombatSession session = find(ctx);
         if (session == null) return;
         LootRequest request = ApiServer.GSON.fromJson(ctx.body(), LootRequest.class);
@@ -417,7 +416,7 @@ public final class CombatController {
         persistResponse(ctx, session, log);
     }
 
-    private static CombatSession find(Context ctx) {
+    private static CombatSession find(ApiExchange ctx) {
         try {
             var saved=Combat_Save_DAO.load();
             if(saved==null || !saved.id().equals(ctx.pathParam("id"))) { ctx.status(404).result("战斗会话不存在或已被新遭遇替换"); return null; }
@@ -426,11 +425,11 @@ public final class CombatController {
         catch (RuntimeException error) { ctx.status(409).result("战斗存档无法恢复，请重新载入或清除存档。"); return null; }
     }
 
-    private static void respondJson(Context ctx, Object payload) {
+    private static void respondJson(ApiExchange ctx, Object payload) {
         ctx.contentType("application/json").result(ApiServer.GSON.toJson(payload));
     }
 
-    public static synchronized void archivePreview(Context ctx) {
+    public static synchronized void archivePreview(ApiExchange ctx) {
         CombatSession session = find(ctx);
         if (session == null) return;
         if (!session.engine.is_combat_finished()) { ctx.status(409).result("战斗结束后才能归档。"); return; }
@@ -443,7 +442,7 @@ public final class CombatController {
         } catch (SQLException error) { storageError(ctx); }
     }
 
-    public static synchronized void archive(Context ctx) {
+    public static synchronized void archive(ApiExchange ctx) {
         CombatSession session = find(ctx);
         if (session == null) return;
         if (!session.engine.is_combat_finished()) { ctx.status(409).result("战斗结束后才能归档。"); return; }

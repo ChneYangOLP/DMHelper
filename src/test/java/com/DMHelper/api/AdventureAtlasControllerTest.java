@@ -3,10 +3,8 @@ package com.DMHelper.api;
 import com.DMHelper.basic.database.Init_DB;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import io.javalin.Javalin;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
-import java.net.URI;
 import java.net.http.*;
 import java.nio.file.*;
 import java.sql.DriverManager;
@@ -14,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AdventureAtlasControllerTest {
     @TempDir Path directory;
-    Javalin app;
+    ApiTestServer app;
     String previousDirectory;
     final HttpClient client = HttpClient.newHttpClient();
     static final String IMAGE = "data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA";
@@ -24,32 +22,16 @@ class AdventureAtlasControllerTest {
         System.setProperty("dmhelper.data.dir", directory.toString());
         Files.createFile(directory.resolve("dnd_data.db"));
         Init_DB.setup_database();
-        app = Javalin.create(config -> config.jetty.defaultHost = "127.0.0.1");
-        app.get("/locations", AdventureAtlasController::locations);
-        app.post("/locations", AdventureAtlasController::createLocation);
-        app.put("/locations/{id}", AdventureAtlasController::updateLocation);
-        app.delete("/locations/{id}", AdventureAtlasController::deleteLocation);
-        app.get("/maps", AdventureAtlasController::maps);
-        app.get("/maps/{id}", AdventureAtlasController::map);
-        app.post("/maps", AdventureAtlasController::createMap);
-        app.put("/maps/{id}", AdventureAtlasController::renameMap);
-        app.delete("/maps/{id}", AdventureAtlasController::deleteMap);
-        app.get("/maps/{id}/markers", AdventureAtlasController::markers);
-        app.put("/maps/{id}/markers", AdventureAtlasController::saveMarker);
-        app.delete("/maps/{id}/markers/{locationId}", AdventureAtlasController::deleteMarker);
-        app.get("/logs", AdventureLogController::list);
-        app.post("/logs", AdventureLogController::create);
-        app.put("/logs/{id}", AdventureLogController::update);
-        app.start(0);
+        app = new ApiTestServer();
     }
     @AfterEach void cleanup() {
-        if (app != null) app.stop();
+        if (app != null) app.close();
         if (previousDirectory == null) System.clearProperty("dmhelper.data.dir");
         else System.setProperty("dmhelper.data.dir", previousDirectory);
     }
     String request(String method, String path, Object body, int status) throws Exception {
         String json = body instanceof String ? (String) body : ApiServer.GSON.toJson(body);
-        var response = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + app.port() + path))
+        var response = client.send(app.request("/api" + path)
                 .header("Content-Type", "application/json").method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(json)).build(), HttpResponse.BodyHandlers.ofString());
         assertEquals(status, response.statusCode(), response.body());
         return response.body();
@@ -99,12 +81,12 @@ class AdventureAtlasControllerTest {
     @Test void journalReferencesFollowRenamesAndSurviveLocationDeletion() throws Exception {
         JsonObject location = location("灰港", false); int id = location.get("id").getAsInt(), map = map("世界");
         request("PUT", pins(map), "{\"location_id\":" + id + ",\"x\":0.3,\"y\":0.5}", 200);
-        JsonObject log = object(request("POST", "/logs", "{\"entry_type\":\"QUEST\",\"title\":\"寻找矿工\",\"quest_status\":\"ACTIVE\",\"location_id\":" + id + "}", 201));
+        JsonObject log = object(request("POST", "/adventure-logs", "{\"entry_type\":\"QUEST\",\"title\":\"寻找矿工\",\"quest_status\":\"ACTIVE\",\"location_id\":" + id + "}", 201));
         assertEquals("灰港", log.get("location").getAsString());
         location.addProperty("name", "新灰港"); request("PUT", "/locations/" + id, location, 200);
-        assertEquals("新灰港", list("/logs").get(0).getAsJsonObject().get("location").getAsString());
+        assertEquals("新灰港", list("/adventure-logs").get(0).getAsJsonObject().get("location").getAsString());
         request("DELETE", "/locations/" + id, null, 204);
-        JsonObject surviving = list("/logs").get(0).getAsJsonObject();
+        JsonObject surviving = list("/adventure-logs").get(0).getAsJsonObject();
         assertTrue(surviving.get("location_id").isJsonNull()); assertEquals("新灰港", surviving.get("location").getAsString());
         assertTrue(list(pins(map)).isEmpty());
         assertEquals(1, list("/maps").size());
@@ -127,17 +109,17 @@ class AdventureAtlasControllerTest {
         request("PUT", pins(map), "{\"location_id\":999,\"x\":0.5,\"y\":0.5}", 404);
         request("PUT", pins(999), "{\"location_id\":" + location + ",\"x\":0.5,\"y\":0.5}", 404);
         request("POST", "/maps", "{\"name\":\"坏图\",\"image_data\":\"data:image/webp;base64,YmFk\"}", 400);
-        request("POST", "/logs", "{\"entry_type\":\"EVENT\",\"title\":\"无效地点\",\"location_id\":999}", 400);
+        request("POST", "/adventure-logs", "{\"entry_type\":\"EVENT\",\"title\":\"无效地点\",\"location_id\":999}", 400);
         assertTrue(list(pins(map)).isEmpty()); assertEquals(1, list("/maps").size());
     }
     @Test void journalLocationLinkCanBeChangedOrRemoved() throws Exception {
         int first = location("第一处", false).get("id").getAsInt(), second = location("第二处", false).get("id").getAsInt();
-        JsonObject log = object(request("POST", "/logs", "{\"entry_type\":\"NPC\",\"title\":\"向导\",\"location_id\":" + first + "}", 201));
+        JsonObject log = object(request("POST", "/adventure-logs", "{\"entry_type\":\"NPC\",\"title\":\"向导\",\"location_id\":" + first + "}", 201));
         log.addProperty("location_id", second);
-        log = object(request("PUT", "/logs/" + log.get("id").getAsInt(), log, 200));
+        log = object(request("PUT", "/adventure-logs/" + log.get("id").getAsInt(), log, 200));
         assertEquals("第二处", log.get("location").getAsString());
         log.add("location_id", null); log.addProperty("location", "手写地点");
-        log = object(request("PUT", "/logs/" + log.get("id").getAsInt(), log, 200));
+        log = object(request("PUT", "/adventure-logs/" + log.get("id").getAsInt(), log, 200));
         assertTrue(log.get("location_id").isJsonNull()); assertEquals("手写地点", log.get("location").getAsString());
     }
     @Test void legacyJournalTableIsMigratedWithoutLosingText() throws Exception {
@@ -146,7 +128,7 @@ class AdventureAtlasControllerTest {
             stmt.execute("INSERT INTO adventure_logs(entry_type,title,location) VALUES('EVENT','旧记录','旧地点')");
         }
         Init_DB.setup_database(); Init_DB.setup_database();
-        JsonObject old = list("/logs").get(0).getAsJsonObject();
+        JsonObject old = list("/adventure-logs").get(0).getAsJsonObject();
         assertEquals("旧地点", old.get("location").getAsString()); assertTrue(old.get("location_id").isJsonNull());
     }
 }

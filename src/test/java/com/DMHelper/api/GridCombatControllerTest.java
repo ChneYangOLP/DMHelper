@@ -8,13 +8,11 @@ import com.DMHelper.basic.database.Init_DB;
 import com.DMHelper.basic.playerclass.Fighter.Fighter_Class;
 import com.DMHelper.basic.race.Human_Race;
 import com.google.gson.JsonObject;
-import io.javalin.Javalin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -26,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class GridCombatControllerTest {
     @TempDir Path directory;
-    Javalin app;
+    ApiTestServer app;
     List<Character_Sheet> savedPool;
     String previousDataDirectory;
     final HttpClient client = HttpClient.newHttpClient();
@@ -43,20 +41,7 @@ class GridCombatControllerTest {
         actor.hp = actor.current_hp = 100;
         assertTrue(Character_DAO.save_character(actor));
         Global_Data.character_pool.add(actor);
-        app = Javalin.create(config -> config.jetty.defaultHost = "127.0.0.1");
-        app.post("/sessions", CombatController::start);
-        app.delete("/current", CombatController::clearCurrent);
-        app.get("/sessions/{id}", CombatController::getState);
-        app.post("/sessions/{id}/deployment", CombatController::deploy);
-        app.post("/sessions/{id}/begin", CombatController::begin);
-        app.post("/sessions/{id}/move", CombatController::move);
-        app.post("/sessions/{id}/actions", CombatController::act);
-        app.post("/sessions/{id}/skip", CombatController::skip);
-        app.post("/sessions/{id}/undo-move", CombatController::undoMove);
-        app.post("/sessions/{id}/tactical", CombatController::tactical);
-        app.post("/sessions/{id}/reaction", CombatController::reaction);
-        app.post("/sessions/{id}/area-preview", CombatController::previewArea);
-        app.start(0);
+        app = new ApiTestServer();
         JsonObject request = new JsonObject();
         request.add("characterIds", ApiServer.GSON.toJsonTree(List.of(actor.database_id)));
         request.add("monsterKeys", ApiServer.GSON.toJsonTree(List.of("ogre")));
@@ -64,7 +49,7 @@ class GridCombatControllerTest {
     }
 
     @AfterEach void cleanup() {
-        if (app != null) app.stop();
+        if (app != null) app.close();
         Global_Data.character_pool.clear();
         if (savedPool != null) Global_Data.character_pool.addAll(savedPool);
         if (previousDataDirectory == null) System.clearProperty("dmhelper.data.dir");
@@ -72,7 +57,7 @@ class GridCombatControllerTest {
     }
 
     String post(String path, String body, int status) throws Exception {
-        var response = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+app.port()+path))
+        var response = client.send(app.request("/api/combat" + path)
                 .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
         assertEquals(status, response.statusCode(), response.body());
         return response.body();
@@ -80,7 +65,7 @@ class GridCombatControllerTest {
     JsonObject json(String value) { return ApiServer.GSON.fromJson(value, JsonObject.class); }
     String endpoint(String suffix) { return "/sessions/"+sessionId+suffix; }
     JsonObject state() throws Exception {
-        return json(client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+app.port()+endpoint(""))).GET().build(), HttpResponse.BodyHandlers.ofString()).body());
+        return json(client.send(app.request("/api/combat" + endpoint("")).GET().build(), HttpResponse.BodyHandlers.ofString()).body());
     }
 
     @Test void deploymentAndManualTurnFlowAreEnforcedByServer() throws Exception {
@@ -149,7 +134,7 @@ class GridCombatControllerTest {
         Character_Sheet bard=Character_Sheet.restore_saved_character("Bard test",20,"",new Human_Race(),bardClass,new Stats(10,10,10,10,10,16));
         assertTrue(Character_DAO.save_character(bard));Global_Data.character_pool.add(bard);
         JsonObject request=new JsonObject();request.add("characterIds",ApiServer.GSON.toJsonTree(List.of(bard.database_id)));request.add("monsterKeys",ApiServer.GSON.toJsonTree(List.of("ogre")));
-        assertEquals(204,client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+app.port()+"/current")).DELETE().build(),HttpResponse.BodyHandlers.ofString()).statusCode());
+        assertEquals(204,client.send(app.request("/api/combat/current").DELETE().build(),HttpResponse.BodyHandlers.ofString()).statusCode());
         sessionId=json(post("/sessions",request.toString(),200)).get("sessionId").getAsString();
         JsonObject initial=state();String bardId="";
         for(var item:initial.getAsJsonArray("combatants"))if(item.getAsJsonObject().get("side").getAsString().equals("PLAYER"))bardId=item.getAsJsonObject().get("id").getAsString();

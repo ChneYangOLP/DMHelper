@@ -12,7 +12,6 @@ import com.DMHelper.basic.playerclass.sorcerer.Sorcerer_Class;
 import com.DMHelper.basic.playerclass.warlock.Warlock_Class;
 import com.DMHelper.basic.playerclass.wizard.Wizard_Class;
 import com.DMHelper.basic.race.*;
-import io.javalin.http.Context;
 
 public class CharacterController {
     
@@ -44,7 +43,7 @@ public class CharacterController {
         public String warlockPatron;
     }
     
-    public static void getAllCharacters(Context ctx) {
+    public static void getAllCharacters(ApiExchange ctx) {
         com.google.gson.JsonArray characters = new com.google.gson.JsonArray();
         for (Character_Sheet character : Global_Data.character_pool) {
             characters.add(ApiServer.GSON.fromJson(
@@ -55,7 +54,7 @@ public class CharacterController {
         ctx.contentType("application/json").result(ApiServer.GSON.toJson(characters));
     }
     
-    public static void getCharacterById(Context ctx) {
+    public static void getCharacterById(ApiExchange ctx) {
         try {
             int id = Integer.parseInt(ctx.pathParam("id"));
             var character = Global_Data.character_pool.stream()
@@ -81,7 +80,7 @@ public class CharacterController {
         public String flaws;
     }
 
-    public static void updateCharacter(Context ctx) {
+    public static void updateCharacter(ApiExchange ctx) {
         int id = Integer.parseInt(ctx.pathParam("id"));
         Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
         if (character != null) {
@@ -104,7 +103,7 @@ public class CharacterController {
         public String itemKey; // e.g. "" for empty
     }
 
-    public static void equipItem(Context ctx) {
+    public static void equipItem(ApiExchange ctx) {
         try {
             int id = Integer.parseInt(ctx.pathParam("id"));
             Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
@@ -157,7 +156,7 @@ public class CharacterController {
         public int quantity;
     }
 
-    public static void manageInventory(Context ctx) {
+    public static void manageInventory(ApiExchange ctx) {
         try {
             int id = Integer.parseInt(ctx.pathParam("id"));
             Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
@@ -377,7 +376,7 @@ public class CharacterController {
         return option;
     }
 
-    public static void rest(Context ctx) {
+    public static void rest(ApiExchange ctx) {
         try {
             int id = Integer.parseInt(ctx.pathParam("id"));
             Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
@@ -406,7 +405,7 @@ public class CharacterController {
         public String reason;
     }
 
-    public static void addXp(Context ctx) {
+    public static void addXp(ApiExchange ctx) {
         try {
             int id = Integer.parseInt(ctx.pathParam("id"));
             Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
@@ -437,7 +436,7 @@ public class CharacterController {
         public String spellKey;
     }
 
-    public static void manageSpells(Context ctx) {
+    public static void manageSpells(ApiExchange ctx) {
         try {
             int id = Integer.parseInt(ctx.pathParam("id"));
             Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
@@ -456,7 +455,7 @@ public class CharacterController {
         }
     }
 
-    public static void levelUp(Context ctx) {
+    public static void levelUp(ApiExchange ctx) {
         int id = Integer.parseInt(ctx.pathParam("id"));
         Character_Sheet character = Global_Data.character_pool.stream().filter(c -> c.database_id == id).findFirst().orElse(null);
         if (character != null) {
@@ -483,7 +482,7 @@ public class CharacterController {
         public java.util.List<String> values;
     }
 
-    public static void applyAdvancementChoice(Context ctx) {
+    public static void applyAdvancementChoice(ApiExchange ctx) {
         try {
             int id = Integer.parseInt(ctx.pathParam("id"));
             Character_Sheet character = Global_Data.character_pool.stream()
@@ -514,7 +513,7 @@ public class CharacterController {
         }
     }
 
-    public static void createCharacter(Context ctx) {
+    public static void createCharacter(ApiExchange ctx) {
         try {
             CharacterCreateRequest req = ApiServer.GSON.fromJson(ctx.body(), CharacterCreateRequest.class);
             if (req.name == null || req.name.trim().isEmpty()) {

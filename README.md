@@ -212,7 +212,7 @@ DMHelper/
    └─ package.json               # 前端与桌面构建命令
 ```
 
-当前后端使用 Javalin，尚未引入 Spring Boot。
+本地 API 使用 Spring Boot 4.1 和 Spring MVC，运行于 Java 17 或以上。API 默认监听 `127.0.0.1:8080`，Electron 启动后端时会传入本次启动的客户端令牌。角色、战斗和冒险资料仍由原有 Java 规则引擎与 SQLite 管理。
 
 ### 验证与构建命令
 
@@ -223,7 +223,7 @@ mvn test
 mvn package
 ```
 
-后端产物为 `target/dmhelper-backend.jar`，直接运行该 JAR 只启动 API，不打开桌面窗口。
+后端产物为 `target/dmhelper-backend.jar`。运行 `java -jar target/dmhelper-backend.jar` 可单独启动 API。单独启动时可通过 `DMHELPER_API_PORT` 和 `DMHELPER_API_TOKEN` 指定端口及客户端令牌。
 
 在 `frontend` 目录运行：
 
